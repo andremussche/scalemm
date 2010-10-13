@@ -10,7 +10,7 @@ const
   {$STACKFRAMES OFF}
 {$ENDIF}
 
-//todo: prefetch memory after alloc ivm class create, strings etc zodat ervolgcode sneller is?
+//todo: prefetch memory after alloc ivm class create, strings etc
 
 type
   PMemoryList   = ^TMemoryList;
@@ -70,9 +70,6 @@ type
     //recursive check when we alloc memory for this blocksize (new memory list)
     FRecursive: boolean;
 
-    //no filer needed, is faster this way
-    //FFiler: array[0..2] of Pointer;  //make 32byte aligned instead of 20 bytes
-
     procedure AddNewMemoryList;
     function  GetMemFromList: Pointer;
     function  GetFreedMemFromList: Pointer; {$ifdef RELEASE}inline;{$ENDIF}
@@ -112,9 +109,9 @@ var
   GOwnTlsIndex,
   GOwnTlsOffset: Cardinal;
 
-//ScaleMM.pas.85: MOV   EAX, GOwnTlsOffset                     //todo: calc once and inject runtime
+//ScaleMM.pas.85: MOV   EAX, GOwnTlsOffset
 //0040A344 A1646C4B00       mov eax,[$004b6c64]
-//ScaleMM.pas.89: MOV   EAX, 123456789                     //todo: calc once and inject runtime
+//ScaleMM.pas.89: MOV   EAX, 123456789
 //0040A344 B815CD5B07       mov eax,$075bcd15
 
 function _GetOwnTls: Pointer;
@@ -231,7 +228,6 @@ var
   bm: PBlockMemory;
 begin
   //Result := nil;
-//  i := aSize div 32;       //blocks of 32: 32, 64, 96, etc till 256
 
   //mini block?
   if aSize <= 8 * 32 then
@@ -256,6 +252,7 @@ begin
     ProcessFreedMemFromOtherThreads;
 
   (*
+  //i := aSize div 32;       //blocks of 32: 32, 64, 96, etc till 256
   //mini block?
   if i <= High(FMiniMemoryBlocks) then
     bm := @FMiniMemoryBlocks[i]
