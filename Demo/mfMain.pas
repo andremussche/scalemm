@@ -27,7 +27,8 @@ var
 implementation
 
 uses
-  _uTextThread, KOLDetours, StrCopyFix;
+  _uTextThread;
+  //KOLDetours, StrCopyFix;
 
 {$R *.dfm}
 
@@ -84,6 +85,7 @@ begin
   end;
 end;
 
+(*
 procedure Dummy;
 begin
   Copy('',0,0);
@@ -128,12 +130,6 @@ begin
   end;
 end;
 
-procedure TfrmMain.FormCreate(Sender: TObject);
-var s:string;
-begin
-  Memo1.Clear;
-  FCsvFile := TStringList.Create;
-
 //  CopyHack;
   //004AB339 E86ABCF5FF       call @UStrCopy
   //004AB3C0 C3               ret
@@ -143,6 +139,14 @@ begin
 
 //  s := 'test';
 //  s := _UStrCopy(s, 0, 2);
+*)
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+var s:string;
+begin
+  Memo1.Clear;
+  FCsvFile := TStringList.Create;
+
 //  edtThreadCount.Text := '4';
 //  ExecuteTest;
 //  Application.Terminate;
