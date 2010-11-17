@@ -16,8 +16,9 @@ function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall;
 procedure Sleep(dwMilliseconds: DWORD); stdcall;
 function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall;
 function  GetCurrentProcess: THandle; stdcall;
-function VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
-  var OldProtect: DWORD): BOOL; stdcall; overload;
+function  GetCurrentThreadId: DWORD; stdcall;
+function  VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
+            var OldProtect: DWORD): BOOL; stdcall; overload;
 
 procedure ZeroMemory(Destination: Pointer; Length: DWORD); inline;
 
@@ -33,12 +34,13 @@ function  TlsFree; external kernel32 name 'TlsFree';
 function  TlsGetValue; external kernel32 name 'TlsGetValue';
 function  TlsSetValue; external kernel32 name 'TlsSetValue';
 procedure Sleep; external kernel32 name 'Sleep';
-function FlushInstructionCache; external kernel32 name 'FlushInstructionCache';
-function GetCurrentProcess; external kernel32 name 'GetCurrentProcess';
+function  FlushInstructionCache; external kernel32 name 'FlushInstructionCache';
+function  GetCurrentProcess; external kernel32 name 'GetCurrentProcess';
+function  GetCurrentThreadId; external kernel32 name 'GetCurrentThreadId';
 //function VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
 //  lpflOldProtect: Pointer): BOOL; external kernel32 name 'VirtualProtect';
-function VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
-  var OldProtect: DWORD): BOOL; external kernel32 name 'VirtualProtect';
+function  VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
+            var OldProtect: DWORD): BOOL; external kernel32 name 'VirtualProtect';
 
 procedure ZeroMemory(Destination: Pointer; Length: DWORD);
 begin

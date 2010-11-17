@@ -27,7 +27,7 @@ var
 implementation
 
 uses
-  _uTextThread;
+  _uTextThread, KOLDetours, StrCopyFix;
 
 {$R *.dfm}
 
@@ -84,11 +84,65 @@ begin
   end;
 end;
 
+procedure Dummy;
+begin
+  Copy('',0,0);
+  //004AC279 E82AADF5FF       call @UStrCopy         FFF5ADAA
+  //  System.pas.18091: begin
+  //00406FA8 55               push ebp
+
+  //A52D1
+  //FFFFFFFF - A52D1 = FFF5AD2E - FFF5ADAA = 7C
+end;
+
+var
+  iDummy: Integer = 0;
+
+procedure CopyHack;
+var
+  p,p2: Pointer;
+begin
+  if iDummy > 0 then
+    Dummy;
+  p2 := nil;
+
+  p := @Dummy;
+  while PByte(p)^ <> $C3{ret} do
+  begin
+    inc(PByte(p));
+    if PByte(p)^ = $E8{call} then
+    begin
+      inc(PByte(p));
+      p2 := PPointer(p)^;
+      Break;
+    end;
+  end;
+
+  if p2 <> nil then
+  begin
+    p2 := Pointer( $FFFFFFFF - Cardinal(p2) );
+    p2 := Pointer( Cardinal(p) - Cardinal(p2) );
+    //p2 := Pointer( $FFFFFFFF - Cardinal(p)
+    KOLDetours.InterceptCreate(p2, @StrCopyFix._UStrCopy)
+    //test
+  end;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
+var s:string;
 begin
   Memo1.Clear;
   FCsvFile := TStringList.Create;
 
+//  CopyHack;
+  //004AB339 E86ABCF5FF       call @UStrCopy
+  //004AB3C0 C3               ret
+
+  //Dummy;
+//  KOLDetours.InterceptCreate(@System.Copy, @StrCopyFix._UStrCopy)
+
+//  s := 'test';
+//  s := _UStrCopy(s, 0, 2);
 //  edtThreadCount.Text := '4';
 //  ExecuteTest;
 //  Application.Terminate;
