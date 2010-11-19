@@ -29,6 +29,14 @@ uses DateUtils, AnsiStrings;
 //  h1, h2, h3: PHeader;
 
 //compare oldvalue with destination: if equal then newvalue is set
+function CAS32nolock(const oldValue: Cardinal; newValue: Cardinal; var destination): boolean;
+asm
+  cmpxchg dword ptr [destination], newValue
+  setz  al
+end; { CAS32 }
+
+
+//compare oldvalue with destination: if equal then newvalue is set
 function CAS32(const oldValue: pointer; newValue: pointer; var destination): boolean;
 asm
   lock cmpxchg dword ptr [destination], newValue
@@ -61,6 +69,10 @@ begin
 end;
 
 
+var
+  GInnerLock,
+  GOuterLock: Cardinal;
+
 procedure TDummyStringThread.Execute;
 var
 //  s, stest: AnsiString;
@@ -69,11 +81,18 @@ var
   p1, p2, p3: pointer;
   i,j:integer;
   tStart: TDateTime;
+  obj1, obj2, obj3: TObject;
+  ws: WideString;
+
+  iCurrentTID: Cardinal;
 //  pOld, pNew, pDest: pointer;
 //  ia: array of integer;
 begin
 //  SetThreadPriority( Self.Handle, THREAD_PRIORITY_ABOVE_NORMAL);
 
+  iCurrentTID := GetCurrentThreadId;
+
+{
       p1 := GetMemory(10);
       p2 := GetMemory(40);
       p3 := GetMemory(80);
@@ -85,6 +104,7 @@ begin
       FreeMem(p1);
       FreeMem(p2);
       FreeMem(p3);
+      }
 
   tStart := now;
   stest  := '12345678901234567890';
@@ -111,7 +131,51 @@ begin
       stest := s + ' ' + s + ' ' + s;
       }
 
-//      {
+      {
+      ws := Copy(stest, 1, 10);
+      ws := Copy(ws, 2, 8);
+      ws := Copy(ws, 3, 4);
+      stest := ws + ' ' + ws + ' ' + ws;
+      }
+
+      repeat
+
+        //try get soft lock
+        while not CAS32nolock(0, iCurrentTID, GInnerLock) do
+          sleep(0);
+        //check first lock
+        if GInnerLock <> iCurrentTID then   //concurrent update by other thread?
+        begin
+          GInnerLock := 0; //reset, otherthread too
+          Continue;
+        end;
+
+        //we have first lock, try set seond safety lock
+        if not CAS32nolock(0, iCurrentTID, GOuterLock) or
+           (GOuterLock <> iCurrentTID)      //concurrent update by other thread?
+        then
+          GInnerLock := 0; //reset, otherthread too
+
+      until (GInnerLock = iCurrentTID) and (GOuterLock = iCurrentTID);
+
+      p1 := GetMemory(10);
+      FreeMem(p1);
+
+      //poc failed?
+      if (GInnerLock <> iCurrentTID) or
+         (GOuterLock <> iCurrentTID) then
+      begin
+        Sleep(0);
+        Assert(False);
+      end;
+
+      //unlock
+      GOuterLock := 0;
+      GInnerLock := 0;
+
+
+
+      {
       p1 := GetMemory(10);
       p2 := GetMemory(40);
       p3 := GetMemory(80);
@@ -123,7 +187,16 @@ begin
       FreeMem(p1);
       FreeMem(p2);
       FreeMem(p3);
-//      }
+      }
+
+      {
+      obj1 := TObject.Create;
+      obj2 := TObject.Create;
+      obj3 := TObject.Create;
+      obj1.Free;
+      obj2.Free;
+      obj3.Free;
+      }
     end;
 
   FDuration_msec := MilliSecondsBetween(now, tStart);

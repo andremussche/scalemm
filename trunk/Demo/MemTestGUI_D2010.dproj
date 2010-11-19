@@ -20,14 +20,13 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_ExeOutput>C:\Projecten_PS_2nd\FobisPS41\Run\</DCC_ExeOutput>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
 			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>
 			<DCC_UnitSearchPath>.\TopMM;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<ImageDebugInfo>true</ImageDebugInfo>
-			<DCC_DependencyCheckOutputName>C:\Projecten_PS_2nd\FobisPS41\Run\MemTestGUI_D2010.exe</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>MemTestGUI_D2010.exe</DCC_DependencyCheckOutputName>
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
 			<DCC_StringChecks>off</DCC_StringChecks>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;$(DCC_UnitAlias)</DCC_UnitAlias>
@@ -40,13 +39,12 @@
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<DCC_TypedAtParameter>false</DCC_TypedAtParameter>
-			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+			<DCC_Define>DEBUG;DEBUG_SCALEMM;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
 			<DCC_Optimize>true</DCC_Optimize>
 			<DCC_RangeChecking>false</DCC_RangeChecking>
-			<DCC_DebugDCUs>false</DCC_DebugDCUs>
 			<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
 			<DCC_IntegerOverflowCheck>false</DCC_IntegerOverflowCheck>
 			<DCC_GenerateStackFrames>false</DCC_GenerateStackFrames>
@@ -56,13 +54,9 @@
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
 			<DCCReference Include="..\ScaleMM.pas"/>
-			<DCCReference Include="..\ThreadHook.pas"/>
+			<DCCReference Include="_uTextThread.pas"/>
 			<DCCReference Include="mfMain.pas">
 				<Form>frmMain</Form>
-			</DCCReference>
-			<DCCReference Include="_uTextThread.pas"/>
-			<DCCReference Include="..\uWinApiFunctions.pas">
-				<Form>$R *.res</Form>
 			</DCCReference>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
@@ -96,7 +90,7 @@
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">0</VersionInfo>
 						<VersionInfo Name="Release">0</VersionInfo>
-						<VersionInfo Name="Build">203</VersionInfo>
+						<VersionInfo Name="Build">291</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -108,7 +102,7 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName"/>
 						<VersionInfoKeys Name="FileDescription"/>
-						<VersionInfoKeys Name="FileVersion">1.0.0.203</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.0.0.291</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName"/>
 						<VersionInfoKeys Name="LegalCopyright"/>
 						<VersionInfoKeys Name="LegalTrademarks"/>
@@ -117,7 +111,7 @@
 						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 						<VersionInfoKeys Name="Last Compile">2010-09-21 10:47</VersionInfoKeys>
-						<VersionInfoKeys Name="LastCompiledTime">17-11-2010 13:53:56</VersionInfoKeys>
+						<VersionInfoKeys Name="LastCompiledTime">19-11-2010 12:46:15</VersionInfoKeys>
 					</VersionInfoKeys>
 					<Excluded_Packages>
 						<Excluded_Packages Name="$(BDS)\bin\dclbde140.bpl">Embarcadero BDE DB Components</Excluded_Packages>
