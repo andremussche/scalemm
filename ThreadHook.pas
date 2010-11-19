@@ -57,6 +57,6 @@ begin
 end;
 
 initialization
-  PatchThread;
+  //PatchThread;
 
 end.

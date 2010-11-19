@@ -6,16 +6,28 @@ const
   C_ARRAYSIZE          = 50;  //alloc memory blocks with 50 memory items each time
   C_GLOBAL_BLOCK_CACHE = 10;  //keep 10 free blocks in cache
 
-{$ifdef RELEASE}
-  {$Optimization   ON}
-  {$STACKFRAMES    OFF}
+{$DEFINE SCALE_INJECT_OFFSET}  //2% faster
+
+//other posible defines:
+//{$DEFINE PURE_PASCAL}        //no assembly, pure delphi code
+//{$DEFINE Align16Bytes}       //16 byte aligned header, so some more overhead
+//{$DEFINE DEBUG_SCALEMM}      //slower but better debugging (no inline functions etc)
+
+{$IFDEF DEBUG_SCALEMM}
+  {$Optimization   OFF}
+  {$STACKFRAMES    ON}
+  {$ASSERTIONS     ON}
+  {$DEBUGINFO      ON}
+  {$OVERFLOWCHECKS ON}
+  {$RANGECHECKS    ON}
+{$ELSE}      //default "release" mode, much faster!
+  {$Optimization   ON}         //235% faster!
+  {$STACKFRAMES    OFF}        //12% faster
   {$ASSERTIONS     OFF}
-  //{$DEBUGINFO      OFF}
+  //{$DEBUGINFO      OFF}      //not faster so keep it on?
   {$OVERFLOWCHECKS OFF}
   {$RANGECHECKS    OFF}
 {$ENDIF}
-  {$ALIGN          ON}
-  {$A8}
 
 //todo: prefetch memory after alloc ivm class create, strings etc?
 
@@ -29,8 +41,10 @@ type
     Owner    : PMemBlock;
     NextMem  : PMemHeader;  //linked to next single memory item (other thread freem mem)
                             //also 8byte aligned
-//    Filer1: Pointer;
-//    Filer2: Pointer;        //16byte aligned
+    {$IFDEF Align16Bytes}
+    Filer1: Pointer;
+    Filer2: Pointer;        //16byte aligned
+    {$ENDIF}
   end;
 
   TMemBlock = record
@@ -51,10 +65,10 @@ type
     FFreedIndex: Byte;
     FFreedArray: array[0..C_ARRAYSIZE] of Pointer;
 
-    function  GetUsedMemoryItem: PMemHeader;    {$ifdef RELEASE}inline;{$ENDIF}
-    procedure FreeMem(aMemoryItem: PMemHeader); {$ifdef RELEASE}inline;{$ENDIF}
+    function  GetUsedMemoryItem: PMemHeader;    {$ifNdef DEBUG_SCALEMM}inline;{$ENDIF}
+    procedure FreeMem(aMemoryItem: PMemHeader); {$ifNdef DEBUG_SCALEMM}inline;{$ENDIF}
 
-    procedure AllocBlockMemoryViaOldMM;
+    procedure AllocBlockMemory;
     procedure FreeBlockMemoryToGlobal;
   end;
 
@@ -75,11 +89,11 @@ type
     //recursive check when we alloc memory for this blocksize (new memory list)
     FRecursive: boolean;
 
-    FFreeMemCount: Integer;
+    FFreeMemCount: NativeInt;
 
     procedure AddNewMemoryBlock;
     function  GetMemFromNewBlock : Pointer;
-    function  GetMemFromUsedBlock: Pointer; {$ifdef RELEASE}inline;{$ENDIF}
+    function  GetMemFromUsedBlock: Pointer; {$ifNdef DEBUG_SCALEMM}inline;{$ENDIF}
   end;
 
   TThreadMemManager = record
@@ -90,29 +104,33 @@ type
     procedure AddFreedMemFromOtherThread(aMemory: PMemHeader);
 
     //array with memory per block size (32 - 256 bytes)
-    var FMiniMemoryBlocks  : array[0..8] of TMemBlockList;
+    var FMiniMemoryBlocks  : array[0..7] of TMemBlockList;
     //array with memory per block size (256 - 2048 bytes)
-    var FSmallMemoryBlocks : array[0..8] of TMemBlockList;
+    var FSmallMemoryBlocks : array[0..7] of TMemBlockList;
     //array with (dynamic) memory per block size 256 (2048 - 16384/18432 bytes)
     var FMediumMemoryBlocks: array[0..63] of PMemBlockList;
 
     //linked list of items to reuse after thread terminated
     FNextThreadManager: PThreadMemManager;
 
-    function  GetLargerMem(aSize: Integer): Pointer;
-    function  GetOldMem   (aSize: Integer): Pointer;
-    function  FreeOldMem  (aMemory: Pointer): Integer;
+    function  GetLargerMem(aSize: NativeInt): Pointer;
+    function  GetOldMem   (aSize: NativeInt): Pointer;
+    function  FreeOldMem  (aMemory: Pointer): NativeInt;
   public
-    FThreadId: Cardinal;
+    FThreadId: NativeUInt;
     FThreadTerminated: Boolean;  //is this thread memory available to new thread?
 
     procedure Init;
     procedure Reset;
 
-    function GetMem (aSize: Integer)  : Pointer; {$ifdef RELEASE}inline;{$ENDIF}
-    function FreeMem(aMemory: Pointer): Integer; {$ifdef RELEASE}inline;{$ENDIF}
+    function GetMem (aSize: NativeInt): Pointer;   {$ifNdef DEBUG_SCALEMM}inline;{$ENDIF}
+    function FreeMem(aMemory: Pointer): NativeInt; {$ifNdef DEBUG_SCALEMM}inline;{$ENDIF}
   end;
 
+  /// <summary>
+  /// Global memory manager (single instance), caches some memory (blocks + threadmem) for fast reuse.
+  /// Also keeps allocated memory in case an old thread allocated some memory for another thread
+  /// </summary>
   TGlobalMemManager = record
   private
     //all thread memory managers
@@ -124,9 +142,9 @@ type
 
     //Freed/used memory:
     //array with memory per block size (32 - 256 bytes)
-    var FFreedMiniMemoryBlocks  : array[0..8] of TMemBlockList;
+    var FFreedMiniMemoryBlocks  : array[0..7] of TMemBlockList;
     //array with memory per block size (256 - 2048 bytes)
-    var FFreedSmallMemoryBlocks : array[0..8] of TMemBlockList;
+    var FFreedSmallMemoryBlocks : array[0..7] of TMemBlockList;
     //array with (dynamic) memory per block size 256 (2048 - 16384/18432 bytes)
     var FFreedMediumMemoryBlocks: array[0..63] of TMemBlockList;
 
@@ -143,57 +161,106 @@ type
     function  GetNewThreadManager: PThreadMemManager;
 
     procedure FreeBlockMemory(aBlockMem: PMemBlock);
-    function  GetBlockMemory (aItemSize: Integer): PMemBlock;
+    function  GetBlockMemory (aItemSize: NativeInt): PMemBlock;
   end;
 
   function GetCurrentThreadManager: PThreadMemManager;
 
-  function Scale_GetMem(aSize: Integer): Pointer;
-  function Scale_AllocMem(aSize: Cardinal): Pointer;
+  function Scale_GetMem(aSize: Integer)   : Pointer;    //cannot use NativeInt?
+  function Scale_AllocMem(aSize: Cardinal): Pointer;    //cannot use NativeUInt?
   function Scale_FreeMem(aMemory: Pointer): Integer;
+  function Scale_ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
 
 var
   GlobalManager: TGlobalMemManager;
 
 implementation
 
-uses
-  uWinApiFunctions,
-  ThreadHook;
+//uses
 //  Windows, SysUtils, Classes, Contnrs;  do not use other units!
 
 ///////////////////////////////////////////////////////////////////////////////
 
+{$REGION 'Windows API functions'}
+//Windows.pas unit cannot be used
+type
+  DWORD = LongWord;
+  BOOL  = LongBool;
+const
+  PAGE_EXECUTE_READWRITE = $40;
+  kernel32  = 'kernel32.dll';
+
+function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
+function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
+function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
+function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
+procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
+function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
+function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
+function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
+function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
+            var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
+procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
+
+procedure ZeroMemory(Destination: Pointer; Length: DWORD);inline;
+begin
+  FillChar(Destination^, Length, 0);
+end;
+
+function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
+begin
+  Assert(Assigned(Code) and (Size > 0));
+  { Flush the instruction cache so changes to the code page are effective immediately }
+  if Permission <> 0 then
+    if FlushInstructionCache(GetCurrentProcess, Code, Size) then
+      if not Scale_VirtualProtect(Code, Size, Permission, Longword(Result)) then
+        sleep(0);
+end;
+{$ENDREGION 'Windows API functions'}
+
+//ScaleMM works on top of previous MM!
+//e.g. large blocks are delegated to OldMM, but also block memory is allocated
+//by OldMM if ScaleMM needs more memory itself (tries to use own memory first)
 var
   OldMM: TMemoryManagerEx;
+
+{$IFDEF PURE_PASCAL}
+threadvar
+  GCurrentThreadManager: PThreadMemManager;
+{$ELSE}
+{$REGION 'TLS AssemblyHacking'}
+var
   GOwnTlsIndex,
-  GOwnTlsOffset: Cardinal;
+  GOwnTlsOffset: NativeUInt;
 
-//ScaleMM.pas.85:      MOV   EAX, GOwnTlsOffset
-//0040A344 A1646C4B00  mov   eax,[$004b6c64]
-//ScaleMM.pas.89:      MOV   EAX, 123456789
-//0040A344 B815CD5B07  mov   eax,$075bcd15
-
-function _GetOwnTls: Pointer;
+function _GetOwnTls: Pointer;        //7% faster if we use this low level assembly!
 asm
-//  MOV   EAX, GOwnTlsIndex
-  MOV   EAX, 123456789                     //dummy value: calc once and inject runtime
+{$IFDEF SCALE_INJECT_OFFSET}
+  MOV   EAX, 123456789               //dummy value: calc once and inject runtime
+{$ELSE}
+  MOV   EAX, GOwnTlsOffset           //2% slower, so we default use injected offset
+{$ENDIF}
   MOV   ECX, fs:[$00000018]
 //  MOV   EAX, [ECX+ EAX*4+$0e10]
-  MOV   EAX, [ECX + EAX]
-  RET
+  MOV   EAX, [ECX + EAX]             //fixed offset, calc only once
 end;
 
 procedure _FixedOffset;
+{$IFDEF SCALE_INJECT_OFFSET}
 var p: pointer;
+{$ENDIF}
 begin
-  GOwnTlsOffset := GOwnTlsIndex*4+$0e10;
+  GOwnTlsOffset := GOwnTlsIndex * 4 + $0e10;
 
+  {$IFDEF SCALE_INJECT_OFFSET}
   p  := @_GetOwnTls;
   SetPermission(p, 5, PAGE_EXECUTE_READWRITE);
   inc(PByte(p));
   PCardinal(p)^ := GOwnTlsOffset;  //write fixed offset (so no calculation + slow global var value fetch)
+  {$ENDIF}
 end;
+{$ENDREGION 'TLS AssemblyHacking'}
+{$ENDIF}
 
 //compare oldvalue with destination: if equal then newvalue is set
 function CAS32(const oldValue: pointer; newValue: pointer; var destination): boolean;
@@ -214,7 +281,7 @@ asm
   lock cmpxchg [ecx], dl
 end;
 
-{$ifdef RELEASE}
+{$ifNdef DEBUG_SCALEMM}
 procedure DummyAssert(aBoolean: boolean);
 begin
   //
@@ -251,15 +318,24 @@ begin
     Result.FThreadTerminated := False;
   end;
 
+  {$IFDEF PURE_PASCAL}
+  GCurrentThreadManager := Result;
+  {$ELSE}
   TlsSetValue(GOwnTLSIndex, Result);
+  {$ENDIF}
+
 //  GlobalManager.AddNewThreadMemoryToList(Result);
 end;
 
 function GetSmallMemManager: PThreadMemManager;inline;
 begin
+  {$IFDEF PURE_PASCAL}
+  Result := GCurrentThreadManager;
+  {$ELSE}
   Result := _GetOwnTls;
+  {$ENDIF}
   if Result <> nil then
-    Exit
+    Exit   //fast branch prediction
   else
     Result := CreateSmallMemManager;
 end;
@@ -273,7 +349,7 @@ end;
 { TThreadMemManager }
 
 procedure TThreadMemManager.Init;
-var i: Integer;
+var i: Byte;
 begin
   FThreadId := GetCurrentThreadId;
 
@@ -318,7 +394,7 @@ end;
 
 procedure TThreadMemManager.Reset;
 var
-  i: Integer;
+  i: Byte;
 
   procedure __ResetBlocklist(aBlocklist: PMemBlockList);
   begin
@@ -357,12 +433,12 @@ begin
   FOtherThreadFreedMemory.NextMem := poldmem;
 end;
 
-function TThreadMemManager.FreeMem(aMemory: Pointer): Integer;
+function TThreadMemManager.FreeMem(aMemory: Pointer): NativeInt;
 var
   pm: PMemBlock;
   p: Pointer;
 begin
-  p  := Pointer(Cardinal(aMemory) - SizeOf(TMemHeader));
+  p  := Pointer(NativeUInt(aMemory) - SizeOf(TMemHeader));
   pm := PMemHeader(p).Owner;
 
   Result := 0; // No Error result for Delphi
@@ -390,12 +466,12 @@ begin
     Result := FreeOldMem(p);
 end;
 
-function TThreadMemManager.FreeOldMem(aMemory: Pointer): Integer;
+function TThreadMemManager.FreeOldMem(aMemory: Pointer): NativeInt;
 begin
  Result := OldMM.FreeMem(aMemory);
 end;
 
-function TThreadMemManager.GetLargerMem(aSize: Integer): Pointer;
+function TThreadMemManager.GetLargerMem(aSize: NativeInt): Pointer;
 begin
   Result := GetOldMem(aSize);
 
@@ -403,21 +479,25 @@ begin
   //if block not yet then add, else normal stuff
 end;
 
-function TThreadMemManager.GetMem(aSize: Integer): Pointer;
+function TThreadMemManager.GetMem(aSize: NativeInt): Pointer;
 var
-  i: Integer;
+  i: Byte;
   bm: PMemBlockList;
 begin
   //mini block?
   if aSize <= 8 * 32 then
   begin
-    i  := (aSize-1) div 32;       //blocks of 32: 32, 64, 96, etc till 256
+    if aSize <= 0 then Exit(nil);
+
+    //i  := (aSize-1) div 32;       //blocks of 32: 32, 64, 96, etc till 256
+    i  := (aSize-1) shr 5;       //blocks of 32: 32, 64, 96, etc till 256
     bm := @FMiniMemoryBlocks[i]
   end
   //small block?
   else if aSize <= 8 * 256 then
   begin
-    i  := (aSize-1) div 256;    //blocks of 256: 256, 512, 768, etc till 2048
+//    i  := (aSize-1) div 256;    //blocks of 256: 256, 512, 768, etc till 2048
+    i  := (aSize-1) shr 8;    //blocks of 256: 256, 512, 768, etc till 2048
     bm := @FSmallMemoryBlocks[i]
   end
   else
@@ -440,23 +520,25 @@ begin
       Result := GetMemFromNewBlock;
   end;
 
-  Assert(Cardinal(Result) > $10000);
-  Result  := Pointer(Cardinal(Result) + SizeOf(TMemHeader));
+  Assert(NativeUInt(Result) > $10000);
+  Result  := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
 end;
 
-function TThreadMemManager.GetOldMem(aSize: Integer): Pointer;
+function TThreadMemManager.GetOldMem(aSize: NativeInt): Pointer;
 begin
   Result := OldMM.GetMem(aSize + SizeOf(TMemHeader));
   TMemHeader(Result^).Owner := nil;  //not our memlist, so nil, so we can check on this
-  Result := Pointer(Cardinal(Result) + SizeOf(TMemHeader) );
+  Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader) );
 end;
 
 ///////////////////////////////////////////////////////////////////////////////
 { TMemBlock }
 
-procedure TMemBlock.AllocBlockMemoryViaOldMM;
+procedure TMemBlock.AllocBlockMemory;
 begin
-  FMemoryArray := OldMM.GetMem( (Owner.FItemSize + SizeOf(TMemHeader))
+//  FMemoryArray := OldMM.GetMem( (Owner.FItemSize + SizeOf(TMemHeader))
+//                                * C_ARRAYSIZE );
+  FMemoryArray := Scale_GetMem( (Owner.FItemSize + SizeOf(TMemHeader))
                                 * C_ARRAYSIZE );
 end;
 
@@ -546,14 +628,15 @@ begin
   //else create own one
   if pm = nil then
   begin
-    New(pm);
-    ZeroMemory(pm, SizeOf(TMemBlock));
+    pm := Scale_AllocMem(SizeOf(pm^));
+//    new(pm);
+//    ZeroMemory(pm, SizeOf(TMemBlock));
 
     with pm^ do
     begin
       {pm.}Owner     := @Self;
       {pm.}FItemSize := Self.FItemSize;
-      AllocBlockMemoryViaOldMM;                  //init
+      AllocBlockMemory;                  //init
     end;
   end;
 
@@ -634,10 +717,11 @@ begin
     if FUsageCount < C_ARRAYSIZE then
     begin
       //calc next item
-      Result := Pointer(Cardinal(FMemoryArray) +
-                                (FUsageCount *
-                                  (FItemSize + SizeOf(TMemHeader))
-                                 ) );
+      Result := Pointer(NativeUInt(FMemoryArray) +
+                                  ( FUsageCount *
+                                   (FItemSize + SizeOf(TMemHeader))
+                                  )
+                       );
       inc(FUsageCount);
       //startheader = link to memlist
       TMemHeader(Result^).Owner := pm;
@@ -647,7 +731,7 @@ begin
 //      Result := nil;
   end;
 
-  Assert(Cardinal(Result) > $10000);
+  Assert(NativeUInt(Result) > $10000);
 end;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -679,7 +763,7 @@ begin
 end;
 
 procedure TGlobalMemManager.FreeAllMemory;
-var i : integer;
+var i: Byte;
 
   procedure __ProcessBlockMem(aOldBlock: PMemBlockList);
   var
@@ -695,8 +779,9 @@ var i : integer;
       begin
         oldmem := allmem;
         allmem := allmem.FNextMemBlock;
-        OldMM.FreeMem(oldmem.FMemoryArray);
-        Dispose(oldmem);
+        Scale_FreeMem(oldmem.FMemoryArray);
+        Scale_FreeMem(oldmem);
+        //Dispose(oldmem);
         //OldMM.FreeMem(oldmem);
       end
       else
@@ -740,7 +825,7 @@ begin
 end;
 
 procedure TGlobalMemManager.FreeBlockMemory(aBlockMem: PMemBlock);
-var i : integer;
+var i : Byte;
     bl: PMemBlockList;
     prevmem: PMemBlock;
 begin
@@ -768,39 +853,44 @@ begin
   //release large mem
   if bl = nil then
   begin
-    OldMM.FreeMem(aBlockMem.FMemoryArray);
-    Dispose(aBlockMem);
+    Scale_FreeMem(aBlockMem.FMemoryArray);
+    Scale_FreeMem(aBlockMem);
   end
   //add to list
   else
   begin
-    //lock
-    while LockCmpxchg(0, 1, @bl.FRecursive) <> 0 do
-      Sleep(0);
+    { TODO -oAM : instead of locks, use fixed array[max 10] with interlocked inc/dec }
 
-    //too much cached?
-    if bl.FFreeMemCount > C_GLOBAL_BLOCK_CACHE then
-    begin
-      //dispose
-      OldMM.FreeMem(aBlockMem.FMemoryArray);
-      Dispose(aBlockMem);
+    //lock
+    while bl.FRecursive or
+          (LockCmpxchg(0, 1, @bl.FRecursive) <> 0)
+    do
+      Sleep(0);
+    try
+      //too much cached?
+      if bl.FFreeMemCount > C_GLOBAL_BLOCK_CACHE then
+      begin
+        //dispose
+        Scale_FreeMem(aBlockMem.FMemoryArray);
+        Scale_FreeMem(aBlockMem);
+        //unlock
+        bl.FRecursive := False;
+
+        Exit;
+      end;
+
+      //add freemem block to front (replace first item, link previous to firsts item)
+      prevmem                          := bl.FFirstFreedMemBlock;
+      aBlockMem.FNextFreedMemBlock     := prevmem;
+      if prevmem <> nil then
+        prevmem.FPreviousFreedMemBlock := aBlockMem;
+      bl.FFirstFreedMemBlock           := aBlockMem;
+      //inc items cached
+      inc(bl.FFreeMemCount);
+    finally
       //unlock
       bl.FRecursive := False;
-
-      Exit;
     end;
-
-    //add freemem block to front (replace first item, link previous to firsts item)
-    prevmem                          := bl.FFirstFreedMemBlock;
-    aBlockMem.FNextFreedMemBlock     := prevmem;
-    if prevmem <> nil then
-      prevmem.FPreviousFreedMemBlock := aBlockMem;
-    bl.FFirstFreedMemBlock           := aBlockMem;
-    //inc items cached
-    inc(bl.FFreeMemCount);
-
-    //unlock
-    bl.FRecursive := False;
 
     (*
     //add freemem list to front (replace first item, link previous to last item)
@@ -822,7 +912,7 @@ end;
 
 procedure TGlobalMemManager.FreeBlocksFromThreadMemory(aThreadMem: PThreadMemManager);
 var
-  i: integer;
+  i: Byte;
 
   procedure __ProcessBlockMem(aOldBlock, aGlobalBlock: PMemBlockList);
   var
@@ -852,8 +942,8 @@ var
           allmem  := allmem.FNextMemBlock;
 
           //dispose
-          OldMM.FreeMem(tempmem.FMemoryArray);
-          Dispose(tempmem);
+          Scale_FreeMem(tempmem.FMemoryArray);
+          Scale_FreeMem(tempmem);
           Continue;
         end;
 
@@ -953,8 +1043,8 @@ begin
   until True = False;
 end;
 
-function TGlobalMemManager.GetBlockMemory(aItemSize: Integer): PMemBlock;
-var i : integer;
+function TGlobalMemManager.GetBlockMemory(aItemSize: NativeInt): PMemBlock;
+var i : Byte;
     bl: PMemBlockList;
     prevmem, nextmem: PMemBlock;
 begin
@@ -977,32 +1067,35 @@ begin
     Exit;
 
   //lock
-  while LockCmpxchg(0, 1, @bl.FRecursive) <> 0 do
+  while bl.FRecursive or
+        (LockCmpxchg(0, 1, @bl.FRecursive) <> 0)
+  do
     Sleep(0);
-
-  //get freed mem from list from front (replace first item)
-  if bl.FFirstFreedMemBlock <> nil then
-  begin
-    prevmem  := bl.FFirstFreedMemBlock;
-    nextmem  := prevmem.FNextFreedMemBlock;
-    bl.FFirstFreedMemBlock := nextmem;
-    if nextmem <> nil then
-      nextmem.FPreviousFreedMemBlock := nil;
-    Result := prevmem;
-  end
-  //get free mem from list from front (replace first item)
-  else if bl.FFirstMemBlock <> nil then
-  begin
-    prevmem  := bl.FFirstMemBlock;
-    nextmem  := prevmem.FNextMemBlock;
-    bl.FFirstMemBlock := nextmem;
-    if nextmem <> nil then
-      nextmem.FPreviousMemBlock := nil;
-    Result := prevmem;
+  try
+    //get freed mem from list from front (replace first item)
+    if bl.FFirstFreedMemBlock <> nil then
+    begin
+      prevmem  := bl.FFirstFreedMemBlock;
+      nextmem  := prevmem.FNextFreedMemBlock;
+      bl.FFirstFreedMemBlock := nextmem;
+      if nextmem <> nil then
+        nextmem.FPreviousFreedMemBlock := nil;
+      Result := prevmem;
+    end
+    //get free mem from list from front (replace first item)
+    else if bl.FFirstMemBlock <> nil then
+    begin
+      prevmem  := bl.FFirstMemBlock;
+      nextmem  := prevmem.FNextMemBlock;
+      bl.FFirstMemBlock := nextmem;
+      if nextmem <> nil then
+        nextmem.FPreviousMemBlock := nil;
+      Result := prevmem;
+    end;
+  finally
+    //unlock
+    bl.FRecursive := False;
   end;
-
-  //unlock
-  bl.FRecursive := False;
 
   {
   //get freemem from list from front (replace first item)
@@ -1060,7 +1153,7 @@ begin
 end;
 
 procedure TGlobalMemManager.Init;
-var i: Integer;
+var i: Byte;
 //    mainthreadmem: PThreadMemManager;
 begin
   //init mini
@@ -1093,12 +1186,12 @@ var
   p: Pointer;
 begin
   // ReAlloc can be misued as GetMem or FreeMem (documented in delphi help) so check what the user wants
-  Assert(Cardinal(aMemory) > $10000);
+  Assert(NativeUInt(aMemory) > $10000);
 
   // Normal realloc of exisiting data?
   if (aMemory <> nil) and (aSize > 0) then
   begin
-    p  := Pointer(Cardinal(aMemory) - SizeOf(TMemHeader));
+    p  := Pointer(NativeUInt(aMemory) - SizeOf(TMemHeader));
     pm := PMemHeader(p).Owner;
 
     if pm <> nil then
@@ -1107,7 +1200,9 @@ begin
       //new size smaller then current size?
       if (aSize <= Owner.FItemSize) then    //we have already incremented blocksize in "TMemList.AllocMem" and "TMemStore.GetMemFromList"
       begin
-        if (aSize + Owner.FItemSize >= Owner.FItemSize) then
+        //if (aSize + Owner.FItemSize >= Owner.FItemSize) then
+        //if aSize >= (Owner.FItemSize div 2) then
+        if aSize >= (Owner.FItemSize shr 1) then
           Result := aMemory //no resize needed
         else
         //too much downscaling
@@ -1138,7 +1233,7 @@ begin
     begin
       Result := OldMM.ReallocMem(p, aSize + SizeOf(TMemHeader));
       TMemHeader(Result^).Owner := nil;  //not our memlist, so nil, so we can check on this
-      Result := Pointer(Cardinal(Result) + SizeOf(TMemHeader) );
+      Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader) );
     end;
   end
   else
@@ -1158,19 +1253,19 @@ end;
 function Scale_GetMem(aSize: Integer): Pointer;
 begin
   Result := GetSmallMemManager.GetMem(aSize);
-  Assert(Cardinal(Result) > $10000);
+  Assert(NativeUInt(Result) > $10000);
 end;
 
 function Scale_AllocMem(aSize: Cardinal): Pointer;
 begin
   Result := GetSmallMemManager.GetMem(aSize);
-  Assert(Cardinal(Result) > $10000);
+  Assert(NativeUInt(Result) > $10000);
   ZeroMemory(Result, aSize);
 end;
 
 function Scale_FreeMem(aMemory: Pointer): Integer;
 begin
-  Assert(Cardinal(aMemory) > $10000);
+  Assert(NativeUInt(aMemory) > $10000);
   Result := GetSmallMemManager.FreeMem(aMemory);
 end;
 
@@ -1184,6 +1279,51 @@ function Scale_UnregisterMemoryLeak(P: Pointer): Boolean;
 begin
   Result := OldMM.UnregisterExpectedMemoryLeak(p);
 end;
+
+{$REGION 'ThreadHooks'}
+type
+  TEndThread = procedure(ExitCode: Integer);
+var
+  OldEndThread: TEndThread;
+
+procedure NewEndThread(ExitCode: Integer); //register; // ensure that calling convension matches EndThread
+begin
+  //free all thread mem
+  GlobalManager.FreeThreadManager( GetCurrentThreadManager );
+  //OldEndThread(ExitCode);  todo: make trampoline with original begin etc
+  //code of original EndThread;
+  ExitThread(ExitCode);
+end;
+
+type
+  PJump = ^TJump;
+  TJump = packed record
+    OpCode: Byte;
+    Distance: Integer;
+  end;
+var
+  //OldCode: TJump;
+  NewCode: TJump = (OpCode  : $E9;
+                    Distance: 0);
+
+// redirect calls to System.EndThread to NewEndThread
+procedure PatchThread;
+var
+  pEndThreadAddr: PJump;
+  iOldProtect: DWord;
+begin
+  pEndThreadAddr   := Pointer(@EndThread);
+  Scale_VirtualProtect(pEndThreadAddr, 5, PAGE_EXECUTE_READWRITE, iOldProtect);
+  //calc jump to new function
+  NewCode.Distance := Cardinal(@NewEndThread) - (Cardinal(@EndThread) + 5);
+  //store old
+  OldEndThread     := TEndThread(pEndThreadAddr);
+  //overwrite with jump to new function
+  pEndThreadAddr^  := NewCode;
+  //flush CPU
+  FlushInstructionCache(GetCurrentProcess, pEndThreadAddr, 5);
+end;
+{$ENDREGION ThreadHooks}
 
 {
 procedure TestSize;
@@ -1211,10 +1351,12 @@ const
 
 procedure ScaleMMInstall;
 begin
+  {$IFnDEF PURE_PASCAL}
   //get TLS slot
   GOwnTlsIndex  := TlsAlloc;
   //write fixed offset to TLS slot (instead calc via GOwnTlsIndex)
   _FixedOffset;
+  {$ENDIF}
 
   // Hook memory Manager
   GetMemoryManager(OldMM);
@@ -1227,6 +1369,7 @@ end;
 
 initialization
   ScaleMMInstall;
+  PatchThread;
 
 finalization
   { TODO : check for memory leaks }

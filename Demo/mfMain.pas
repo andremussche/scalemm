@@ -11,8 +11,10 @@ type
     edtThreadCount: TLabeledEdit;
     btnStart: TButton;
     Memo1: TMemo;
+    Button1: TButton;
     procedure FormCreate(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
     FCsvFile: Tstrings;
@@ -35,6 +37,11 @@ uses
 procedure TfrmMain.btnStartClick(Sender: TObject);
 begin
   ExecuteTest;
+end;
+
+procedure TfrmMain.Button1Click(Sender: TObject);
+begin
+  //
 end;
 
 procedure TfrmMain.ExecuteTest;
@@ -141,15 +148,22 @@ end;
 //  s := _UStrCopy(s, 0, 2);
 *)
 
+const
+  ABOVE_NORMAL_PRIORITY_CLASS = $00008000;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
-var s:string;
+//var s:string;
 begin
   Memo1.Clear;
   FCsvFile := TStringList.Create;
 
-//  edtThreadCount.Text := '4';
+  SetPriorityClass(GetCurrentProcess, ABOVE_NORMAL_PRIORITY_CLASS);
+
+//  edtThreadCount.Text :=  '4';
 //  ExecuteTest;
 //  Application.Terminate;
+
+  GetMemory(-1)
 end;
 
 end.

@@ -29,14 +29,14 @@ implementation
 const
   kernel32  = 'kernel32.dll';
 
-function  TlsAlloc; external kernel32 name 'TlsAlloc';
-function  TlsFree; external kernel32 name 'TlsFree';
-function  TlsGetValue; external kernel32 name 'TlsGetValue';
-function  TlsSetValue; external kernel32 name 'TlsSetValue';
-procedure Sleep; external kernel32 name 'Sleep';
+function  TlsAlloc;              external kernel32 name 'TlsAlloc';
+function  TlsFree;               external kernel32 name 'TlsFree';
+function  TlsGetValue;           external kernel32 name 'TlsGetValue';
+function  TlsSetValue;           external kernel32 name 'TlsSetValue';
+procedure Sleep;                 external kernel32 name 'Sleep';
 function  FlushInstructionCache; external kernel32 name 'FlushInstructionCache';
-function  GetCurrentProcess; external kernel32 name 'GetCurrentProcess';
-function  GetCurrentThreadId; external kernel32 name 'GetCurrentThreadId';
+function  GetCurrentProcess;     external kernel32 name 'GetCurrentProcess';
+function  GetCurrentThreadId;    external kernel32 name 'GetCurrentThreadId';
 //function VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
 //  lpflOldProtect: Pointer): BOOL; external kernel32 name 'VirtualProtect';
 function  VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
