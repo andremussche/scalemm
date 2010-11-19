@@ -68,10 +68,9 @@ begin
 
 end;
 
-
-var
-  GInnerLock,
-  GOuterLock: Cardinal;
+//var
+//  GInnerLock,
+//  GOuterLock: Cardinal;
 
 procedure TDummyStringThread.Execute;
 var
@@ -138,44 +137,7 @@ begin
       stest := ws + ' ' + ws + ' ' + ws;
       }
 
-      repeat
-
-        //try get soft lock
-        while not CAS32nolock(0, iCurrentTID, GInnerLock) do
-          sleep(0);
-        //check first lock
-        if GInnerLock <> iCurrentTID then   //concurrent update by other thread?
-        begin
-          GInnerLock := 0; //reset, otherthread too
-          Continue;
-        end;
-
-        //we have first lock, try set seond safety lock
-        if not CAS32nolock(0, iCurrentTID, GOuterLock) or
-           (GOuterLock <> iCurrentTID)      //concurrent update by other thread?
-        then
-          GInnerLock := 0; //reset, otherthread too
-
-      until (GInnerLock = iCurrentTID) and (GOuterLock = iCurrentTID);
-
-      p1 := GetMemory(10);
-      FreeMem(p1);
-
-      //poc failed?
-      if (GInnerLock <> iCurrentTID) or
-         (GOuterLock <> iCurrentTID) then
-      begin
-        Sleep(0);
-        Assert(False);
-      end;
-
-      //unlock
-      GOuterLock := 0;
-      GInnerLock := 0;
-
-
-
-      {
+//      {
       p1 := GetMemory(10);
       p2 := GetMemory(40);
       p3 := GetMemory(80);
@@ -187,7 +149,7 @@ begin
       FreeMem(p1);
       FreeMem(p2);
       FreeMem(p3);
-      }
+//      }
 
       {
       obj1 := TObject.Create;
