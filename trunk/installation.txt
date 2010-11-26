@@ -1,0 +1,28 @@
+= Installation =
+
+Just add ScaleMM.pas as the first unit in your Delphi project file (.dpr).
+--------------------
+program <YourApp>;
+
+uses
+  ScaleMM,
+  <etc> 
+--------------------
+
+ScaleMM can also be used on top of an other memory manager (default it runs
+on top of the Delphi memory manager). For example:
+--------------------
+program <YourApp>;
+
+uses
+  FastMM4,
+  ScaleMM,
+  <etc> 
+--------------------
+
+= Limitations =
+
+Currently only memory till 16384 bytes are handled by ScaleMM. Larger blocks 
+are handled by the previous memory manager.
+Also there is no check for memory leaks. If you run it on top of FastMM (default
+MM of Delphi 2007+), you will get memory leaks of ScaleMM itself.
