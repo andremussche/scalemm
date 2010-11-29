@@ -1,0 +1,133 @@
+<mmchallenge>
+<mmbench>
+<benchmarks>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
+<os> (NT.6.1.7600) </os>
+<result name="Fragmentation Test" time="20101129 10:31:40.546" mticks="597" mem="79544" />
+<result name="ReallocMem benchmark" time="20101129 10:31:41.960" mticks="937" mem="113336" />
+<result name="Block downsize" time="20101129 10:31:43.294" mticks="773" mem="190840" />
+<result name="Small upsize benchmark" time="20101129 10:31:44.850" mticks="1055" mem="354616" />
+<result name="Small downsize benchmark" time="20101129 10:31:46.506" mticks="1534" mem="296632" />
+<result name="Block size spread benchmark" time="20101129 10:31:48.141" mticks="1480" mem="334200" />
+<result name="Raw Performance 1 thread" time="20101129 10:31:52.551" mticks="8086" mem="162604" />
+<result name="Address space creep benchmark" time="20101129 10:32:00.040" mticks="15414" mem="280620" />
+<result name="Large block spread benchmark" time="20101129 10:32:05.885" mticks="11493" mem="384876" />
+<result name="Array Upsize 1 thread" time="20101129 10:32:07.579" mticks="1626" mem="241452" />
+<result name="Address space creep (larger blocks)" time="20101129 10:32:10.927" mticks="5561" mem="476716" />
+<result name="Single-threaded reallocate and use" time="20101129 10:32:16.820" mticks="11613" mem="224620" />
+<result name="Single-threaded allocate, use and free" time="20101129 10:32:22.285" mticks="10591" mem="198828" />
+<result name="Single Variables Access 6 arrays at a time" time="20101129 10:32:41.804" mticks="22541" mem="171436" />
+<result name="Double Variables Access 3 arrays at a time" time="20101129 10:32:45.088" mticks="5414" mem="167276" />
+<result name="Double Variables Access 6 arrays at a time" time="20101129 10:32:48.360" mticks="5385" mem="167276" />
+<result name="Double Variables Access 18 arrays at a time" time="20101129 10:32:51.999" mticks="6254" mem="167276" />
+<result name="Move Benchmark1 2 arrays at a time" time="20101129 10:32:53.907" mticks="2140" mem="185324" />
+<result name="Move Benchmark2 4 arrays at a time" time="20101129 10:32:57.313" mticks="5701" mem="185324" />
+<result name="FillCharMultiThread" time="20101129 10:32:58.868" mticks="1299" mem="174188" />
+<result name="SortIntegerArrayBenchmark" time="20101129 10:33:01.257" mticks="3281" mem="167724" />
+<result name="SortExtendedArrayBenchmark" time="20101129 10:33:03.872" mticks="3819" mem="173868" />
+<result name="MemFree1" time="20101129 10:33:15.013" mticks="24097" mem="175724" />
+<result name="MemFree2" time="20101129 10:33:16.122" mticks="236" mem="169836" />
+<result name="Linked-list container benchmark" time="20101129 10:33:17.859" mticks="1732" mem="209260" />
+<result name="Multi-threaded allocate, use and free" time="20101129 10:33:22.852" mticks="9467" mem="232364" />
+<result name="Multi-threaded reallocate and use" time="20101129 10:33:26.013" mticks="5117" mem="234604" />
+<result name="QuickSortIntegerArrayBenchmark" time="20101129 10:33:30.258" mticks="7697" mem="175212" />
+<result name="QuickSortExtendedArrayBenchmark" time="20101129 10:33:31.437" mticks="399" mem="197036" />
+<result name="NexusDB with 1 thread(s)" time="20101129 10:33:39.157" mticks="15956" mem="197804" />
+<result name="NexusDB with 2 thread(s)" time="20101129 10:33:43.699" mticks="8383" mem="222124" />
+<result name="NexusDB with 4 thread(s)" time="20101129 10:33:46.641" mticks="4601" mem="270764" />
+<result name="NexusDB with 8 thread(s)" time="20101129 10:33:49.812" mticks="5142" mem="369068" />
+<result name="Transient threaded objects" time="20101129 10:33:51.133" mticks="739" mem="298924" />
+<result name="Raw Performance 8 threads" time="20101129 10:34:02.025" mticks="23503" mem="244140" />
+<result name="ManyShortLivedThreads" time="20101129 10:34:10.463" mticks="17667" mem="346028" />
+<result name="StringThreadTest" time="20101129 10:35:29.845" mticks="186377" mem="355948" />
+<result name="Single-threaded AllocMem" time="20101129 10:37:02.625" mticks="189621" mem="392748" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
+<os> (NT.6.1.7600) </os>
+<result name="Fragmentation Test" time="20101129 10:42:10.576" mticks="589" mem="74936" />
+<result name="ReallocMem benchmark" time="20101129 10:42:11.908" mticks="739" mem="100024" />
+<result name="Block downsize" time="20101129 10:42:13.224" mticks="708" mem="115640" />
+<result name="Small upsize benchmark" time="20101129 10:42:14.694" mticks="899" mem="243576" />
+<result name="Small downsize benchmark" time="20101129 10:42:16.155" mticks="1068" mem="219256" />
+<result name="Block size spread benchmark" time="20101129 10:42:17.625" mticks="1088" mem="155256" />
+<result name="Raw Performance 1 thread" time="20101129 10:42:21.730" mticks="7360" mem="105656" />
+<result name="Address space creep benchmark" time="20101129 10:42:29.051" mticks="15004" mem="174392" />
+<result name="Large block spread benchmark" time="20101129 10:42:34.922" mticks="11557" mem="304824" />
+<result name="Array Upsize 1 thread" time="20101129 10:42:36.425" mticks="1174" mem="130360" />
+<result name="Address space creep (larger blocks)" time="20101129 10:42:39.781" mticks="5582" mem="390584" />
+<result name="Single-threaded reallocate and use" time="20101129 10:42:45.486" mticks="11163" mem="169144" />
+<result name="Single-threaded allocate, use and free" time="20101129 10:42:50.797" mticks="10227" mem="114104" />
+<result name="Single Variables Access 6 arrays at a time" time="20101129 10:43:10.260" mticks="22421" mem="38584" />
+<result name="Double Variables Access 3 arrays at a time" time="20101129 10:43:13.533" mticks="5382" mem="38584" />
+<result name="Double Variables Access 6 arrays at a time" time="20101129 10:43:16.766" mticks="5291" mem="39864" />
+<result name="Double Variables Access 18 arrays at a time" time="20101129 10:43:20.240" mticks="5864" mem="38584" />
+<result name="Move Benchmark1 2 arrays at a time" time="20101129 10:43:22.157" mticks="2154" mem="54200" />
+<result name="Move Benchmark2 4 arrays at a time" time="20101129 10:43:25.583" mticks="5747" mem="54200" />
+<result name="FillCharMultiThread" time="20101129 10:43:27.085" mticks="1173" mem="44216" />
+<result name="SortIntegerArrayBenchmark" time="20101129 10:43:29.476" mticks="3285" mem="37304" />
+<result name="SortExtendedArrayBenchmark" time="20101129 10:43:32.059" mticks="3737" mem="41144" />
+<result name="MemFree1" time="20101129 10:43:43.260" mticks="24236" mem="37304" />
+<result name="MemFree2" time="20101129 10:43:44.370" mticks="237" mem="37304" />
+<result name="Linked-list container benchmark" time="20101129 10:43:46.004" mticks="1482" mem="106424" />
+<result name="Multi-threaded allocate, use and free" time="20101129 10:43:53.790" mticks="16113" mem="82104" />
+<result name="Multi-threaded reallocate and use" time="20101129 10:43:57.513" mticks="6453" mem="98424" />
+<result name="QuickSortIntegerArrayBenchmark" time="20101129 10:44:01.845" mticks="7903" mem="37304" />
+<result name="QuickSortExtendedArrayBenchmark" time="20101129 10:44:03.035" mticks="423" mem="41144" />
+<result name="NexusDB with 1 thread(s)" time="20101129 10:44:10.322" mticks="14927" mem="53944" />
+<result name="NexusDB with 2 thread(s)" time="20101129 10:44:16.996" mticks="13471" mem="73144" />
+<result name="NexusDB with 4 thread(s)" time="20101129 10:44:23.453" mticks="12956" mem="108984" />
+<result name="NexusDB with 8 thread(s)" time="20101129 10:44:29.481" mticks="11936" mem="183224" />
+<result name="Transient threaded objects" time="20101129 10:44:33.471" mticks="7084" mem="160184" />
+<result name="Raw Performance 8 threads" time="20101129 10:44:46.430" mticks="28419" mem="115640" />
+<result name="ManyShortLivedThreads" time="20101129 10:44:52.865" mticks="12899" mem="38328" />
+<result name="StringThreadTest" time="20101129 10:45:00.287" mticks="15248" mem="37048" />
+<result name="Single-threaded AllocMem" time="20101129 10:46:32.177" mticks="187507" mem="207928" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
+<os> (NT.6.1.7600) </os>
+<result name="Fragmentation Test" time="20101129 10:53:08.606" mticks="616" mem="74936" />
+<result name="Fragmentation Test" time="20101129 10:53:10.625" mticks="641" mem="74936" />
+<result name="ReallocMem benchmark" time="20101129 10:53:11.968" mticks="768" mem="100024" />
+<result name="Block downsize" time="20101129 10:53:13.286" mticks="715" mem="115640" />
+<result name="Small upsize benchmark" time="20101129 10:53:14.798" mticks="979" mem="243576" />
+<result name="Small downsize benchmark" time="20101129 10:53:16.272" mticks="1095" mem="219256" />
+<result name="Block size spread benchmark" time="20101129 10:53:17.738" mticks="1070" mem="156536" />
+<result name="Raw Performance 1 thread" time="20101129 10:53:22.144" mticks="8065" mem="98156" />
+<result name="Address space creep benchmark" time="20101129 10:53:29.883" mticks="15995" mem="166892" />
+<result name="Large block spread benchmark" time="20101129 10:53:35.864" mticks="11812" mem="297324" />
+<result name="Array Upsize 1 thread" time="20101129 10:53:37.372" mticks="1184" mem="117676" />
+<result name="Address space creep (larger blocks)" time="20101129 10:53:40.933" mticks="6054" mem="383084" />
+<result name="Single-threaded reallocate and use" time="20101129 10:53:46.734" mticks="11393" mem="160044" />
+<result name="Single-threaded allocate, use and free" time="20101129 10:53:52.313" mticks="10854" mem="106604" />
+<result name="Single Variables Access 6 arrays at a time" time="20101129 10:54:11.828" mticks="22535" mem="31084" />
+<result name="Double Variables Access 3 arrays at a time" time="20101129 10:54:15.103" mticks="5387" mem="31084" />
+<result name="Double Variables Access 6 arrays at a time" time="20101129 10:54:18.377" mticks="5386" mem="32364" />
+<result name="Double Variables Access 18 arrays at a time" time="20101129 10:54:21.890" mticks="5952" mem="31084" />
+<result name="Move Benchmark1 2 arrays at a time" time="20101129 10:54:23.846" mticks="2248" mem="46444" />
+<result name="Move Benchmark2 4 arrays at a time" time="20101129 10:54:27.330" mticks="5884" mem="46444" />
+<result name="FillCharMultiThread" time="20101129 10:54:28.840" mticks="1186" mem="36716" />
+<result name="SortIntegerArrayBenchmark" time="20101129 10:54:31.230" mticks="3278" mem="29804" />
+<result name="SortExtendedArrayBenchmark" time="20101129 10:54:33.856" mticks="3843" mem="33644" />
+<result name="MemFree1" time="20101129 10:54:45.061" mticks="24245" mem="29804" />
+<result name="MemFree2" time="20101129 10:54:46.180" mticks="238" mem="29804" />
+<result name="Linked-list container benchmark" time="20101129 10:54:47.804" mticks="1460" mem="98924" />
+<result name="Multi-threaded allocate, use and free" time="20101129 10:54:55.722" mticks="16423" mem="75884" />
+<result name="Multi-threaded reallocate and use" time="20101129 10:54:59.572" mticks="6756" mem="92524" />
+<result name="QuickSortIntegerArrayBenchmark" time="20101129 10:55:03.905" mticks="7895" mem="31084" />
+<result name="QuickSortExtendedArrayBenchmark" time="20101129 10:55:05.115" mticks="467" mem="34924" />
+<result name="NexusDB with 1 thread(s)" time="20101129 10:55:12.493" mticks="15141" mem="46444" />
+<result name="NexusDB with 2 thread(s)" time="20101129 10:55:19.567" mticks="14418" mem="65644" />
+<result name="NexusDB with 4 thread(s)" time="20101129 10:55:25.982" mticks="12849" mem="101484" />
+<result name="NexusDB with 8 thread(s)" time="20101129 10:55:32.333" mticks="12699" mem="175724" />
+<result name="Transient threaded objects" time="20101129 10:55:36.190" mticks="6765" mem="152428" />
+<result name="Raw Performance 8 threads" time="20101129 10:55:49.514" mticks="29279" mem="108140" />
+<result name="ManyShortLivedThreads" time="20101129 10:55:55.892" mticks="12755" mem="29548" />
+<result name="StringThreadTest" time="20101129 10:56:03.280" mticks="15158" mem="29548" />
+<result name="Single-threaded AllocMem" time="20101129 10:57:35.374" mticks="187983" mem="200428" />
+</benchmark>
+</benchmarks>
+</mmbench>
+</mmchallenge>
