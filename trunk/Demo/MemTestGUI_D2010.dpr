@@ -1,9 +1,23 @@
 program MemTestGUI_D2010;
 
 uses
-  ScaleMM in '..\ScaleMM.pas',
-//  ThreadHook in '..\ThreadHook.pas',
-//  uWinApiFunctions in '..\uWinApiFunctions.pas',
+//  ShareMem,
+//  SynScaleMM in '..\SynScaleMM.pas',
+//  ScaleMM in '..\ScaleMM.pas',
+
+//  BucketMem,
+//  BucketMem_ASM,
+//  DKC_IA32_MM_Unit,
+//  EWCMM,
+  MultiMM,
+//  nxReplacementMemoryManager,
+//  PSDMemoryManager,
+//  QMemory,
+//  RecyclerMM,
+//  WinMem,
+//  LocalHeapMM,
+//  HeapMM,
+
   //
   _uTextThread in '_uTextThread.pas',
   Forms,
@@ -22,4 +36,5 @@ end.
 
   TopInstall in 'TopMM\TopInstall.pas',
 
+//  ScaleMM in '..\ScaleMM.pas',
 

@@ -21,7 +21,8 @@ type
 
 implementation
 
-uses DateUtils, AnsiStrings;
+uses
+  DateUtils, AnsiStrings;
 
 { TDummyStringThread }
 
@@ -91,6 +92,9 @@ begin
 
   iCurrentTID := GetCurrentThreadId;
 
+  p1 := GetMemory(255);
+  FreeMem(p1);
+//  FreeMem(p1);
 {
       p1 := GetMemory(10);
       p2 := GetMemory(40);
@@ -150,6 +154,20 @@ begin
       FreeMem(p2);
       FreeMem(p3);
 //      }
+
+      {
+      p1 := Scale_GetMem(10);
+      p2 := Scale_GetMem(40);
+      p3 := Scale_GetMem(80);
+
+      p1 := Scale_ReallocMem(p1, 30);
+      p2 := Scale_ReallocMem(p2, 60);
+      p3 := Scale_ReallocMem(p3, 120);
+
+      Scale_FreeMem(p1);
+      Scale_FreeMem(p2);
+      Scale_FreeMem(p3);
+      }
 
       {
       obj1 := TObject.Create;
