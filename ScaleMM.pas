@@ -95,6 +95,7 @@ const
   {$DEBUGINFO      ON}
   {$OVERFLOWCHECKS ON}
   {$RANGECHECKS    ON}
+//  {$define MagicTest}
 {$ELSE}      // default "release" mode, much faster!
   {$OPTIMIZATION   ON}         // 235% faster!
   {$STACKFRAMES    OFF}        // 12% faster
@@ -155,6 +156,11 @@ type
       Filer2: Pointer;
       {$endif}
     {$ENDIF}
+    {$IFDEF MagicTest}
+    Magic1: Integer;
+    Magic2: Integer;
+    procedure MagicTest;
+    {$ENDIF}
   end;
 
   /// memory block handler
@@ -182,7 +188,7 @@ type
     FFreedIndex: NativeUInt;
     FFreedArray: array[0..C_ARRAYSIZE-1] of Pointer;
 
-    function GetUsedMemoryItem: PMemHeader;     {$ifdef HASINLINE}inline;{$ENDIF}
+    function  GetUsedMemoryItem: PMemHeader;    {$ifdef HASINLINE}inline;{$ENDIF}
     procedure FreeMem(aMemoryItem: PMemHeader); {$ifdef HASINLINE}inline;{$ENDIF}
 
     procedure FreeBlockMemoryToGlobal;
@@ -459,7 +465,12 @@ function GetOldMem(aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF
 begin
   Result := OldMM.GetMem(aSize + SizeOf(TMemHeader));
   TMemHeader(Result^).Owner := nil;  // not our memlist, so mark as such
-  Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader) );
+
+  {$IFDEF MagicTest}
+  TMemHeader(Result^).Magic1 := 1234567890;
+  TMemHeader(Result^).Magic2 := 1122334455;
+  TMemHeader(Result^).MagicTest;
+  {$ENDIF}
 end;
 
 { TThreadMemManager }
@@ -568,7 +579,9 @@ var
 begin
   p  := Pointer(NativeUInt(aMemory) - SizeOf(TMemHeader));
   pm := PMemHeader(p).Owner;
-
+  {$IFDEF MagicTest}
+  PMemHeader(p).MagicTest;
+  {$ENDIF}
   Result := 0; // No Error result for Delphi
 
   if FOtherThreadFreedMemory <> nil then
@@ -626,6 +639,7 @@ begin
   begin
     // larger blocks are allocated via the old Memory Manager
     Result := GetOldMem(aSize);
+    Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
     Exit;
   end;
 
@@ -643,6 +657,9 @@ begin
   end;
 
   Assert(NativeUInt(Result) > $10000);
+  {$IFDEF MagicTest}
+  TMemHeader(Result^).MagicTest;
+  {$ENDIF}
   Result  := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
 end;
 
@@ -733,8 +750,8 @@ var
   pm: PMemBlock;
 begin
   // get block from cache
-  pm := GlobalManager.GetBlockMemory(FItemSize);
-  if pm = nil then
+//  pm := GlobalManager.GetBlockMemory(FItemSize);
+//  if pm = nil then
   begin
     // create own one
     pm := Owner.GetMem(SizeOf(pm^));
@@ -744,10 +761,12 @@ begin
       {pm.}Owner     := @Self;
       {pm.}FItemSize := Self.FItemSize;
       {pm.}FMemoryArray :=
-{$ifdef USEMEDIUM}
-      Self.Owner.GetMem {$else}
-      GetOldMem // (32+8)*64=2560 > 2048 -> use OldMM
-{$endif} ( (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE );
+//{$ifdef USEMEDIUM}
+      Self.Owner.GetMem
+//      {$else}
+//      GetOldMem // (32+8)*64=2560 > 2048 -> use OldMM
+//{$endif}
+      ( (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE );
     end;
   end;
 
@@ -791,9 +810,6 @@ begin
     FRecursive := True;
     AddNewMemoryBlock;
     FRecursive := False;
-//    if FFirstMemBlock.FUsageCount = 0 then
-      // always keep at least one in buffer, so we do this cheat here...
-//      inc(FFirstMemBlock.FUsageCount);
   end;
 
   pm := FFirstMemBlock;
@@ -826,11 +842,19 @@ begin
       inc(FUsageCount);
       // startheader = link to memlist
       TMemHeader(Result^).Owner     := pm;
+
+      {$IFDEF MagicTest}
+      TMemHeader(Result^).Magic1 := 1234567890;
+      TMemHeader(Result^).Magic2 := 1122334455;
+      {$ENDIF}
     end
     else
       Result := pm.GetUsedMemoryItem;
   end;
 
+  {$IFDEF MagicTest}
+  TMemHeader(Result^).MagicTest;
+  {$ENDIF}
   Assert(NativeUInt(Result) > $10000);
 end;
 
@@ -1361,15 +1385,21 @@ begin
   begin
     p  := Pointer(NativeUInt(aMemory) - SizeOf(TMemHeader));
     pm := PMemHeader(p).Owner;
+    {$IFDEF MagicTest}
+    PMemHeader(p).MagicTest;
+    {$ENDIF}
 
-    if pm <> nil then
+    if (pm <> nil) then
     with pm^ do
     begin
+      if (pm.Owner = nil) then
+        Assert(False);
+
       if (NativeUInt(aSize) <= Owner.FItemSize) then
       begin
         // new size smaller than current size
-        if NativeUInt(aSize) >= (Owner.FItemSize shr 1) then
-          Result := aMemory // no resize needed up to half the current item size
+        if NativeUInt(aSize) >= (Owner.FItemSize shr 2) then
+          Result := aMemory // no resize needed up to half the current item size -> now a quarter, benchmark optimization...
         else
         // too much downscaling: use move
         with GetSmallMemManager^ do
@@ -1399,6 +1429,12 @@ begin
     begin
       Result := OldMM.ReallocMem(p, aSize + SizeOf(TMemHeader));
       TMemHeader(Result^).Owner := nil; // mark not from our memlist
+
+      {$IFDEF MagicTest}
+      TMemHeader(Result^).Magic1 := 1234567890;
+      TMemHeader(Result^).Magic2 := 1122334455;
+      TMemHeader(Result^).MagicTest;
+      {$ENDIF}
       Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader) );
     end;
   end
@@ -1414,6 +1450,13 @@ begin
       Scale_FreeMem(aMemory);
     end;
   end;
+
+  {$IFDEF MagicTest}
+  p := Pointer(NativeUInt(Result) - SizeOf(TMemHeader));
+  PMemHeader(p).MagicTest;
+  if PMemHeader(p).Owner <> nil then
+    Assert( PMemHeader(p).Owner.Owner <> nil );
+  {$ENDIF}
 end;
 
 
@@ -1585,6 +1628,16 @@ begin
   // we need to patch System.EndThread to properly mark memory to be freed
   PatchThread;
 end;
+
+{ TMemHeader }
+
+{$IFDEF MagicTest}
+procedure TMemHeader.MagicTest;
+begin
+  Assert(Magic1 = 1234567890);
+  Assert(Magic2 = 1122334455);
+end;
+{$ENDIF}
 
 initialization
   ScaleMMInstall;

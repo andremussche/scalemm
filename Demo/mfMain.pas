@@ -39,8 +39,32 @@ begin
   ExecuteTest;
 end;
 
+function BitScanFirst(aValue: Integer): Integer;
+asm
+  BSF	EAX, aValue;
+end;
+
+function BitTestReset(aValue: Integer; aBit: Integer): Integer;
+asm
+  BTR	aValue, aBit;
+end;
+
 procedure TfrmMain.Button1Click(Sender: TObject);
+var
+  i1, i2: Integer;
 begin
+  i1 := 1;
+  i2 := BitScanFirst(i1);
+  i1 := 2;
+  i2 := BitScanFirst(i1);
+
+  i1 := 9;
+  i2 := BitScanFirst(i1);
+  i2 := BitTestReset(i1, i2);
+
+
+
+
   //
 end;
 
@@ -162,8 +186,7 @@ begin
 //  edtThreadCount.Text :=  '4';
 //  ExecuteTest;
 //  Application.Terminate;
-
-  GetMemory(-1)
+//  GetMemory(-1)
 end;
 
 end.
