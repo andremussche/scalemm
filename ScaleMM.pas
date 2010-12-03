@@ -337,6 +337,7 @@ function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 na
 function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
 function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
 procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
+function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
 function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
 function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
 function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
@@ -517,7 +518,8 @@ begin
     pcurrentmem := FOtherThreadFreedMemory;
     if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
       Break;
-    Sleep(0);
+    if not SwitchToThread then
+      Sleep(0);
   until false;
 
   //free all mem in linked list
@@ -568,7 +570,8 @@ begin
     // set new item as first (to created linked list)
     if CAS32(poldmem, aMemory, FOtherThreadFreedMemory) then
       Break;
-    Sleep(0);  //retry
+    if not SwitchToThread then
+      Sleep(0);  //retry
   until false;
 end;
 
@@ -750,8 +753,8 @@ var
   pm: PMemBlock;
 begin
   // get block from cache
-//  pm := GlobalManager.GetBlockMemory(FItemSize);
-//  if pm = nil then
+  pm := GlobalManager.GetBlockMemory(FItemSize);
+  if pm = nil then
   begin
     // create own one
     pm := Owner.GetMem(SizeOf(pm^));
@@ -761,12 +764,10 @@ begin
       {pm.}Owner     := @Self;
       {pm.}FItemSize := Self.FItemSize;
       {pm.}FMemoryArray :=
-//{$ifdef USEMEDIUM}
-      Self.Owner.GetMem
-//      {$else}
-//      GetOldMem // (32+8)*64=2560 > 2048 -> use OldMM
-//{$endif}
-      ( (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE );
+{$ifdef USEMEDIUM}
+      Self.Owner.GetMem {$else}
+      GetOldMem // (32+8)*64=2560 > 2048 -> use OldMM
+{$endif} ( (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE );
     end;
   end;
 
@@ -870,7 +871,8 @@ begin
     // try to set "result" in global var
     if CAS32(pprevthreadmem, aThreadMem, FFirstThreadMemory) then
       break;
-    sleep(0);
+    if not SwitchToThread then
+      sleep(0);
   until false;
   // make linked list: new one is first item (global var), next item is previous item
   aThreadMem.FNextThreadManager := pprevthreadmem;
@@ -968,18 +970,26 @@ begin
     end;
   end;
 
-  // lock
-  while bl.FRecursive or (LockCmpxchg(0, 1, @bl.FRecursive) <> 0) do
-    Sleep(0);
   // too much cached?
   if bl.FFreeMemCount > C_GLOBAL_BLOCK_CACHE then
   begin
     // dispose
     Scale_FreeMem(aBlockMem.FMemoryArray);
     Scale_FreeMem(aBlockMem);
-    // unlock
-    bl.FRecursive := False;
     Exit;
+  end;
+
+  // lock
+  while bl.FRecursive or (LockCmpxchg(0, 1, @bl.FRecursive) <> 0) do
+  begin
+    //fast/simple switch to other thread and wait least possible time
+    if not SwitchToThread then
+      Sleep(0);
+    //can we lock now?
+    if not bl.FRecursive and (LockCmpxchg(0, 1, @bl.FRecursive) = 0) then
+      Break;
+    //longer wait (up to 15ms!), otherwise race condition + high Kernel CPU if only Sleep(0)
+    Sleep(1);
   end;
 
   // add freemem block to front (replace first item, link previous to first items)
@@ -990,8 +1000,10 @@ begin
   bl.FFirstFreedMemBlock := aBlockMem;
   // inc items cached
   inc(bl.FFreeMemCount);
+
   // unlock
   bl.FRecursive := False;
+
   // prepare block content
   aBlockMem.Owner := bl;
   aBlockMem.FNextMemBlock := nil;
@@ -1080,7 +1092,8 @@ var
         lastinusemem.FNextFreedMemBlock := prevmem;
         if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
           break;
-        sleep(0);
+        if not SwitchToThread then
+          sleep(0);
       until false;
     end;
 
@@ -1091,8 +1104,10 @@ var
       repeat
         prevmem                     := aGlobalBlock.FFirstMemBlock;
         lastunusedmem.FNextMemBlock := prevmem;
-        if CAS32(prevmem, unusedmem, aGlobalBlock.FFirstMemBlock) then break;
-        sleep(0);
+        if CAS32(prevmem, unusedmem, aGlobalBlock.FFirstMemBlock) then
+          break;
+        if not SwitchToThread then
+          sleep(0);
       until false;
     end;
   end;
@@ -1125,7 +1140,8 @@ begin
     // try to set "result" in global var
     if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
       break;
-    sleep(0);
+    if not SwitchToThread then
+      sleep(0);
   until false;
 end;
 
@@ -1161,7 +1177,17 @@ begin
 
   // lock
   while bl.FRecursive or (LockCmpxchg(0, 1, @bl.FRecursive) <> 0) do
-    Sleep(0);
+  begin
+    //fast/simple switch to other thread and wait least possible time
+    if not SwitchToThread then
+      Sleep(0);
+    //can we lock now?
+    if not bl.FRecursive and (LockCmpxchg(0, 1, @bl.FRecursive) = 0) then
+      Break;
+    //longer wait (up to 15ms!), otherwise race condition + high Kernel CPU if only Sleep(0)
+    Sleep(1);
+  end;
+
   // get freed mem from list from front (replace first item)
   if bl.FFirstFreedMemBlock <> nil then
   begin
@@ -1182,6 +1208,7 @@ begin
       nextmem.FPreviousMemBlock := nil;
     Result := prevmem;
   end;
+
   // unlock
   bl.FRecursive := False;
 
@@ -1217,7 +1244,8 @@ begin
       Result.FNextThreadManager := nil;
       break;
     end;
-    sleep(0);
+    if not SwitchToThread then
+      sleep(0);
   end;
 end;
 
@@ -1392,8 +1420,7 @@ begin
     if (pm <> nil) then
     with pm^ do
     begin
-      if (pm.Owner = nil) then
-        Assert(False);
+      Assert(pm.Owner <> nil);
 
       if (NativeUInt(aSize) <= Owner.FItemSize) then
       begin
