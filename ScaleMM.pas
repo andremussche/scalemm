@@ -14,9 +14,13 @@ Homepage:
   http://code.google.com/p/scalemm
   by André Mussche (andre.mussche@gmail.com)
 
-Usage: (delphi)
-  Place this unit as the very first unit under the "uses" section in your
-  project's .dpr file.
+Usage:
+ - Delphi 6 up to Delphi 2005 with FastMM4:
+   Place FastMM4 as the very first unit under the "uses" clause of your
+   project's .dpr file THEN add SynScaleMM to the "uses" clause
+ - Delphi 6 up to Delphi 2005 with no FastMM4 or Delphi 2006 up to Delphi XE:
+   Place SynScaleMM as the very first unit under the "uses" clause of your
+   project's .dpr file.
 
 License:
   Released under Mozilla Public License 1.1
@@ -25,7 +29,7 @@ License:
   - Compiles from Delphi 6 up to Delphi XE;
   - Some pascal code converted to faster asm;
   - Some code refactoring, a lot of comments added;
-  - Added (experimental) medium block handling from 2048 bytes up to 16384;
+  - Added medium block handling from 2048 bytes up to 16384;
   - Released under MPL 1.1/GPL 2.0/LGPL 2.1 tri-license.
 
   *** BEGIN LICENSE BLOCK *****
@@ -76,6 +80,29 @@ Change log:
 
 interface
 
+{.$DEFINE DEBUG_SCALEMM}  // slower but better debugging (no inline functions etc)
+
+{$IFDEF DEBUG_SCALEMM}
+  {$OPTIMIZATION   OFF}
+  {$STACKFRAMES    ON}
+  {$ASSERTIONS     ON}
+  {$DEBUGINFO      ON}
+  {$OVERFLOWCHECKS ON}
+  {$RANGECHECKS    ON}
+  {$define MagicTest}
+{$ELSE}      // default "release" mode, much faster!
+  {$OPTIMIZATION   ON}         // 235% faster!
+  {$STACKFRAMES    OFF}        // 12% faster
+  {$ASSERTIONS     OFF}
+  {$OVERFLOWCHECKS OFF}
+  {$RANGECHECKS    OFF}
+  {$if CompilerVersion >= 17}
+    {$define HASINLINE}        // Delphi 2005 or newer
+  {$ifend}
+  {$D-}
+  {$L-}
+{$ENDIF}
+
 const
   /// alloc memory blocks with 64 memory items each time
   // - 64 = 1 shl 6, therefore any multiplication compiles into nice shl opcode
@@ -89,39 +116,26 @@ const
 /// internal GetSmallMemManager function is 2% faster with an injected offset
 {$DEFINE SCALE_INJECT_OFFSET}
 
-// experimental inlined TLS access
+// inlined TLS access
 // - injected offset + GetSmallMemManager call can be slower than offset loading
 {$define INLINEGOWN}
 {$ifdef INLINEGOWN}
-  {$UNDEF SCALE_INJECT_OFFSET}
+  {$ifndef HASINLINE} // inlined Getmem/Freemem will call GetSmallMemManager
+    {$UNDEF SCALE_INJECT_OFFSET}
+  {$endif}
 {$endif}
 
+// enable Backing Off Locks with Spin-Wait Loops
+// - see http://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures
+// first a "SwitchToThread" is tried (gives better results if #thread's is higher than #cpu's or cores)
+// then a Sleep(0) (gives least wait time, only switches if an other thread is ready)
+// if the locking still fails, a Sleep(1) is done, which waits at least 1ms but most times 15ms(!)
+{$define SPINWAITBACKOFF}
 
 // other posible defines:
 {.$DEFINE PURE_PASCAL}    // no assembly, pure delphi code
 {.$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
-{.$DEFINE DEBUG_SCALEMM}  // slower but better debugging (no inline functions etc)
 {$DEFINE USEMEDIUM}      // handling of 2048..16384 bytes blocks
-
-
-{$IFDEF DEBUG_SCALEMM}
-  {$OPTIMIZATION   OFF}
-  {$STACKFRAMES    ON}
-  {$ASSERTIONS     ON}
-  {$DEBUGINFO      ON}
-  {$OVERFLOWCHECKS ON}
-  {$RANGECHECKS    ON}
-//  {$define MagicTest}
-{$ELSE}      // default "release" mode, much faster!
-  {$OPTIMIZATION   ON}         // 235% faster!
-  {$STACKFRAMES    OFF}        // 12% faster
-  {$ASSERTIONS     OFF}
-  {$OVERFLOWCHECKS OFF}
-  {$RANGECHECKS    OFF}
-  {$if CompilerVersion >= 17}
-    {$define HASINLINE}        // Delphi 2005 or newer
-  {$ifend}
-{$ENDIF}
 
 {$if CompilerVersion < 19}
   type // from Delphi 6 up to Delphi 2007
@@ -181,28 +195,31 @@ type
 
   /// memory block handler
   TMemBlock = object
+    {$IFDEF DEBUG_SCALEMM}
+    OwnerThreadId: NativeUInt;
+    {$ENDIF}
     /// the memory block list which owns this memory block handler
     Owner: PMemBlockList;
-
-    { TODO -oAM : todo: one double linked list? }
-    /// link to the next list with freed memory, in case this list has no more freed mem
-    FNextFreedMemBlock: PMemBlock;
     /// link to the next list with free memory
     FNextMemBlock: PMemBlock;
     /// link to the previous list with free memory
     // - double linked to be able for fast removal of one block
     FPreviousMemBlock: PMemBlock;
+
+    /// link to the next list with freed memory, in case this list has no more freed mem
+    FNextFreedMemBlock: PMemBlock;
     /// link to the previous list with freed memory
     FPreviousFreedMemBlock: PMemBlock;
-    /// internal storage of the memory blocks
-    // - will contain array[0..C_ARRAYSIZE-1] of memory items,
-    // i.e. (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE bytes
-    FMemoryArray: Pointer;
     /// how much free mem is used, max is C_ARRAYSIZE
     FUsageCount: NativeUInt;
 
     FFreedIndex: NativeUInt;
     FFreedArray: array[0..C_ARRAYSIZE-1] of Pointer;
+
+    /// internal storage of the memory blocks
+    // - will contain array[0..C_ARRAYSIZE-1] of memory items,
+    // i.e. (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE bytes
+    FMemoryArray: Pointer;
 
     function  GetUsedMemoryItem: PMemHeader;    {$ifdef HASINLINE}inline;{$ENDIF}
     procedure FreeMem(aMemoryItem: PMemHeader); {$ifdef HASINLINE}inline;{$ENDIF}
@@ -282,7 +299,7 @@ type
     /// all thread memory managers
     FFirstThreadMemory: PThreadMemManager;
     /// freed/used thread memory managers
-    // - used to cache the per-thread managers in case of multiple threads creation
+    // - used to cache the per-thread managers in case of multiple threads creation 
     FFirstFreedThreadMemory: PThreadMemManager;
     /// main thread manager (owner of all global mem)
     FMainThreadMemory: PThreadMemManager;
@@ -339,7 +356,7 @@ var
 
 implementation
 
-// Windows.pas unit is better not used -> code inlined here
+// Windows.pas unit dependency should be not used -> code inlined here
 
 type
   DWORD = LongWord;
@@ -352,8 +369,10 @@ function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
 function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
 function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
 function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
-//procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
-//function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
+procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
+{$ifdef SPINWAITBACKOFF}
+function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
+{$endif}
 function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
 function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
 function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
@@ -367,8 +386,7 @@ begin
   { Flush the instruction cache so changes to the code page are effective immediately }
   if Permission <> 0 then
     if FlushInstructionCache(GetCurrentProcess, Code, Size) then
-      if not Scale_VirtualProtect(Code, Size, Permission, Longword(Result)) then
-        ;//sleep(0);
+      Scale_VirtualProtect(Code, Size, Permission, Longword(Result));
 end;
 
 function CreateSmallMemManager: PThreadMemManager; forward;
@@ -413,7 +431,7 @@ begin
   {$IFDEF SCALE_INJECT_OFFSET}
   p  := @GetSmallMemManager;
   SetPermission(p, 5, PAGE_EXECUTE_READWRITE);
-  PCardinal(p+1)^ := GOwnTlsOffset;  // write fixed offset
+  PCardinal(p+1)^ := GOwnTlsOffset;  // write fixed offset 
   {$ENDIF}
 end;
 
@@ -442,31 +460,24 @@ end;
 
 // compare oldvalue with destination: if equal then newvalue is set
 function CAS32(const oldValue: pointer; newValue: pointer; var destination): boolean;
-asm
-  lock cmpxchg dword ptr [destination], newValue
+asm // eax=oldValue, edx=newValue, ecx=Destination
+  lock cmpxchg dword ptr [Destination],newValue
   setz  al
-end; { CAS32 }
+{$ifdef SPINWAITBACKOFF}
+  jz @ok
+  pause // let the CPU know this thread is in a Spin Wait loop
+@ok:
+{$endif}
+end; 
 
-{Compare [AAddress], CompareVal:
- If Equal: [AAddress] := NewVal and result = CompareVal
- If Unequal: Result := [AAddress]}
-function LockCmpxchg(CompareVal, NewVal: Byte; AAddress: PByte): Byte;
+procedure InterlockedIncrement(var Value: Byte);
 asm
-  {On entry:
-    al = CompareVal,
-    dl = NewVal,
-    ecx = AAddress}
-  lock cmpxchg [ecx], dl
+  lock inc byte [Value]
 end;
 
-procedure InterlockedIncrement(var Addend: Byte);
+procedure InterlockedDecrement(var Value: Byte);
 asm
-  LOCK INC byte [Addend]
-end;
-
-procedure InterlockedDecrement(var Addend: Byte);
-asm
-  LOCK DEC byte [Addend]
+  lock dec byte [Value]
 end;
 
 {$ifNdef DEBUG_SCALEMM}
@@ -482,7 +493,7 @@ begin
     asm
       int 3;
     end;
-    //Sleep(0);  //no exception, just dummy for breakpoint
+    Sleep(0);  // no exception, just dummy for breakpoint
   end;
 end;
 {$ENDIF}
@@ -507,7 +518,7 @@ var i, j: NativeUInt;
 begin
   fillchar(self,sizeof(self),0);
   FThreadId := GetCurrentThreadId;
-  j := 32;
+  j := 32; 
   for i := Low(FMiniMemoryBlocks) to High(FMiniMemoryBlocks) do
   begin // 32, 64, 96, 128, 160, 192, 224 bytes
     FMiniMemoryBlocks[i].Owner := @Self;
@@ -544,8 +555,14 @@ begin
     pcurrentmem := FOtherThreadFreedMemory;
     if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
       Break;
-    //if not SwitchToThread then
-    //  Sleep(0);
+    {$ifdef SPINWAITBACKOFF}
+    if not SwitchToThread then
+      sleep(0);
+    pcurrentmem := FOtherThreadFreedMemory;
+    if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
+      Break;
+    sleep(1);
+    {$endif}
   until false;
 
   //free all mem in linked list
@@ -592,12 +609,19 @@ var
 begin
   repeat
     poldmem          := FOtherThreadFreedMemory;
-    aMemory.NextMem  := poldmem;       //link to current next BEFORE the swap!
+    aMemory.NextMem  := poldmem;  // link to current next BEFORE the swap!
     // set new item as first (to created linked list)
     if CAS32(poldmem, aMemory, FOtherThreadFreedMemory) then
       Break;
-    //if not SwitchToThread then
-    //  Sleep(0);  //retry
+    {$ifdef SPINWAITBACKOFF}
+    if not SwitchToThread then
+      sleep(0);
+    poldmem          := FOtherThreadFreedMemory;
+    aMemory.NextMem  := poldmem;
+    if CAS32(poldmem, aMemory, FOtherThreadFreedMemory) then
+      Break;
+    sleep(1);
+    {$endif}
   until false;
 end;
 
@@ -611,26 +635,23 @@ begin
   {$IFDEF MagicTest}
   PMemHeader(p).MagicTest;
   {$ENDIF}
-  Result := 0; // No Error result for Delphi
 
   if FOtherThreadFreedMemory <> nil then
     ProcessFreedMemFromOtherThreads;
 
   if pm <> nil then
-  // block obtained via Scale_GetMem()
   with pm^ do
   begin
+    // block obtained via Scale_GetMem()
     Assert(Owner <> nil);
     Assert(Owner.Owner <> nil);
-
-    if Owner.Owner = @Self then  // mem of own thread?
+    if Owner.Owner = @Self then
+      // mem of own thread
       FreeMem(PMemHeader(p))
     else
-    //mem of other thread
-    begin
-      //put mem in lockfree queue of owner thread
+      // put mem in lockfree queue of owner thread
       Owner.Owner.AddFreedMemFromOtherThread(PMemHeader(p));
-    end;
+    Result := 0;
   end
   else
     Result := OldMM.FreeMem(p);
@@ -641,28 +662,21 @@ var
   bm: PMemBlockList;
 begin
   if aSize <= (length(FMiniMemoryBlocks)*32) then
-  begin
     if aSize > 0 then
-    begin
       // blocks of 32: 32, 64, 96, 128, 160, 192, 224
-      bm := @FMiniMemoryBlocks[(aSize-1) shr 5];
-    end else
+      bm := @FMiniMemoryBlocks[(aSize-1) shr 5]
+    else
     begin
       Result := nil;
       Exit;
-    end;
-  end
+    end 
   else if aSize <= (length(FSmallMemoryBlocks)*256) then
-  begin
     // blocks of 256: 256,512,768,1024,1280,1536,1792 bytes
-    bm := @FSmallMemoryBlocks[(aSize-1) shr 8];
-  end
+    bm := @FSmallMemoryBlocks[(aSize-1) shr 8]
 {$ifdef USEMEDIUM}
   else if aSize <= (length(FMediumMemoryBlocks)*2048) then
-  begin
     // blocks of 2048: 2048, 4096... bytes
-    bm := @FMediumMemoryBlocks[(aSize-1) shr 11];
-  end
+    bm := @FMediumMemoryBlocks[(aSize-1) shr 11]
 {$endif}
   else
   begin
@@ -677,9 +691,9 @@ begin
 
   with bm^ do
   begin
-    // first get from freed mem (fastest because most chance?)
     if FFirstFreedMemBlock <> nil then
-      Result := FFirstFreedMemBlock.GetUsedMemoryItem
+    // first get from freed mem (fastest because most chance?)
+      Result := FFirstFreedMemBlock.GetUsedMemoryItem 
     else
       // from normal list
       Result := GetMemFromNewBlock;
@@ -697,9 +711,10 @@ end;
 
 procedure TMemBlock.FreeBlockMemoryToGlobal;
 begin
-  if Owner.FFirstMemBlock = @Self then Exit; //keep one block
+  if Owner.FFirstMemBlock = @Self then
+    Exit; //keep one block
 
-  //remove ourselves from linked list
+  // remove ourselves from linked list
   if FPreviousMemBlock <> nil then
     FPreviousMemBlock.FNextMemBlock := Self.FNextMemBlock;
   if FPreviousFreedMemBlock <> nil then
@@ -719,6 +734,8 @@ end;
 
 procedure TMemBlock.FreeMem(aMemoryItem: PMemHeader);
 begin
+  Assert(Owner <> nil);
+
   // first free item of block?
   // then we add this block to (linked) list with available mem
   if FFreedIndex = 0 then
@@ -761,13 +778,16 @@ begin
 
   if FFreedIndex = 0 then  // no free items left?
   begin
-    //set next free memlist
+    // set next free memlist
     Owner.FFirstFreedMemBlock := {Self.}FNextFreedMemBlock;
-    //first one has no previous
+    // first one has no previous
     if {Self.}FNextFreedMemBlock <> nil then
+    begin
+      Assert(FNextFreedMemBlock.FFreedIndex > 0);
       {Self.}FNextFreedMemBlock.FPreviousFreedMemBlock := nil;
+    end;
 
-    //remove from free list
+    // remove from free list
     {Self.}FPreviousFreedMemBlock := nil;
     {Self.}FNextFreedMemBlock     := nil;
   end
@@ -783,6 +803,7 @@ procedure TMemBlockList.AddNewMemoryBlock;
 var
   pm: PMemBlock;
 begin
+  FRecursive := True;
   // get block from cache
   pm := GlobalManager.GetBlockMemory(FItemSize);
   if pm = nil then
@@ -790,25 +811,31 @@ begin
     // create own one
     pm :=
     {$ifdef USEMEDIUM}
-      Self.Owner.GetMem {$else}
+      Owner.GetMem
+    {$else}
       GetOldMem // (32+8)*64=2560 > 2048 -> use OldMM
     {$endif}
-      ( SizeOf(pm^) +
-        (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE
-      );
-
-    fillchar(pm^,SizeOf(pm^),0);
-    with pm^ do
+      ( SizeOf(pm^) + (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE );
+    with pm^ do // put zero only to needed properties
     begin
-      {pm.}Owner        := @Self;
-      {pm.}FItemSize    := Self.FItemSize;
+      fillchar(FNextFreedMemBlock,SizeOf(FNextFreedMemBlock)+
+        SizeOf(FPreviousFreedMemBlock)+SizeOf(FUsageCount)+
+        SizeOf({$ifdef USEBITMAP}FFreed{$else}FFreedIndex{$endif}),0);
       {pm.}FMemoryArray := Pointer(NativeUInt(pm) + SizeOf(pm^));
     end;
+
+    {$IFDEF DEBUG_SCALEMM}
+    pm.OwnerThreadId := GetCurrentThreadId;
+    {$ENDIF}
   end;
 
   // init
   with pm^ do
   begin
+    {$IFDEF DEBUG_SCALEMM}
+    Assert(pm.OwnerThreadId = GetCurrentThreadId);
+    {$ENDIF}
+
     {pm.}Owner             := @Self;
     // set new memlist as first, add link to current item
     {pm.}FNextMemBlock     := {self}FFirstMemBlock;
@@ -832,6 +859,7 @@ begin
         inc({pm.}Owner.FFreeMemCount);
     end;
   end;
+  FRecursive := False;
 end;
 
 function TMemBlockList.GetMemFromNewBlock: Pointer;
@@ -846,9 +874,7 @@ begin
       Result := GetOldMem(Self.FItemSize);
       Exit;
     end;
-    FRecursive := True;
     AddNewMemoryBlock;
-    FRecursive := False;
   end;
 
   pm := FFirstMemBlock;
@@ -862,9 +888,7 @@ begin
         Result := GetOldMem(Self.FItemSize);
         Exit;
       end;
-      FRecursive := True;
       AddNewMemoryBlock;
-      FRecursive := False;
       pm := FFirstMemBlock;
     end;
   end;
@@ -875,9 +899,9 @@ begin
     // space left?
     if FUsageCount < C_ARRAYSIZE then
     begin
+      Result := FMemoryArray;
       // calc next item
-      Result := Pointer(
-        NativeUInt(FMemoryArray) + FUsageCount * (FItemSize + SizeOf(TMemHeader)) );
+      FMemoryArray := Pointer(NativeUInt(FMemoryArray) + (FItemSize + SizeOf(TMemHeader)) );
       inc(FUsageCount);
       // startheader = link to memlist
       TMemHeader(Result^).Owner     := pm;
@@ -908,9 +932,15 @@ begin
     pprevthreadmem := FFirstThreadMemory;
     // try to set "result" in global var
     if CAS32(pprevthreadmem, aThreadMem, FFirstThreadMemory) then
-      break;
-//    if not SwitchToThread then
-//      sleep(0);
+      Break;
+    {$ifdef SPINWAITBACKOFF}
+    if not SwitchToThread then
+      sleep(0);
+    pprevthreadmem := FFirstThreadMemory;
+    if CAS32(pprevthreadmem, aThreadMem, FFirstThreadMemory) then
+      Break;
+    Sleep(1);
+    {$endif}
   until false;
   // make linked list: new one is first item (global var), next item is previous item
   aThreadMem.FNextThreadManager := pprevthreadmem;
@@ -932,7 +962,6 @@ procedure TGlobalMemManager.FreeAllMemory;
       begin
         oldmem := allmem;
         allmem := allmem.FNextFreedMemBlock;
-        //FMainThreadMemory.FreeMem(oldmem.FMemoryArray);
         FMainThreadMemory.FreeMem(oldmem);
       end
       else
@@ -982,55 +1011,40 @@ begin
   Assert( aBlockMem.FFreedIndex = aBlockMem.FUsageCount );
 
   with aBlockMem.Owner^ do
-  begin
     if FItemSize <= (length(Self.FFreedMiniMemoryBlocks)*32) then
-    begin
       // blocks of 32: 32, 64, 96, 128, 160, 192, 224
-      bl := @Self.FFreedMiniMemoryBlocks[(FItemSize-1) shr 5];
-    end
+      bl := @Self.FFreedMiniMemoryBlocks[(FItemSize-1) shr 5]
     else if FItemSize <= (length(Self.FFreedSmallMemoryBlocks)*256) then
-    begin
       // blocks of 256: 256,512,768,1024,1280,1536,1792[,2048] bytes
-      bl := @Self.FFreedSmallMemoryBlocks[(FItemSize-1) shr 8];
-    end
+      bl := @Self.FFreedSmallMemoryBlocks[(FItemSize-1) shr 8]
 {$ifdef USEMEDIUM}
     else if FItemSize <= (length(Self.FFreedMediumMemoryBlocks)*2048) then
-    begin
       // blocks of 2048: 2048,4096,6144,8192,10240,12288,14336,16384 bytes
-      bl := @Self.FFreedMediumMemoryBlocks[(FItemSize-1) shr 11];
-    end
+      bl := @Self.FFreedMediumMemoryBlocks[(FItemSize-1) shr 11]
 {$endif}
     else begin
       // large block
-      //FreeMem(aBlockMem.FMemoryArray);
-      Scale_FreeMem(aBlockMem);
+      FMainThreadMemory.FreeMem(aBlockMem);
       Exit;
     end;
-  end;
 
   // too much cached?
   if bl.FFreeMemCount > C_GLOBAL_BLOCK_CACHE then
   begin
     // dispose
-    //Scale_FreeMem(aBlockMem.FMemoryArray);
-    Scale_FreeMem(aBlockMem);
+    FMainThreadMemory.FreeMem(aBlockMem);
     Exit;
   end;
 
-  // lock
-  (*
-  while bl.FRecursive or (LockCmpxchg(0, 1, @bl.FRecursive) <> 0) do
-  begin
-    //fast/simple switch to other thread and wait least possible time
-    if not SwitchToThread then
-      Sleep(0);
-    //can we lock now?
-    if not bl.FRecursive and (LockCmpxchg(0, 1, @bl.FRecursive) = 0) then
-      Break;
-    //longer wait (up to 15ms!), otherwise race condition + high Kernel CPU if only Sleep(0)
-    Sleep(1);
-  end;
-  *)
+  // prepare block content
+  {$IFDEF DEBUG_SCALEMM}
+  Assert(aBlockMem.OwnerThreadId <> 0);
+  aBlockMem.OwnerThreadId := 0;
+  {$ENDIF}
+  aBlockMem.Owner := bl;
+  aBlockMem.FNextMemBlock := nil;
+  aBlockMem.FPreviousMemBlock := nil;
+  aBlockMem.FPreviousFreedMemBlock := nil;
 
   // add freemem block to front (replace first item, link previous to first items)
   repeat
@@ -1038,24 +1052,19 @@ begin
     aBlockMem.FNextFreedMemBlock := prevmem;
     if CAS32(prevmem, aBlockMem, bl.FFirstFreedMemBlock) then
       Break;
-//    if not SwitchToThread then
-//      Sleep(0);
+    {$ifdef SPINWAITBACKOFF}
+    if not SwitchToThread then
+      Sleep(0);
+    prevmem := bl.FFirstFreedMemBlock;
+    aBlockMem.FNextFreedMemBlock := prevmem;
+    if CAS32(prevmem, aBlockMem, bl.FFirstFreedMemBlock) then
+      Break;
+    Sleep(1);
+    {$endif}
   until False;
-//  if prevmem <> nil then
-//    prevmem.FPreviousFreedMemBlock := aBlockMem;
-//  bl.FFirstFreedMemBlock := aBlockMem;
+
   // inc items cached
   InterlockedIncrement(bl.FFreeMemCount);
-  //inc(bl.FFreeMemCount);
-
-  // unlock
-  //bl.FRecursive := False;
-
-  // prepare block content
-  aBlockMem.Owner := bl;
-  aBlockMem.FNextMemBlock := nil;
-  aBlockMem.FPreviousMemBlock := nil;
-  aBlockMem.FPreviousFreedMemBlock := nil;
 end;
 
 procedure TGlobalMemManager.FreeBlocksFromThreadMemory(aThreadMem: PThreadMemManager);
@@ -1090,8 +1099,7 @@ var
           tempmem := allmem;
           allmem  := allmem.FNextMemBlock;
           // dispose
-          //Scale_FreeMem(tempmem.FMemoryArray);
-          Scale_FreeMem(tempmem);
+          aThreadMem.FreeMem(tempmem);
           Continue;
         end;
 
@@ -1121,6 +1129,10 @@ var
         inc(aGlobalBlock.FFreeMemCount);
       end;
 
+      {$IFDEF DEBUG_SCALEMM}
+      Assert(allmem.OwnerThreadId <> 0);
+      allmem.OwnerThreadId := 0;
+      {$ENDIF}
       allmem.Owner                  := aGlobalBlock;
       allmem.FNextFreedMemBlock     := nil;
       allmem.FPreviousMemBlock      := nil;
@@ -1139,8 +1151,15 @@ var
         lastinusemem.FNextFreedMemBlock := prevmem;
         if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
           break;
-//        if not SwitchToThread then
-//          sleep(0);
+        {$ifdef SPINWAITBACKOFF}
+        if not SwitchToThread then
+          sleep(0);
+        prevmem := aGlobalBlock.FFirstFreedMemBlock;
+        lastinusemem.FNextFreedMemBlock := prevmem;
+        if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
+          break;
+        sleep(1);
+        {$endif}
       until false;
     end;
 
@@ -1153,13 +1172,21 @@ var
         lastunusedmem.FNextMemBlock := prevmem;
         if CAS32(prevmem, unusedmem, aGlobalBlock.FFirstMemBlock) then
           break;
-//        if not SwitchToThread then
-//          sleep(0);
+        {$ifdef SPINWAITBACKOFF}
+        if not SwitchToThread then
+          sleep(0);
+        prevmem                     := aGlobalBlock.FFirstMemBlock;
+        lastunusedmem.FNextMemBlock := prevmem;
+        if CAS32(prevmem, unusedmem, aGlobalBlock.FFirstMemBlock) then
+          break;
+        sleep(1);
+        {$endif}
       until false;
     end;
   end;
 
 begin
+  assert(GetSmallMemManager=aThreadMem);
   for i := Low(aThreadMem.FMiniMemoryBlocks) to High(aThreadMem.FMiniMemoryBlocks) do
     __ProcessBlockMem( @aThreadMem.FMiniMemoryBlocks[i],   @Self.FFreedMiniMemoryBlocks[i]);
   for i := Low(aThreadMem.FSmallMemoryBlocks) to High(aThreadMem.FSmallMemoryBlocks) do
@@ -1187,8 +1214,15 @@ begin
     // try to set "result" in global var
     if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
       break;
-//    if not SwitchToThread then
-//      sleep(0);
+    {$ifdef SPINWAITBACKOFF}
+    if not SwitchToThread then
+      sleep(0);
+    pprevthreadmem := FFirstFreedThreadMemory;
+    aThreadMem.FNextThreadManager := pprevthreadmem;
+    if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
+      break;
+    sleep(1);
+    {$endif}
   until false;
 end;
 
@@ -1200,42 +1234,21 @@ begin
 
   dec(aItemSize);
   if aItemSize < (length(Self.FFreedMiniMemoryBlocks)*32) then
-  begin
     // blocks of 32: 32, 64, 96, 128, 160, 192, 224
-    bl := @Self.FFreedMiniMemoryBlocks[aItemSize shr 5];
-  end
+    bl := @Self.FFreedMiniMemoryBlocks[aItemSize shr 5]
   else if aItemSize < (length(Self.FFreedSmallMemoryBlocks)*256) then
-  begin
     // blocks of 256: 256,512,768,1024,1280,1536,1792[,2048] bytes
-    bl := @Self.FFreedSmallMemoryBlocks[aItemSize shr 8];
-  end
+    bl := @Self.FFreedSmallMemoryBlocks[aItemSize shr 8]
 {$ifdef USEMEDIUM}
   else if aItemSize < (length(Self.FFreedMediumMemoryBlocks)*2048) then
-  begin
     // blocks of 2048: 2048,4096,6144,8192,10240,12288,14336,16384 bytes
-    bl := @Self.FFreedMediumMemoryBlocks[aItemSize shr 11];
-  end
+    bl := @Self.FFreedMediumMemoryBlocks[aItemSize shr 11]
 {$endif}
   else begin
     // not allocated by this unit (should not happen)
     assert(false);
     Exit;
   end;
-
-  // lock
-  (*
-  while bl.FRecursive or (LockCmpxchg(0, 1, @bl.FRecursive) <> 0) do
-  begin
-    //fast/simple switch to other thread and wait least possible time
-    if not SwitchToThread then
-      Sleep(0);
-    //can we lock now?
-    if not bl.FRecursive and (LockCmpxchg(0, 1, @bl.FRecursive) = 0) then
-      Break;
-    //longer wait (up to 15ms!), otherwise race condition + high Kernel CPU if only Sleep(0)
-    Sleep(1);
-  end;
-  *)
 
   // get freed mem from list from front (replace first item)
   repeat
@@ -1278,14 +1291,14 @@ begin
       Break;
   until false;
 
-  // unlock
-  //bl.FRecursive := False;
-
   if Result <> nil then
   begin
     InterlockedDecrement(bl.FFreeMemCount);
-    //dec(bl.FFreeMemCount);
     Result.Owner := bl;
+    {$IFDEF DEBUG_SCALEMM}
+    Assert(Result.OwnerThreadId = 0);
+    Result.OwnerThreadId := GetCurrentThreadId;
+    {$ENDIF}
     Result.FNextFreedMemBlock := nil;
     Result.FNextMemBlock := nil;
     Result.FPreviousMemBlock := nil;
@@ -1311,11 +1324,28 @@ begin
     if CAS32(pprevthreadmem, newthreadmem, FFirstFreedThreadMemory) then
     begin
       Result := pprevthreadmem;
-      Result.FNextThreadManager := nil;
+      if Result <> nil then
+        Result.FNextThreadManager := nil;
       break;
     end;
-//    if not SwitchToThread then
-//      sleep(0);
+    {$ifdef SPINWAITBACKOFF}
+    if not SwitchToThread then
+      sleep(0);
+    pprevthreadmem := FFirstFreedThreadMemory;
+    if pprevthreadmem <> nil then
+      newthreadmem := pprevthreadmem.FNextThreadManager
+    else
+      newthreadmem := nil;
+    // try to set "result" in global var
+    if CAS32(pprevthreadmem, newthreadmem, FFirstFreedThreadMemory) then
+    begin
+      Result := pprevthreadmem;
+      if Result <> nil then
+        Result.FNextThreadManager := nil;
+      break;
+    end;
+    sleep(1);
+    {$endif}
   end;
 end;
 
@@ -1495,17 +1525,17 @@ begin
       if (NativeUInt(aSize) <= Owner.FItemSize) then
       begin
         // new size smaller than current size
-        if NativeUInt(aSize) >= (Owner.FItemSize shr 2) then
-          Result := aMemory // no resize needed up to half the current item size -> now a quarter, benchmark optimization...
+        if NativeUInt(aSize) > (Owner.FItemSize shr 2) then
+          Result := aMemory // no resize needed up to 1/4 the current item size
         else
         // too much downscaling: use move
         with GetSmallMemManager^ do
         begin
-          Result := Scale_GetMem(aSize); // new mem
+          Result := GetMem(aSize); // new mem
           if aMemory <> Result then
           begin
             Move(aMemory^, Result^, aSize); // copy (use smaller new size)
-            Scale_FreeMem(aMemory); // free old mem
+            FreeMem(aMemory); // free old mem
           end;
         end;
       end
@@ -1513,11 +1543,11 @@ begin
       with GetSmallMemManager^ do
       begin
         // new size bigger than current size
-        Result := Scale_GetMem(aSize); // new mem
+        Result := GetMem(aSize); // new mem
         if aMemory <> Result then
         begin
           Move(aMemory^, Result^, Owner.FItemSize); // copy (use smaller old size)
-          Scale_FreeMem(aMemory); // free old mem
+          FreeMem(aMemory); // free old mem
         end;
       end;
     end
@@ -1538,11 +1568,11 @@ begin
   else
   begin
     if (aMemory = nil) and (aSize > 0) then
-    begin // GetMem disguised as ReAlloc
-      Result := Scale_GetMem(aSize);
-    end
+      // GetMem disguised as ReAlloc
+      Result := Scale_GetMem(aSize)
     else
-    begin // FreeMem disguised as ReAlloc
+    begin
+      // FreeMem disguised as ReAlloc
       Result := nil;
       Scale_FreeMem(aMemory);
     end;
@@ -1708,9 +1738,9 @@ const
 procedure ScaleMMInstall;
 begin
   {$IFnDEF PURE_PASCAL}
-  //get TLS slot
+  // get TLS slot
   GOwnTlsIndex  := TlsAlloc;
-  //write fixed offset to TLS slot (instead calc via GOwnTlsIndex)
+  // write fixed offset to TLS slot (instead calc via GOwnTlsIndex)
   _FixedOffset;
   {$ENDIF}
 
@@ -1741,7 +1771,7 @@ initialization
 
 finalization
   { TODO : check for memory leaks }
-  //GlobalManager.FreeAllMemory;
+  // GlobalManager.FreeAllMemory;
 
 end.
 
