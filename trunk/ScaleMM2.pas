@@ -2,6 +2,10 @@ unit ScaleMM2;
 
 interface
 
+{$IFDEF DEBUG}
+  {.$DEFINE FILLFREEMEM}
+{$ENDIF}
+
 type
   PMediumHeader    = ^TMediumHeader;
   PMediumHeaderExt = ^TMediumHeaderExt;
@@ -17,14 +21,44 @@ type
 
   TThreadManager = record
   private
-    FreeMem2  : array[0..16] of PMediumHeaderExt;
-    FreeMask2 : NativeUInt; //word, 16 bit, 65535
-    function  AllocBlock2: PMediumHeaderExt;
-    procedure PutBlockToFree2(aHeader: PMediumHeader; aSize: NativeUInt);
+    FFreeMem  : array[0..16] of PMediumHeaderExt;
+    FFreeMask : NativeUInt; //word, 16 bit, 65535
+
+    FFirstBlock: PBlockMemory;
+
+    function  AllocBlock: PMediumHeaderExt;
+    procedure FreeBlock(aBlock: PBlockMemory);
+    function ScanBlockForFreeItems(aBlock: PBlockMemory): PMediumHeaderExt;
+
+    procedure PutMemToFree(aHeader: PMediumHeader; aSize: NativeUInt);
+    procedure FreeMemOtherThread(aHeader: PMediumHeader);
   public
-    function GetMem2(aSize: NativeInt) : Pointer;    {$ifdef HASINLINE}inline;{$ENDIF}
-    function FreeMem_2(aMemory: Pointer): NativeInt; {$ifdef HASINLINE}inline;{$ENDIF}
-    function ReallocMem2(aMemory: Pointer; aSize: Integer): Pointer;
+    function GetMem(aSize: NativeInt) : Pointer;    {$ifdef HASINLINE}inline;{$ENDIF}
+    function FreeMem(aMemory: Pointer): NativeInt;  {$ifdef HASINLINE}inline;{$ENDIF}
+    function ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
+  end;
+
+  /// Global memory manager
+  // - a single instance is created for the whole process
+  // - caches some memory (blocks + threadmem) for fast reuse
+  // - also keeps allocated memory in case an old thread allocated some memory
+  // for another thread
+  TGlobalMemManager = object
+  private
+    /// main thread manager (owner of all global mem)
+    FMainThreadMemory: PThreadManager;
+
+    FFirstBlock: PBlockMemory;
+    FLock: NativeUInt;
+    FFreeBlockCount: NativeUInt;
+
+    procedure Init;
+    procedure FreeBlocksFromThreadMemory(aThreadMem: PThreadManager);
+  public
+    procedure FreeAllMemory;
+
+    procedure FreeBlockMemory(aBlockMem: PBlockMemory);
+    function  GetBlockMemory: PBlockMemory;
   end;
 
   //4 bytes
@@ -65,11 +99,99 @@ type
 
 threadvar
   GThreadManager: TThreadManager;
+var
+  GGlobalManager: TGlobalMemManager;
+(*
+{$ifdef USEMEMMANAGEREX}
+  OldMM: TMemoryManagerEx;
+{$else}
+  OldMM: TMemoryManager;
+{$endif}
+*)
 
 implementation
 
-uses
-  Windows;
+////////////////////////////////////////////////////////////////////////////////
+//Inline Windows functions
+
+//uses
+// Windows.pas unit dependency should be not used -> code inlined here
+
+type
+  DWORD = LongWord;
+  BOOL  = LongBool;
+const
+  PAGE_EXECUTE_READWRITE = $40;
+  kernel32  = 'kernel32.dll';
+  MEM_COMMIT = $1000;
+  PAGE_READWRITE = 4;
+  MEM_RELEASE = $8000;
+
+function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
+function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
+function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
+function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
+procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
+function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
+function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
+function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
+function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
+function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
+            var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
+procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
+function VirtualAlloc(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
+function VirtualFree(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';
+
+function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
+begin
+  Assert(Assigned(Code) and (Size > 0));
+  { Flush the instruction cache so changes to the code page are effective immediately }
+  if Permission <> 0 then
+    if FlushInstructionCache(GetCurrentProcess, Code, Size) then
+      Scale_VirtualProtect(Code, Size, Permission, Longword(Result));
+end;
+
+procedure NewEndThread(ExitCode: Integer); //register; // ensure that calling convension matches EndThread
+begin
+  // free all thread mem
+  GGlobalManager.FreeBlocksFromThreadMemory(@GThreadManager);
+  // OldEndThread(ExitCode);  todo: make trampoline with original begin etc
+  // code of original EndThread;
+  ExitThread(ExitCode);
+end;
+
+type
+  PJump = ^TJump;
+  TJump = packed record
+    OpCode: Byte;
+    Distance: Integer;
+  end;
+  TEndThread = procedure(ExitCode: Integer);
+var
+  NewCode: TJump = (OpCode  : $E9;
+                    Distance: 0);
+  OldEndThread: TEndThread;
+
+// redirect calls to System.EndThread to NewEndThread
+procedure PatchThread;
+var
+  pEndThreadAddr: PJump;
+  iOldProtect: DWord;
+begin
+  pEndThreadAddr := Pointer(@EndThread);
+  Scale_VirtualProtect(pEndThreadAddr, 5, PAGE_EXECUTE_READWRITE, iOldProtect);
+  // calc jump to new function
+  NewCode.Distance := Cardinal(@NewEndThread) - (Cardinal(@EndThread) + 5);
+  // store old
+  OldEndThread := TEndThread(pEndThreadAddr);
+  // overwrite with jump to new function
+  pEndThreadAddr^  := NewCode;
+  // flush CPU
+  FlushInstructionCache(GetCurrentProcess, pEndThreadAddr, 5);
+end;
+
+////////////////////////////////////////////////////////////////////////////////
+//Assembly functions
 
 //find first bit (0..31)
 //http://www.arl.wustl.edu/~lockwood/class/cs306/books/artofasm/Chapter_6/CH06-4.html
@@ -83,59 +205,141 @@ asm
   BSR	AX, aValue;
 end;
 
+//compare oldvalue with destination: if equal then newvalue is set
+function CAS32(const oldValue: NativeUInt; newValue: NativeUInt; var destination): boolean;
+asm // eax=oldValue, edx=newValue, ecx=Destination
+  lock cmpxchg dword ptr [Destination],newValue
+  setz  al
+{$ifdef SPINWAITBACKOFF}
+  jz @ok
+  pause // let the CPU know this thread is in a Spin Wait loop
+@ok:
+{$endif}
+end;
+
+////////////////////////////////////////////////////////////////////////////////
+
 { TThreadManager }
 
-function TThreadManager.AllocBlock2: PMediumHeaderExt;
+function TThreadManager.AllocBlock: PMediumHeaderExt;
 var
   iAllocSize: NativeUInt;
   pheader: PMediumHeaderExt;
   pblock : PBlockMemory;
 begin
-  iAllocSize := (1 shl 16 shl 4) {1mb} +
-                SizeOf(TBlockMemory)  {block header} +
-                SizeOf(TMediumHeader) {extra beginheader} +
-                SizeOf(TMediumHeader) {extra endheader};
+  pblock := GGlobalManager.GetBlockMemory;
+  if pblock = nil then
+  begin
+    iAllocSize := (1 shl 16 shl 4) {1mb} +
+                  SizeOf(TBlockMemory)  {block header} +
+                  SizeOf(TMediumHeader) {extra beginheader} +
+                  SizeOf(TMediumHeader) {extra endheader};
 
-  //alloc
-  pblock := VirtualAlloc( nil,
-                          iAllocSize,
-                          MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
-                          PAGE_READWRITE);
-  pblock.Size           := iAllocSize;
+    //alloc
+    pblock := VirtualAlloc( nil,
+                            iAllocSize,
+                            MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+                            PAGE_READWRITE);
+    pblock.Size           := iAllocSize;
+
+    //first item
+    pheader               := PMediumHeaderExt( NativeUInt(pblock) + SizeOf(TBlockMemory));
+    pheader.Block         := pblock;
+    pheader.Next          := PMediumHeader( NativeUInt(pheader) +
+                                            (1 shl 16 shl 4) {1mb} +
+                                            SizeOf(TMediumHeader){begin} );
+    pheader.Size          := (1 shl 16 shl 4) {1mb} +
+                             SizeOf(TMediumHeader){begin};
+    //reset end
+    pheader.Next.Block    := nil;
+    pheader.Next.Next     := nil;
+    {$IFDEF DEBUG}
+    pheader.Next.Magic1   := 0;
+    pheader.Magic1        := 0;
+    {$ENDIF}
+    //mark as free
+    NativeInt(pheader.Next) := NativeInt(pheader.Next) or (1 shl 31);
+    //init
+    pheader.NextFreeBlock := nil;
+    pheader.PrevFreeBlock := nil;
+    pheader.BlockMask     := 1 shl 16;
+    pheader.ArrayPosition := 16;
+
+    //max size is available now
+    FFreeMask    := FFreeMask or (1 shl 16);
+    FFreeMem[16] := pheader;
+  end
+  else
+    pheader := ScanBlockForFreeItems(pblock);
+  assert(pheader <> nil);
+
   pblock.OwnerThread    := @Self;
-  pblock.NextBlock      := nil;
-  pblock.PreviousBlock  := nil;
 
-  pheader               := PMediumHeaderExt( NativeUInt(pblock) + SizeOf(TBlockMemory));
-  pheader.Block         := pblock;
-  pheader.Next          := PMediumHeader( NativeUInt(pheader) +
-                                          (1 shl 16 shl 4) {1mb} +
-                                          SizeOf(TMediumHeader){begin} );
-  pheader.Size          := (1 shl 16 shl 4) {1mb} +
-                           SizeOf(TMediumHeader){begin};
-  //reset end
-  pheader.Next.Block    := nil;
-  pheader.Next.Next     := nil;
-  {$IFDEF DEBUG}
-  pheader.Next.Magic1   := 0;
-  pheader.Magic1        := 0;
-  {$ENDIF}
-  //mark as free
-  NativeInt(pheader.Next) := NativeInt(pheader.Next) or (1 shl 31);
-  //init
-  pheader.NextFreeBlock := nil;
-  pheader.PrevFreeBlock := nil;
-  pheader.BlockMask     := 1 shl 16;
-  pheader.ArrayPosition := 16;
-
-  //max size is available now
-  FreeMask2    := FreeMask2 or (1 shl 16);
-  FreeMem2[16] := pheader;
+  //linked list of thread blocks (replace first)
+  if FFirstBlock <> nil then
+    FFirstBlock.PreviousBlock := pblock;
+  pblock.NextBlock            := FFirstBlock;
+  FFirstBlock                 := pblock;
+  pblock.PreviousBlock        := nil;
 
   Result := pheader;
 end;
 
-function TThreadManager.FreeMem_2(aMemory: Pointer): NativeInt;
+procedure TThreadManager.FreeMemOtherThread(aHeader: PMediumHeader);
+var
+  headerext: PMediumHeaderExt;
+  iRemainder: NativeInt;
+begin
+  headerext := PMediumHeaderExt(aHeader);
+  with headerext^ do
+  begin
+    {headerext.}Size          := NativeUInt({headerext.}Next) - NativeUInt(headerext);
+    {headerext.}NextFreeBlock := nil;
+    {headerext.}PrevFreeBlock := nil;
+  end;
+
+  if headerext.Size < (1 shl 16 shl 4) then  //smaller than 1mb?
+  begin
+    iRemainder := BitScanLast(                        //get highest bit
+                              headerext.Size shr 4);  //div 16 so 1mb fits in 16bit
+  end
+  else
+    iRemainder := 16; { TODO -oAM : release mem back to Windows? }
+
+  with headerext^ do
+  begin
+    {headerext.}BlockMask     :=  (1 shl iRemainder);
+    {headerext.}ArrayPosition := iRemainder;
+
+    //as last: set higest bit (mark as free)
+    //now owner thread can use it when it scans for marked mem
+    NativeInt({headerext.}Next) := NativeInt({headerext.}Next) or (1 shl 31);
+  end;
+end;
+
+procedure TThreadManager.FreeBlock(aBlock: PBlockMemory);
+begin
+  //remove from linked list
+  if FFirstBlock = aBlock then
+  begin
+    FFirstBlock := aBlock.NextBlock;
+    if FFirstBlock <> nil then
+      FFirstBlock.PreviousBlock := nil;
+  end
+  else
+  begin
+    if aBlock.NextBlock <> nil then
+      aBlock.NextBlock.PreviousBlock := aBlock.PreviousBlock;
+    if aBlock.PreviousBlock <> nil then
+      aBlock.PreviousBlock.NextBlock := aBlock.NextBlock;
+  end;
+  aBlock.NextBlock     := nil;
+  aBlock.PreviousBlock := nil;
+
+  GGlobalManager.FreeBlockMemory(aBlock);
+end;
+
+function TThreadManager.FreeMem(aMemory: Pointer): NativeInt;
 var
   header: PMediumHeader;
 begin
@@ -143,10 +347,14 @@ begin
 
   {$IFDEF DEBUG}
   Assert(header.Magic1 = 123456789); //must be in use!
+  Assert(header.Block <> nil);
   {$ENDIF}
 
-  //put free item to block + allmem array + mask
-  PutBlockToFree2(header, NativeUInt(header.Next) - NativeUInt(header));
+  if header.Block.OwnerThread = @Self then
+    //put free item to block + allmem array + mask
+    PutMemToFree(header, NativeUInt(header.Next) - NativeUInt(header))
+  else
+    FreeMemOtherThread(header);
 
   Result  := 0;
 
@@ -155,7 +363,7 @@ begin
   {$ENDIF}
 end;
 
-function TThreadManager.GetMem2(aSize: NativeInt): Pointer;
+function TThreadManager.GetMem(aSize: NativeInt): Pointer;
 var
   //iWordSize: Word;
   iWordRemainderSize: Word;
@@ -171,7 +379,7 @@ var
   pheader : PMediumHeaderExt;
   pheaderremainder : PMediumHeaderExt;
 begin
-  {$ifdef DEBUG} try {$ENDIF}
+  {$ifdef DEBUG} Result := nil; try {$ENDIF}
 
   Result := nil;
   if aSize <= 0 then Exit;
@@ -192,7 +400,7 @@ begin
   allocsize     := allocsize shr 3 shl 3;         //8byte aligned: we've add 8 before and remove lowest bits now
 
   //first without +1 and check if size is OK (otherwise alloc of same size after alloc + free will fail)
-  pheader       := FreeMem2[iMSB];
+  pheader       := FFreeMem[iMSB];
   if (pheader <> nil) and (pheader.Size >= allocsize)  then
   begin
     iFreeMemIndex   := iMSB;
@@ -200,21 +408,21 @@ begin
   else
   begin
     inc(iMSB);  //+1 for max size
-    tempmask        := FreeMask2 shr iMSB shl iMSB;   //reset lowest bits (shr + shl)
+    tempmask        := FFreeMask shr iMSB shl iMSB;   //reset lowest bits (shr + shl)
 
     if tempmask > 0 then
     //get available mem
     begin
       iFreeMemIndex := BitScanFirst(tempmask);        //get lowest bit (smallest size)
       Assert(iFreeMemIndex >= 0);
-      pheader       := FreeMem2[iFreeMemIndex];
+      pheader       := FFreeMem[iFreeMemIndex];
       Assert(pheader <> nil);
     end
     else
     //alloc new mem (for biggest block)
     begin
       iFreeMemIndex := 16;
-      pheader       := AllocBlock2;
+      pheader       := AllocBlock;
     end;
   end;
 
@@ -250,7 +458,7 @@ begin
   //same block left?
   if iFreeMemIndex = iRemainder then
   begin
-    pheaderremainder               := PMediumHeaderExt(NativeUInt(pheader) + allocsize);
+    pheaderremainder := PMediumHeaderExt(NativeUInt(pheader) + allocsize);
     with pheaderremainder^ do
     begin
       {pheaderremainder.}Block         := pheader.Block;
@@ -265,13 +473,15 @@ begin
 
     //keep same block as free
     //only change to new offset
-    FreeMem2[iFreeMemIndex] := pheaderremainder;
+    FFreeMem[iFreeMemIndex] := pheaderremainder;
 
     with pheader^ do
     begin
       //next = alloc
       {pheader.}Next := PMediumHeader(pheaderremainder);
       //{pheader.}Size := allocsize; todo
+      Assert(pheader.Block <> nil);
+      Assert(pheader.Next.Block <> nil);
 
       //relink next one to our new offset
       if {pheader.}NextFreeBlock <> nil then
@@ -289,11 +499,13 @@ begin
   with pheader^ do
   begin
     //alloc size
-    {pheader.}Next := PMediumHeader(NativeUInt(pheader) + allocsize);
-    //pheader.Size := allocsize; todo
+    {pheader.}Next       := PMediumHeader(NativeUInt(pheader) + allocsize);
+    //pheader.Size       := allocsize; todo
+    //set block of next item too
+    {pheader.}Next.Block := {pheader.}Block;
 
     //replace with next free block
-    FreeMem2[iFreeMemIndex] := {pheader.}NextFreeBlock;
+    FFreeMem[iFreeMemIndex] := {pheader.}NextFreeBlock;
     {$IFDEF DEBUG}
     Assert( (pheader.NextFreeBlock = nil) or
             ((pheader.NextFreeBlock.ArrayPosition = iFreeMemIndex) and
@@ -303,7 +515,7 @@ begin
 
     //reset bit if nothing free anymore
     if {pheader.}NextFreeBlock {FreeMem2[iFreeMemIndex]} = nil then
-      FreeMask2 := FreeMask2 xor {pheader.}BlockMask
+      FFreeMask := FFreeMask xor {pheader.}BlockMask
     else
     begin
       {$IFDEF DEBUG}
@@ -315,7 +527,7 @@ begin
     //create remainder
     if remaindersize > 0 then
     begin
-      PutBlockToFree2({pheader.}Next, remaindersize);
+      PutMemToFree({pheader.}Next, remaindersize);
       {$IFDEF DEBUG}
       Assert(pheader.Next.Magic1 = 0); //must be free
       {$ENDIF}
@@ -333,7 +545,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TThreadManager.PutBlockToFree2(aHeader: PMediumHeader;
+procedure TThreadManager.PutMemToFree(aHeader: PMediumHeader;
   aSize: NativeUInt);
 var
   pnext,
@@ -342,7 +554,7 @@ var
 //  pblock: PBlockMemory;
   newsize: NativeUInt;
   //strippedpointer : NativeUInt;
-  {$ifdef DEBUG}
+  {$IFDEF FILLFREEMEM}
   temppointer: Pointer;
   {$ENDIF}
   iRemainder: NativeInt;
@@ -354,14 +566,15 @@ begin
   newsize := aSize;
 
   //create remainder
-  pheaderremainder       := PMediumHeaderExt(aHeader);
-
-  pnext := PMediumHeaderExt(NativeUInt(pheaderremainder) + newsize);
+  pheaderremainder := PMediumHeaderExt(aHeader);
+  //next
+  pnext            := PMediumHeaderExt(NativeUInt(pheaderremainder) + newsize);
   with pheaderremainder^ do
   begin
     {pheaderremainder.}Next  := PMediumHeader(pnext);
     {pheaderremainder.}Size  := newsize;
   end;
+
   //can we use some mem from next free block?
   while (pnext <> nil) and
         //(next.Next <> nil) and  //next is not the end
@@ -387,9 +600,9 @@ begin
       if {next.}PrevFreeBlock = nil then {first?}
       begin
         //replace first item with next
-        FreeMem2[{next.}ArrayPosition] := {next.}NextFreeBlock;
+        FFreeMem[{next.}ArrayPosition] := {next.}NextFreeBlock;
         if {next.}NextFreeBlock = nil then
-          FreeMask2 := FreeMask2 xor {next.}BlockMask
+          FFreeMask := FFreeMask xor {next.}BlockMask
         else
         begin
           {next.}NextFreeBlock.PrevFreeBlock := nil;
@@ -430,12 +643,14 @@ begin
 
   {$ifdef DEBUG}
   Assert(newsize >= 32);
+  {$IFDEF FILLFREEMEM}
   //reset all mem!
   temppointer := Pointer(NativeUInt(pheaderremainder) +
                  SizeOf(TMediumHeader)); //do no reset header
   FillChar( temppointer^,
             newsize - SizeOf(TMediumHeader){offset} - SizeOf(TMediumHeader){own header},
             $80);
+  {$ENDIF}
   pheaderremainder.Magic1 := 0;//free
   {$ENDIF}
 
@@ -452,15 +667,23 @@ begin
                               newsize shr 4);     //div 16 so 1mb fits in 16bit
   end
   else
-    iRemainder := 16; { TODO -oAM : release mem back to Windows? }
+  begin
+    iRemainder := 16;
+    //block complete free: release mem back to Windows? {or global manager}
+    if FFreeMem[iRemainder] <> nil then
+    begin
+      FreeBlock(pheaderremainder.Block);
+      Exit;
+    end;
+  end;
 
   //set mask
-  FreeMask2 := FreeMask2 or (1 shl iRemainder);
+  FFreeMask := FFreeMask or (1 shl iRemainder);
 
   //get first
-  pnext     := FreeMem2[iRemainder];
+  pnext     := FFreeMem[iRemainder];
   //replace first
-  FreeMem2[iRemainder] := pheaderremainder;
+  FFreeMem[iRemainder] := pheaderremainder;
   //set previous of the next
   if pnext <> nil then
   begin
@@ -486,7 +709,7 @@ begin
   {$ENDIF}
 end;
 
-function TThreadManager.ReallocMem2(aMemory: Pointer; aSize: Integer): Pointer;
+function TThreadManager.ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
 var
   header: PMediumHeader;
   nextfree: PMediumHeaderExt;
@@ -494,7 +717,7 @@ var
   currentsize, remaindersize,
   newsize, nextsize: NativeUInt;
 begin
-  {$ifdef DEBUG} try {$ENDIF}
+  {$ifdef DEBUG} Result := nil; try {$ENDIF}
 
   // ReAlloc can be misued as GetMem or FreeMem (documented in delphi help) so check what the user wants
   // Normal realloc of exisiting data?
@@ -537,9 +760,10 @@ begin
       begin
         Result := aMemory;
         //resize
-        header.Next := PMediumHeader(NativeUInt(header) + newsize); // + SizeOf(TMediumHeader));
+        header.Next       := PMediumHeader(NativeUInt(header) + newsize); // + SizeOf(TMediumHeader));
+        header.Next.Block := header.Block;
         //make new block of remaining
-        PutBlockToFree2(header.Next, remaindersize);
+        PutMemToFree(header.Next, remaindersize);
 
         {$IFDEF DEBUG}
         Assert(header.Magic1 = 123456789); //must be in use!
@@ -581,7 +805,8 @@ begin
             remaindersize := 0;
           end;
           //resize
-          header.Next := PMediumHeader(NativeUInt(header) + newsize);
+          header.Next       := PMediumHeader(NativeUInt(header) + newsize);
+          header.Next.Block := header.Block;
           //todo: replace with size
 
           { TODO -oAM : use same "alloc from free block" as GetMem }
@@ -590,10 +815,10 @@ begin
           if nextfree.PrevFreeBlock = nil then {first?}
           begin
             //replace first item with nextfree
-            FreeMem2[nextfree.ArrayPosition] := nextfree.NextFreeBlock;
+            FFreeMem[nextfree.ArrayPosition] := nextfree.NextFreeBlock;
             //reset bit if nothing free anymore
             if nextfree.NextFreeBlock {FreeMem2[nextfree.ArrayPosition]} = nil then
-              FreeMask2 := FreeMask2 xor nextfree.BlockMask
+              FFreeMask := FFreeMask xor nextfree.BlockMask
             else
             begin
               nextfree.NextFreeBlock.PrevFreeBlock := nil;
@@ -628,7 +853,7 @@ begin
 
           //make new block of remaining
           if remaindersize > 0 then
-            PutBlockToFree2(header.Next, remaindersize);
+            PutMemToFree(header.Next, remaindersize);
 
           {$IFDEF DEBUG}
           Assert(header.Magic1 = 123456789); //must be in use!
@@ -639,22 +864,22 @@ begin
         else
         begin
           //alloc new mem and copy data
-          Result := Self.GetMem2(newsize);
+          Result := Self.GetMem(newsize);
           if aMemory <> Result then
           begin
             Move(aMemory^, Result^, currentsize); // copy (use smaller old size)
-            FreeMem_2(aMemory); // free old mem
+            FreeMem(aMemory); // free old mem
           end;
         end;
       end
       else
       //alloc new mem and copy data
       begin
-        Result := Self.GetMem2(newsize);
+        Result := Self.GetMem(newsize);
         if aMemory <> Result then
         begin
           Move(aMemory^, Result^, currentsize); // copy (use smaller old size)
-          FreeMem_2(aMemory); // free old mem
+          FreeMem(aMemory); // free old mem
         end;
       end;
     end;
@@ -663,12 +888,12 @@ begin
   begin
     if (aMemory = nil) and (aSize > 0) then
       // GetMem disguised as ReAlloc
-      Result := Self.GetMem2(aSize)
+      Result := Self.GetMem(aSize)
     else
     begin
       //FreeMem disguised as ReAlloc
       Result := nil;
-      Self.FreeMem_2(aMemory);
+      Self.FreeMem(aMemory);
     end;
   end;
 
@@ -679,6 +904,54 @@ begin
   {$ENDIF}
 end;
 
+function TThreadManager.ScanBlockForFreeItems(aBlock: PBlockMemory): PMediumHeaderExt;
+var
+  firstmem: PMediumHeader;
+  prevmem,
+  nextmem : PMediumHeaderExt;
+  newsize : NativeUInt;
+begin
+  firstmem := PMediumHeader( NativeUInt(aBlock) + SizeOf(TBlockMemory));
+  nextmem  := PMediumHeaderExt(firstmem);
+  prevmem  := nil;
+  newsize  := 0;
+  Result   := nil;
+
+  while (nextmem <> nil) do
+  begin
+    prevmem := nextmem;
+
+    //next block is free?
+    while (nextmem <> nil) and
+          (NativeUInt(nextmem.Next) > NativeUInt(1 shl 31)) do
+          //note: previous block cannot be scanned!?
+    begin
+      Assert( Cardinal(nextmem.Next) <> $80808080);
+      //make one block
+      newsize := newsize + nextmem.Size;
+      //get next item
+      nextmem := PMediumHeaderExt(NativeUInt(nextmem) + nextmem.Size);
+      //nextmem := PMediumHeaderExt(NativeInt(nextmem.Next) xor (1 shl 31));
+      //note: nextmem.NextFreeBlock cannot be used, points to other thread mem
+    end;
+
+    //put mem as free in our mem array
+    if (nextmem <> nil) and (newsize > 0) then
+    begin
+      PutMemToFree(PMediumHeader(prevmem), newsize);
+      if Result = nil then
+        Result := prevmem;
+    end;
+
+    newsize := 0;
+    //next
+    if nextmem.Next <> nil then
+      nextmem := PMediumHeaderExt(NativeInt(nextmem.Next) xor (1 shl 31))
+    else
+      nextmem := nil;
+  end;
+end;
+
 procedure MemTest;
 var p1, p2, p3: pointer;
   i: NativeInt;
@@ -687,20 +960,183 @@ begin
   i := 1 shl 16;
   i := i shl 4;
 
-  p1 := GThreadManager.GetMem2(100);
-  p2 := GThreadManager.GetMem2(100);
-  p3 := GThreadManager.GetMem2(100);
-  GThreadManager.FreeMem_2(p2);
-  p2 := GThreadManager.GetMem2(100);
-  p2 := GThreadManager.ReallocMem2(p2, 150);
-  p2 := GThreadManager.ReallocMem2(p2, 50);
-  p2 := GThreadManager.ReallocMem2(p2, 100);
+  p1 := GThreadManager.GetMem(100);
+  p2 := GThreadManager.GetMem(100);
+  p3 := GThreadManager.GetMem(100);
+  GThreadManager.FreeMem(p2);
+  p2 := GThreadManager.GetMem(100);
+  p2 := GThreadManager.ReallocMem(p2, 150);
+  p2 := GThreadManager.ReallocMem(p2, 50);
+  p2 := GThreadManager.ReallocMem(p2, 100);
 
-  GThreadManager.FreeMem_2(p3);
-  GThreadManager.FreeMem_2(p1);
+  GThreadManager.FreeMem(p3);
+  GThreadManager.FreeMem(p1);
+end;
+
+{ TGlobalMemManager }
+
+procedure TGlobalMemManager.FreeAllMemory;
+begin
+{ TODO -oAM : TGlobalMemManager.FreeAllMemory }
+end;
+
+procedure TGlobalMemManager.FreeBlockMemory(aBlockMem: PBlockMemory);
+var
+  firstmem: PMediumHeader;
+begin
+  //keep max 10 blocks in buffer
+  if FFreeBlockCount >= 10 then
+  begin
+    firstmem := PMediumHeader( NativeUInt(aBlockMem) + SizeOf(TBlockMemory));
+    //is free mem?
+    if NativeUInt(firstmem.Next) > NativeUInt(1 shl 31) then
+    begin
+      //fully free mem? we can only release fully free mem (duh...)
+      if PMediumHeaderExt(firstmem).ArrayPosition = 16 then
+      begin
+        //RELEASE TO WINDOWS
+        VirtualFree(aBlockMem, 0 {all}, MEM_RELEASE);
+        //exit!
+        Exit;
+      end
+    end;
+  end;
+
+  //LOCK
+  while not CAS32(0, 1, FLock) do
+  begin
+    //small wait: try to swith to other pending thread (if any) else direct continue
+    if not SwitchToThread then
+      sleep(0);
+    //try again
+    if CAS32(0, 1, FLock) then
+      Break;
+    //wait some longer: force swith to any other thread
+    sleep(1);
+  end;
+
+  //linked list of thread blocks: replace first item
+  if FFirstBlock <> nil then
+    FFirstBlock.PreviousBlock := aBlockMem;
+  aBlockMem.NextBlock         := FFirstBlock;
+  aBlockMem.PreviousBlock     := nil;
+  FFirstBlock                 := aBlockMem;
+
+  inc(FFreeBlockCount);
+
+  //UNLOCK
+  FLock := 0;
+end;
+
+procedure TGlobalMemManager.FreeBlocksFromThreadMemory(aThreadMem: PThreadManager);
+var
+  threadblock, nextblock: PBlockMemory;
+begin
+  threadblock := aThreadMem.FFirstBlock;
+  while threadblock <> nil do
+  begin
+    nextblock   := threadblock.NextBlock;
+    FreeBlockMemory(threadblock);
+    threadblock := nextblock;
+  end;
+end;
+
+function TGlobalMemManager.GetBlockMemory: PBlockMemory;
+//var
+//  firstmem: PMediumHeader;
+begin
+  Result := nil;
+  if FFirstBlock = nil then Exit;
+
+  //LOCK
+  while not CAS32(0, 1, FLock) do
+  begin
+    //small wait: try to swith to other pending thread (if any) else direct continue
+    if not SwitchToThread then
+      sleep(0);
+    //try again
+    if CAS32(0, 1, FLock) then
+      Break;
+    //wait some longer: force swith to any other thread
+    sleep(1);
+  end;
+
+  //get block
+  Result := FFirstBlock;
+  //got a block?
+  if Result <> nil then
+  begin
+    //rearrange linked list (replace first item)
+    FFirstBlock := FFirstBlock.NextBlock;
+    if FFirstBlock <> nil then
+      FFirstBlock.PreviousBlock := nil;
+
+    Result.NextBlock     := nil;
+    Result.PreviousBlock := nil;
+
+    //firstmem := PMediumHeader( NativeUInt(Result) + SizeOf(TBlockMemory));
+    //is free mem?
+    //if firstmem.Next > (1 shl 31) then
+    //begin
+      //fully free mem?
+      //if PMediumHeaderExt(firstmem).ArrayPosition = 16 then
+        dec(FFreeBlockCount);
+    //end;
+  end;
+
+  //UNLOCK
+  FLock := 0;
+end;
+
+procedure TGlobalMemManager.Init;
+begin
+//  FMainThreadMemory := GetSmallMemManager;
+{ TODO -oAM : TGlobalMemManager.Init }
+end;
+
+(*
+const
+{$ifdef USEMEMMANAGEREX}
+  ScaleMM_Ex: TMemoryManagerEx = (
+    GetMem: Scale_GetMem;
+    FreeMem: Scale_FreeMem;
+    ReallocMem: Scale_ReallocMem;
+    AllocMem: Scale_AllocMem;
+    RegisterExpectedMemoryLeak: Scale_RegisterMemoryLeak;
+    UnregisterExpectedMemoryLeak: Scale_UnregisterMemoryLeak );
+{$else}
+  ScaleMM_Ex: TMemoryManager = (
+    GetMem: Scale_GetMem;
+    FreeMem: Scale_FreeMem;
+    ReallocMem: Scale_ReallocMem );
+{$endif}
+*)
+
+procedure ScaleMM2_Install;
+begin
+  (*
+  {$IFnDEF PURE_PASCAL}
+  // get TLS slot
+  GOwnTlsIndex  := TlsAlloc;
+  // write fixed offset to TLS slot (instead calc via GOwnTlsIndex)
+  _FixedOffset;
+  {$ENDIF}
+
+  // Hook memory Manager
+  GetMemoryManager(OldMM);
+  if @OldMM <> @ScaleMM_Ex then
+    SetMemoryManager(ScaleMM_Ex);
+  *)
+
+  // init main thread manager
+  GGlobalManager.Init;
+
+  // we need to patch System.EndThread to properly mark memory to be freed
+  PatchThread;
 end;
 
 initialization
   MemTest;
+  ScaleMM2_Install;
 
 end.
