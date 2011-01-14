@@ -1,5 +1,13 @@
 unit ScaleMM2;
 
+//known "bugs":
+// - virtual mem is allocated on 1mb boundary by Windows, so we need to alloc
+// little bit less than 2mb instead of little bit more than 1mb
+// (999kb between blocks -> never used -> fragmentation)
+// - use TMediumHeader.Size instead of .Next (because we use MSB of .Next we
+// cannot use mem above 2Gb)
+// - Check for minimum free mem size when reusing previous blocks of GlobalManager
+
 interface
 
 {$IFDEF DEBUG}
@@ -26,15 +34,17 @@ type
 
     FFirstBlock: PBlockMemory;
 
-    function  AllocBlock: PMediumHeaderExt;
+    function  AllocBlock(aMinResultSize: NativeUInt): PMediumHeaderExt;
     procedure FreeBlock(aBlock: PBlockMemory);
-    function ScanBlockForFreeItems(aBlock: PBlockMemory): PMediumHeaderExt;
+    function  ScanBlockForFreeItems(aBlock: PBlockMemory; aMinResultSize: NativeUInt): PMediumHeaderExt;
 
     procedure PutMemToFree(aHeader: PMediumHeader; aSize: NativeUInt);
     procedure FreeMemOtherThread(aHeader: PMediumHeader);
+
+    function  GetBigMem(aSize: NativeInt): Pointer;
   public
-    function GetMem(aSize: NativeInt) : Pointer;    {$ifdef HASINLINE}inline;{$ENDIF}
-    function FreeMem(aMemory: Pointer): NativeInt;  {$ifdef HASINLINE}inline;{$ENDIF}
+    function GetMem(aSize: NativeInt) : Pointer;    //{$ifdef HASINLINE}inline;{$ENDIF}
+    function FreeMem(aMemory: Pointer): NativeInt;  //{$ifdef HASINLINE}inline;{$ENDIF}
     function ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
   end;
 
@@ -61,23 +71,29 @@ type
     function  GetBlockMemory: PBlockMemory;
   end;
 
+  {
   //4 bytes
   TSmallHeader = record
     offset2block: Word;
     offset2next : Word;  //size
   end;
+  }
 
-  //8 bytes
+  //16 bytes
   TMediumHeader = record
-    Block : PBlockMemory;
-    Next  : PMediumHeader; //todo: only size, not fixed pointer
+    Block     : PBlockMemory;
+    TodoSize  : NativeUInt;    //todo: use size
+    Next      : PMediumHeader;
+    TodoPrev  : PMediumHeader; //todo: use prev for backwards scanning
     {$IFDEF DEBUG}
-    Magic1: NativeInt;
+    Magic1    : NativeInt;
     {$ENDIF}
   end;
   TMediumHeaderExt = record
-    Block        : PBlockMemory;
-    Next         : PMediumHeader; //todo: only size, not fixed pointer
+    Block     : PBlockMemory;
+    TodoSize  : NativeUInt;    //todo: use size
+    Next      : PMediumHeader;
+    TodoPrev  : PMediumHeader;
     {$IFDEF DEBUG}
     Magic1       : NativeInt;
     {$ENDIF}
@@ -89,6 +105,7 @@ type
 //    CRC: NativeUInt;
   end;
 
+  {
   //16 bytes
   TLargeHeader = record
     //Block: Pointer;
@@ -96,9 +113,10 @@ type
     AllMemIndex: NativeUInt;
     Mask: NativeUInt;
   end;
+  }
 
-threadvar
-  GThreadManager: TThreadManager;
+//threadvar
+//  GThreadManager: TThreadManager;
 var
   GGlobalManager: TGlobalMemManager;
 (*
@@ -151,6 +169,7 @@ begin
       Scale_VirtualProtect(Code, Size, Permission, Longword(Result));
 end;
 
+(*
 procedure NewEndThread(ExitCode: Integer); //register; // ensure that calling convension matches EndThread
 begin
   // free all thread mem
@@ -189,6 +208,7 @@ begin
   // flush CPU
   FlushInstructionCache(GetCurrentProcess, pEndThreadAddr, 5);
 end;
+*)
 
 ////////////////////////////////////////////////////////////////////////////////
 //Assembly functions
@@ -221,13 +241,21 @@ end;
 
 { TThreadManager }
 
-function TThreadManager.AllocBlock: PMediumHeaderExt;
+function TThreadManager.AllocBlock(aMinResultSize: NativeUInt): PMediumHeaderExt;
 var
   iAllocSize: NativeUInt;
   pheader: PMediumHeaderExt;
   pblock : PBlockMemory;
 begin
   pblock := GGlobalManager.GetBlockMemory;
+  if pblock <> nil then
+  repeat
+    pheader := ScanBlockForFreeItems(pblock, aMinResultSize);
+    //no mem of minimum size?
+    if pheader = nil then
+      pblock  := GGlobalManager.GetBlockMemory;
+  until (pheader <> nil) or (pblock = nil);
+
   if pblock = nil then
   begin
     iAllocSize := (1 shl 16 shl 4) {1mb} +
@@ -240,6 +268,11 @@ begin
                             iAllocSize,
                             MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
                             PAGE_READWRITE);
+    if pblock = nil then
+    begin
+      Result := nil;
+      Exit;
+    end;
     pblock.Size           := iAllocSize;
 
     //first item
@@ -268,9 +301,7 @@ begin
     //max size is available now
     FFreeMask    := FFreeMask or (1 shl 16);
     FFreeMem[16] := pheader;
-  end
-  else
-    pheader := ScanBlockForFreeItems(pblock);
+  end;
   assert(pheader <> nil);
 
   pblock.OwnerThread    := @Self;
@@ -347,20 +378,49 @@ begin
 
   {$IFDEF DEBUG}
   Assert(header.Magic1 = 123456789); //must be in use!
-  Assert(header.Block <> nil);
   {$ENDIF}
 
-  if header.Block.OwnerThread = @Self then
-    //put free item to block + allmem array + mask
-    PutMemToFree(header, NativeUInt(header.Next) - NativeUInt(header))
+  //not large mem?
+  if header.Block <> nil then
+  begin
+    if header.Block.OwnerThread = @Self then
+      //put free item to block + allmem array + mask
+      PutMemToFree(header, NativeUInt(header.Next) - NativeUInt(header))
+    else
+      FreeMemOtherThread(header);
+    Result := 0;
+
+    {$IFDEF DEBUG}
+    Assert(header.Magic1 = 0); //must be free
+    {$ENDIF}
+  end
   else
-    FreeMemOtherThread(header);
+  begin
+    Result  := 0;
+    if not VirtualFree(header, 0, MEM_RELEASE) then
+      Result := 1;
+  end;
+end;
 
-  Result  := 0;
+function TThreadManager.GetBigMem(aSize: NativeInt): Pointer;
+var
+  pheader: PMediumHeader;
+begin
+  //alloc
+  pheader := VirtualAlloc( nil,
+                          aSize + SizeOf(TMediumHeader) {extra beginheader},
+                          MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+                          PAGE_READWRITE);
+  //reset begin
+  pheader.Block := nil;
+  pheader.Next  := nil;
 
-  {$IFDEF DEBUG}
-  Assert(header.Magic1 = 0); //must be free
+  {$ifdef DEBUG}
+  pheader.Magic1 := 123456789;
+  Assert(pmediumheader(pheader).Magic1 = 123456789); //must be in use!
   {$ENDIF}
+
+  Result := Pointer(NativeUInt(pheader) + SizeOf(TMediumHeader));
 end;
 
 function TThreadManager.GetMem(aSize: NativeInt): Pointer;
@@ -381,11 +441,14 @@ var
 begin
   {$ifdef DEBUG} Result := nil; try {$ENDIF}
 
-  Result := nil;
-  if aSize <= 0 then Exit;
-  if aSize >= (1 shl 16 shl 4) then  //bigger than 1mb
+  if aSize <= 0 then  //zero or less?
   begin
-    Result := nil; //GetMem(aSize);   { TODO -oAM : get mem bigger than 1Mb directly from Windows }
+    Result := nil;
+    Exit;
+  end
+  else if aSize >= (1 shl 16 shl 4) then  //bigger than 1mb
+  begin
+    Result := GetBigMem(aSize);
     Exit;
   end;
 
@@ -422,7 +485,12 @@ begin
     //alloc new mem (for biggest block)
     begin
       iFreeMemIndex := 16;
-      pheader       := AllocBlock;
+      pheader       := AllocBlock(allocsize);
+      if pheader = nil then  //out of memory?
+      begin
+        Result := nil;
+        Exit;
+      end;
     end;
   end;
 
@@ -498,12 +566,6 @@ begin
   {put remainder free block in AllMem array + mask}
   with pheader^ do
   begin
-    //alloc size
-    {pheader.}Next       := PMediumHeader(NativeUInt(pheader) + allocsize);
-    //pheader.Size       := allocsize; todo
-    //set block of next item too
-    {pheader.}Next.Block := {pheader.}Block;
-
     //replace with next free block
     FFreeMem[iFreeMemIndex] := {pheader.}NextFreeBlock;
     {$IFDEF DEBUG}
@@ -523,6 +585,12 @@ begin
       {$ENDIF}
       pheader.NextFreeBlock.PrevFreeBlock := nil;
     end;
+
+    //alloc size
+    {pheader.}Next       := PMediumHeader(NativeUInt(pheader) + allocsize);
+    //pheader.Size       := allocsize; todo
+    //set block of next item too
+    {pheader.}Next.Block := {pheader.}Block;
 
     //create remainder
     if remaindersize > 0 then
@@ -702,11 +770,7 @@ begin
     {pheaderremainder.}PrevFreeBlock := nil; //we are the first
   end;
 
-  {$ifdef DEBUG} 
-  except
-    sleep(0);
-  end;
-  {$ENDIF}
+  {$ifdef DEBUG} except sleep(0); end; {$ENDIF}
 end;
 
 function TThreadManager.ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
@@ -714,20 +778,35 @@ var
   header: PMediumHeader;
   nextfree: PMediumHeaderExt;
   //strippedpointer,
-  currentsize, remaindersize,
+  remaindersize: NativeInt;
+  currentsize,
   newsize, nextsize: NativeUInt;
 begin
   {$ifdef DEBUG} Result := nil; try {$ENDIF}
 
   // ReAlloc can be misued as GetMem or FreeMem (documented in delphi help) so check what the user wants
   // Normal realloc of exisiting data?
-  if (aMemory <> nil) and (aSize > 0) then
-  begin
+//  if (aMemory <> nil) and (aSize > 0) then
+//  begin
     header      := PMediumHeader(NativeUInt(aMemory) - SizeOf(TMediumHeader));
+    newsize     := NativeUInt(aSize) + SizeOf(TMediumHeader);
+
+    //todo: use size etc with smart up/downsize
+    //large mem?
+    if header.Block = nil then
+    begin
+      Result := Self.GetMem(newsize);
+      if aMemory <> Result then
+      begin
+        Move(aMemory^, Result^, currentsize); // copy (use smaller old size)
+        FreeMem(aMemory); // free old mem
+      end;
+      Exit;
+    end;
+
     {$IFDEF DEBUG}
     Assert(header.Magic1 = 123456789); //must be in use!
     {$ENDIF}
-    newsize     := NativeUInt(aSize) + SizeOf(TMediumHeader);
     currentsize := NativeInt(header.Next) - NativeInt(header);
 
     //same?
@@ -745,7 +824,7 @@ begin
       newsize       := newsize + (aSize div 16);    //alloc some extra mem for small grow
                        //SizeOf(TMediumHeader);
       newsize       := (newsize + 8) shr 3 shl 3;  //8byte aligned: add 8 and remove lowest bits
-      remaindersize := currentsize - newsize;
+      remaindersize := NativeInt(currentsize) - NativeInt(newsize);
       //less than 32 bytes left after resize?
       if (remaindersize < 32) {or less than div 16 change?} then
       begin
@@ -797,18 +876,6 @@ begin
         begin
           Result := aMemory;
 
-          remaindersize := nextsize - newsize;
-          //too small remainder?
-          if remaindersize < 32 then
-          begin
-            newsize := newsize + remaindersize;
-            remaindersize := 0;
-          end;
-          //resize
-          header.Next       := PMediumHeader(NativeUInt(header) + newsize);
-          header.Next.Block := header.Block;
-          //todo: replace with size
-
           { TODO -oAM : use same "alloc from free block" as GetMem }
 
           //remove old size
@@ -851,6 +918,19 @@ begin
                 );
           {$ENDIF}
 
+          remaindersize := nextsize - newsize;
+          //too small remainder?
+          if remaindersize < 32 then
+          begin
+            newsize := newsize + remaindersize;
+            remaindersize := 0;
+          end;
+
+          //resize
+          header.Next       := PMediumHeader(NativeUInt(header) + newsize);
+          header.Next.Block := header.Block;
+          //todo: replace with size
+
           //make new block of remaining
           if remaindersize > 0 then
             PutMemToFree(header.Next, remaindersize);
@@ -883,6 +963,7 @@ begin
         end;
       end;
     end;
+{
   end
   else
   begin
@@ -895,7 +976,7 @@ begin
       Result := nil;
       Self.FreeMem(aMemory);
     end;
-  end;
+  end;            }
 
   {$ifdef DEBUG} 
   except
@@ -904,7 +985,7 @@ begin
   {$ENDIF}
 end;
 
-function TThreadManager.ScanBlockForFreeItems(aBlock: PBlockMemory): PMediumHeaderExt;
+function TThreadManager.ScanBlockForFreeItems(aBlock: PBlockMemory; aMinResultSize: NativeUInt): PMediumHeaderExt;
 var
   firstmem: PMediumHeader;
   prevmem,
@@ -940,7 +1021,8 @@ begin
     begin
       PutMemToFree(PMediumHeader(prevmem), newsize);
       if Result = nil then
-        Result := prevmem;
+        if newsize >= aMinResultSize then
+          Result := prevmem;
     end;
 
     newsize := 0;
@@ -952,6 +1034,7 @@ begin
   end;
 end;
 
+(*
 procedure MemTest;
 var p1, p2, p3: pointer;
   i: NativeInt;
@@ -972,6 +1055,7 @@ begin
   GThreadManager.FreeMem(p3);
   GThreadManager.FreeMem(p1);
 end;
+*)
 
 { TGlobalMemManager }
 
@@ -1112,6 +1196,7 @@ const
 {$endif}
 *)
 
+(*
 procedure ScaleMM2_Install;
 begin
   (*
@@ -1126,7 +1211,7 @@ begin
   GetMemoryManager(OldMM);
   if @OldMM <> @ScaleMM_Ex then
     SetMemoryManager(ScaleMM_Ex);
-  *)
+  )
 
   // init main thread manager
   GGlobalManager.Init;
@@ -1134,9 +1219,11 @@ begin
   // we need to patch System.EndThread to properly mark memory to be freed
   PatchThread;
 end;
+*)
 
-initialization
-  MemTest;
-  ScaleMM2_Install;
+//initialization
+//  MemTest;
+//  ScaleMM2_Install;
+
 
 end.
