@@ -91,13 +91,13 @@ type
   end;
   TMediumHeaderExt = record
     Block     : PBlockMemory;
-    TodoSize  : NativeUInt;    //todo: use size
+    Size      : NativeUInt;
     Next      : PMediumHeader;
     TodoPrev  : PMediumHeader;
     {$IFDEF DEBUG}
     Magic1       : NativeInt;
     {$ENDIF}
-    Size         : NativeUInt;
+    //Size         : NativeUInt;
     NextFreeBlock: PMediumHeaderExt;
     PrevFreeBlock: PMediumHeaderExt;
     BlockMask    : NativeUInt;
