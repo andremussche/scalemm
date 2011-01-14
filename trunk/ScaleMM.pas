@@ -80,6 +80,9 @@ Change log:
 
 interface
 
+uses
+  ScaleMM2;
+
 {.$DEFINE DEBUG_SCALEMM}  // slower but better debugging (no inline functions etc)
 
 {$IFDEF DEBUG_SCALEMM}
@@ -99,6 +102,7 @@ interface
   {$if CompilerVersion >= 17}
     {$define HASINLINE}        // Delphi 2005 or newer
   {$ifend}
+  {$define INLINEGOWN}
   {$D-}
   {$L-}
 {$ENDIF}
@@ -118,7 +122,6 @@ const
 
 // inlined TLS access
 // - injected offset + GetSmallMemManager call can be slower than offset loading
-{$define INLINEGOWN}
 {$ifdef INLINEGOWN}
   {$ifndef HASINLINE} // inlined Getmem/Freemem will call GetSmallMemManager
     {$UNDEF SCALE_INJECT_OFFSET}
@@ -130,12 +133,12 @@ const
 // first a "SwitchToThread" is tried (gives better results if #thread's is higher than #cpu's or cores)
 // then a Sleep(0) (gives least wait time, only switches if an other thread is ready)
 // if the locking still fails, a Sleep(1) is done, which waits at least 1ms but most times 15ms(!)
-{$define SPINWAITBACKOFF}
+//{$define SPINWAITBACKOFF}  -> always on, otherwise race condition
 
 // other posible defines:
 {.$DEFINE PURE_PASCAL}    // no assembly, pure delphi code
 {.$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
-{$DEFINE USEMEDIUM}      // handling of 2048..16384 bytes blocks
+{.$DEFINE USEMEDIUM}      // handling of 2048..16384 bytes blocks
 
 {$if CompilerVersion < 19}
   type // from Delphi 6 up to Delphi 2007
@@ -267,17 +270,21 @@ type
     /// array with memory per block size of 256 bytes (small blocks)
     // - i.e. 256,512,768,1024,1280,1536,1792[,2048] bytes
     FSmallMemoryBlocks: array[0..MAX_SMALLMEMBLOCK] of TMemBlockList;
+
 {$ifdef USEMEDIUM}
     /// array with memory per block size of 2048 bytes (medium blocks)
     // - i.e. 2048,4096,6144,8192,10240,12288,14336,16384 bytes
     FMediumMemoryBlocks: array[0..MAX_MEDIUMMEMBLOCK] of TMemBlockList;
 {$endif}
+    FMediumMemManager: TThreadManager;
 
     // link to list of items to reuse after thread terminated
     FNextThreadManager: PThreadMemManager;
 
     procedure ProcessFreedMemFromOtherThreads;
     procedure AddFreedMemFromOtherThread(aMemory: PMemHeader);
+
+    function GetMediumOrLargeMem(aSize: NativeInt): Pointer;
   public
     FThreadId: LongWord;
     FThreadTerminated: Boolean;  //is this thread memory available to new thread?
@@ -333,6 +340,9 @@ function Scale_GetMem(aSize: Integer): Pointer;
 function Scale_AllocMem(aSize: Cardinal): Pointer;
 function Scale_FreeMem(aMemory: Pointer): Integer;
 function Scale_ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
+{$ifdef DEBUG_SCALEMM}
+procedure Assert(aCondition: boolean);
+{$ENDIF}
 
 var
   GlobalManager: TGlobalMemManager;
@@ -346,13 +356,14 @@ var
 // - note that also "root" block memory is allocated by OldMM if ScaleMM needs
 // memory itself (to populate its internal buffers): there is not direct call
 // to the VirtualAlloc() API, for instance
+(*
 var
 {$ifdef USEMEMMANAGEREX}
   OldMM: TMemoryManagerEx;
 {$else}
   OldMM: TMemoryManager;
 {$endif}
-
+*)
 
 implementation
 
@@ -364,21 +375,24 @@ type
 const
   PAGE_EXECUTE_READWRITE = $40;
   kernel32  = 'kernel32.dll';
+  MEM_COMMIT = $1000;
+  PAGE_READWRITE = 4;
+  MEM_RELEASE = $8000;
 
 function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
 function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
 function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
 function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
 procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
-{$ifdef SPINWAITBACKOFF}
 function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
-{$endif}
 function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
 function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
 function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
 function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
             var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
 procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
+function  VirtualAlloc(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
+function  VirtualFree(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';
 
 function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 begin
@@ -442,7 +456,11 @@ begin
   Result := GlobalManager.GetNewThreadManager;
   if Result = nil then
   begin
-    Result := OldMM.GetMem( SizeOf(TThreadMemManager) );
+    Result := //OldMM.GetMem( SizeOf(TThreadMemManager) );
+              VirtualAlloc( nil,
+                            SizeOf(TThreadMemManager),
+                            MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+                            PAGE_READWRITE);
     Result.Init;
   end
   else
@@ -498,7 +516,7 @@ begin
 end;
 {$ENDIF}
 
-
+(*
 function GetOldMem(aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
 begin
   Result := OldMM.GetMem(aSize + SizeOf(TMemHeader));
@@ -510,6 +528,7 @@ begin
   TMemHeader(Result^).MagicTest;
   {$ENDIF}
 end;
+*)
 
 { TThreadMemManager }
 
@@ -555,14 +574,12 @@ begin
     pcurrentmem := FOtherThreadFreedMemory;
     if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
       Break;
-    {$ifdef SPINWAITBACKOFF}
     if not SwitchToThread then
       sleep(0);
     pcurrentmem := FOtherThreadFreedMemory;
     if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
       Break;
     sleep(1);
-    {$endif}
   until false;
 
   //free all mem in linked list
@@ -613,7 +630,6 @@ begin
     // set new item as first (to created linked list)
     if CAS32(poldmem, aMemory, FOtherThreadFreedMemory) then
       Break;
-    {$ifdef SPINWAITBACKOFF}
     if not SwitchToThread then
       sleep(0);
     poldmem          := FOtherThreadFreedMemory;
@@ -621,7 +637,6 @@ begin
     if CAS32(poldmem, aMemory, FOtherThreadFreedMemory) then
       Break;
     sleep(1);
-    {$endif}
   until false;
 end;
 
@@ -630,6 +645,8 @@ var
   pm: PMemBlock;
   p: Pointer;
 begin
+  {$ifdef DEBUG_SCALEMM} Result := 0; try {$ENDIF}
+
   p  := Pointer(NativeUInt(aMemory) - SizeOf(TMemHeader));
   pm := PMemHeader(p).Owner;
   {$IFDEF MagicTest}
@@ -654,7 +671,25 @@ begin
     Result := 0;
   end
   else
-    Result := OldMM.FreeMem(p);
+    Result := FMediumMemManager.FreeMem(p);
+
+  {$ifdef DEBUG_SCALEMM} except sleep(0); end; {$ENDIF}
+end;
+
+function TThreadMemManager.GetMediumOrLargeMem(aSize: NativeInt): Pointer;
+begin
+  // larger blocks are allocated via the medium manager
+  Result := FMediumMemManager.GetMem(aSize + SizeOf(TMemHeader));
+
+  if Result <> nil then
+  begin
+    TMemHeader(Result^).Owner := nil;  // not our memlist, so mark as such
+    {$IFDEF MagicTest}
+    TMemHeader(Result^).Magic1 := 1234567890;
+    TMemHeader(Result^).Magic2 := 1122334455;
+    TMemHeader(Result^).MagicTest;
+    {$ENDIF}
+  end;
 end;
 
 function TThreadMemManager.GetMem(aSize: NativeInt): Pointer;
@@ -680,9 +715,9 @@ begin
 {$endif}
   else
   begin
-    // larger blocks are allocated via the old Memory Manager
-    Result := GetOldMem(aSize);
-    Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
+    Result := GetMediumOrLargeMem(aSize);
+    if Result <> nil then
+      Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
     Exit;
   end;
 
@@ -810,11 +845,12 @@ begin
   begin
     // create own one
     pm :=
-    {$ifdef USEMEDIUM}
+//    {$ifdef USEMEDIUM}
       Owner.GetMem
-    {$else}
-      GetOldMem // (32+8)*64=2560 > 2048 -> use OldMM
-    {$endif}
+//    {$else}
+      //Owner.GetMedumOrLargeMem // (32+8)*64=2560 > 2048 -> use OldMM
+//      Owner.FMediumMemManager.GetMem // (32+8)*64=2560 > 2048 -> use OldMM
+//    {$endif}
       ( SizeOf(pm^) + (FItemSize + SizeOf(TMemHeader)) * C_ARRAYSIZE );
     with pm^ do // put zero only to needed properties
     begin
@@ -871,7 +907,7 @@ begin
   begin
     if FRecursive then
     begin
-      Result := GetOldMem(Self.FItemSize);
+      Result := Owner.GetMediumOrLargeMem(Self.FItemSize);
       Exit;
     end;
     AddNewMemoryBlock;
@@ -885,7 +921,7 @@ begin
     begin
       if FRecursive then
       begin
-        Result := GetOldMem(Self.FItemSize);
+        Result := Self.Owner.GetMediumOrLargeMem(Self.FItemSize);
         Exit;
       end;
       AddNewMemoryBlock;
@@ -933,14 +969,12 @@ begin
     // try to set "result" in global var
     if CAS32(pprevthreadmem, aThreadMem, FFirstThreadMemory) then
       Break;
-    {$ifdef SPINWAITBACKOFF}
     if not SwitchToThread then
       sleep(0);
     pprevthreadmem := FFirstThreadMemory;
     if CAS32(pprevthreadmem, aThreadMem, FFirstThreadMemory) then
       Break;
     Sleep(1);
-    {$endif}
   until false;
   // make linked list: new one is first item (global var), next item is previous item
   aThreadMem.FNextThreadManager := pprevthreadmem;
@@ -1000,7 +1034,7 @@ begin
   begin
     tempthreadmem := oldthreadmem;
     oldthreadmem  := oldthreadmem.FNextThreadManager;
-    OldMM.FreeMem(tempthreadmem);
+    VirtualFree(tempthreadmem, 0, MEM_RELEASE);
   end;
 end;
 
@@ -1052,7 +1086,6 @@ begin
     aBlockMem.FNextFreedMemBlock := prevmem;
     if CAS32(prevmem, aBlockMem, bl.FFirstFreedMemBlock) then
       Break;
-    {$ifdef SPINWAITBACKOFF}
     if not SwitchToThread then
       Sleep(0);
     prevmem := bl.FFirstFreedMemBlock;
@@ -1060,7 +1093,6 @@ begin
     if CAS32(prevmem, aBlockMem, bl.FFirstFreedMemBlock) then
       Break;
     Sleep(1);
-    {$endif}
   until False;
 
   // inc items cached
@@ -1151,7 +1183,6 @@ var
         lastinusemem.FNextFreedMemBlock := prevmem;
         if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
           break;
-        {$ifdef SPINWAITBACKOFF}
         if not SwitchToThread then
           sleep(0);
         prevmem := aGlobalBlock.FFirstFreedMemBlock;
@@ -1159,7 +1190,6 @@ var
         if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
           break;
         sleep(1);
-        {$endif}
       until false;
     end;
 
@@ -1172,7 +1202,6 @@ var
         lastunusedmem.FNextMemBlock := prevmem;
         if CAS32(prevmem, unusedmem, aGlobalBlock.FFirstMemBlock) then
           break;
-        {$ifdef SPINWAITBACKOFF}
         if not SwitchToThread then
           sleep(0);
         prevmem                     := aGlobalBlock.FFirstMemBlock;
@@ -1180,7 +1209,6 @@ var
         if CAS32(prevmem, unusedmem, aGlobalBlock.FFirstMemBlock) then
           break;
         sleep(1);
-        {$endif}
       until false;
     end;
   end;
@@ -1214,7 +1242,6 @@ begin
     // try to set "result" in global var
     if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
       break;
-    {$ifdef SPINWAITBACKOFF}
     if not SwitchToThread then
       sleep(0);
     pprevthreadmem := FFirstFreedThreadMemory;
@@ -1222,7 +1249,6 @@ begin
     if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
       break;
     sleep(1);
-    {$endif}
   until false;
 end;
 
@@ -1328,7 +1354,6 @@ begin
         Result.FNextThreadManager := nil;
       break;
     end;
-    {$ifdef SPINWAITBACKOFF}
     if not SwitchToThread then
       sleep(0);
     pprevthreadmem := FFirstFreedThreadMemory;
@@ -1345,7 +1370,6 @@ begin
       break;
     end;
     sleep(1);
-    {$endif}
   end;
 end;
 
@@ -1554,7 +1578,7 @@ begin
     // was allocated via OldMM -> rely on OldMM for reallocation
     else
     begin
-      Result := OldMM.ReallocMem(p, aSize + SizeOf(TMemHeader));
+      Result := GetSmallMemManager.FMediumMemManager.ReallocMem(p, aSize + SizeOf(TMemHeader));
       TMemHeader(Result^).Owner := nil; // mark not from our memlist
 
       {$IFDEF MagicTest}
@@ -1668,12 +1692,14 @@ end;
 function Scale_RegisterMemoryLeak(P: Pointer): Boolean;
 begin
   { TODO : implement memory leak checking }
-  Result := OldMM.RegisterExpectedMemoryLeak(p);
+//  Result := OldMM.RegisterExpectedMemoryLeak(p);
+  Result := True;
 end;
 
 function Scale_UnregisterMemoryLeak(P: Pointer): Boolean;
 begin
-  Result := OldMM.UnregisterExpectedMemoryLeak(p);
+//  Result := OldMM.UnregisterExpectedMemoryLeak(p);
+  Result := True;
 end;
 {$endif}
 
@@ -1733,6 +1759,13 @@ const
     GetMem: Scale_GetMem;
     FreeMem: Scale_FreeMem;
     ReallocMem: Scale_ReallocMem );
+{$endif}
+
+var
+{$ifdef USEMEMMANAGEREX}
+  OldMM: TMemoryManagerEx;
+{$else}
+  OldMM: TMemoryManager;
 {$endif}
 
 procedure ScaleMMInstall;
