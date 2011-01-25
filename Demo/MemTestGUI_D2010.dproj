@@ -24,7 +24,7 @@
 			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
 			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>
-			<DCC_UnitSearchPath>.\TopMM;.\Challenge;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>.\TopMM;.\Challenge;..\;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<ImageDebugInfo>true</ImageDebugInfo>
 			<DCC_DependencyCheckOutputName>MemTestGUI_D2010.exe</DCC_DependencyCheckOutputName>
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
@@ -53,6 +53,7 @@
 			<DelphiCompile Include="MemTestGUI_D2010.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
+			<DCCReference Include="..\ScaleMM2.pas"/>
 			<DCCReference Include="_uTextThread.pas"/>
 			<DCCReference Include="mfMain.pas">
 				<Form>frmMain</Form>
@@ -89,7 +90,7 @@
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">0</VersionInfo>
 						<VersionInfo Name="Release">0</VersionInfo>
-						<VersionInfo Name="Build">564</VersionInfo>
+						<VersionInfo Name="Build">649</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -101,7 +102,7 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName"/>
 						<VersionInfoKeys Name="FileDescription"/>
-						<VersionInfoKeys Name="FileVersion">1.0.0.564</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.0.0.649</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName"/>
 						<VersionInfoKeys Name="LegalCopyright"/>
 						<VersionInfoKeys Name="LegalTrademarks"/>
@@ -110,7 +111,7 @@
 						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 						<VersionInfoKeys Name="Last Compile">2010-09-21 10:47</VersionInfoKeys>
-						<VersionInfoKeys Name="LastCompiledTime">26-11-2010 20:42:24</VersionInfoKeys>
+						<VersionInfoKeys Name="LastCompiledTime">8-12-2010 12:33:09</VersionInfoKeys>
 					</VersionInfoKeys>
 					<Excluded_Packages>
 						<Excluded_Packages Name="$(BDS)\bin\dclbde140.bpl">Embarcadero BDE DB Components</Excluded_Packages>

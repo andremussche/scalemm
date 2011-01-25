@@ -6,7 +6,7 @@
   Heap API used, which is fast and very effective (allocated block granularity
   is 16 bytes). One additional benefit is that some proofing tools (MemProof)
   do not detect API failures, which those can find when standard Delphi memory
-  manager used. 
+  manager used.
   =====================================================================
   Copyright (C) by Vladimir Kladov, 2001
   ---------------------------------------------------------------------
@@ -60,29 +60,90 @@ var
     are, 16 bytes will actually be available because the heap cannot allocate
     less than 16 bytes at a time.
   }
+
+type
+  TMemHeader = object
+    /// the memory block handler which owns this memory block
+    //Owner: PMemBlock;
+    /// linked to next single memory item (other thread freem mem)
+    //NextMem: PMemHeader;
+    Size: NativeUInt;
+  end;
+  PMemHeader = ^TMemHeader;
+
 implementation
 
-function HeapGetMem(size: Integer): Pointer;
 // Allocate memory block.
+function HeapGetMem(aSize: Integer): Pointer;
+var
+  iSize: Integer;
 begin
-  Result := HeapAlloc( HeapHandle, HeapFlags, size );
+  iSize  := aSize + SizeOf(TMemHeader) + (aSize shr 3); {1/8 extra}
+  Result := HeapAlloc( HeapHandle, HeapFlags, iSize );
+  TMemHeader(Result^).Size := iSize;
+  Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
 end;
 
-function HeapFreeMem(p: Pointer): Integer;
 // Deallocate memory block.
+function HeapFreeMem(aMemory: Pointer): Integer;
+var
+  ph: PMemHeader;
 begin
-  Result := Integer( not HeapFree( HeapHandle, HeapFlags and HEAP_NO_SERIALIZE,
-            p ) );
+  ph     := PMemHeader(NativeUInt(aMemory) - SizeOf(TMemHeader));
+  Result := Integer(not HeapFree(HeapHandle, HeapFlags and HEAP_NO_SERIALIZE, ph) );
 end;
 
-function HeapReallocMem(p: Pointer; size: Integer): Pointer;
 // Resize memory block.
+function HeapReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
+var
+  ph: PMemHeader;
+  iSize: Integer;
 begin
+  ph    := PMemHeader(NativeUInt(aMemory) - SizeOf(TMemHeader));
+  iSize := aSize + SizeOf(TMemHeader);
+
+//  iSize := iSize + (aSize shr 3); {1/8 extra}
+
+  // new size smaller than current size?
+  if (NativeUInt(iSize) <= ph.Size) then
+  begin
+    if NativeUInt(iSize) >= (ph.Size shr 2) then
+    begin
+      Result := aMemory; // no resize needed up to half the current item size -> now a quarter, benchmark optimization...
+      Exit;
+    end
+  end;
+  {
+    // too much downscaling: use move
+    else
+    begin
+      Result := HeapGetMem(aSize); // new mem
+      if aMemory <> Result then
+      begin
+        Move(aMemory^, Result^, aSize); // copy (use smaller new size)
+        HeapFreeMem(aMemory); // free old mem
+      end;
+    end;
+  end
+  else
+  begin
+    // new size bigger than current size
+    Result := HeapGetMem(aSize); // new mem
+    if aMemory <> Result then
+    begin
+      Move(aMemory^, Result^, ph.Size); // copy (use smaller old size)
+      HeapFreeMem(aMemory); // free old mem
+    end;
+  end;
+  }
+
   Result := HeapRealloc( HeapHandle, HeapFlags and (HEAP_NO_SERIALIZE and
          HEAP_GENERATE_EXCEPTIONS and HEAP_ZERO_MEMORY),
          // (Prevent using flag HEAP_REALLOC_IN_PLACE_ONLY here - to allow
          // system to move the block if necessary).
-         p, size );
+         ph, iSize );
+  TMemHeader(Result^).Size := iSize;
+  Result := Pointer(NativeUInt(Result) + SizeOf(TMemHeader));
 end;
 
 const
@@ -94,7 +155,6 @@ const
 var OldMM: TMemoryManager;
 
 initialization
-
   {$IFDEF USE_PROCESS_HEAP}
   HeapHandle := GetProcessHeap;
   {$ELSE}
@@ -104,7 +164,6 @@ initialization
   SetMemoryManager( HeapMemoryManager );
 
 finalization
-
   SetMemoryManager( OldMM );
   {$IFNDEF USE_PROCESS_HEAP}
   HeapDestroy( HeapHandle );

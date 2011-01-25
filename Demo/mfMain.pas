@@ -12,15 +12,27 @@ type
     btnStart: TButton;
     Memo1: TMemo;
     Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
+    Panel1: TPanel;
     procedure FormCreate(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
+    procedure MyButton3Click(Sender: TObject);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
   private
     { Private declarations }
     FCsvFile: Tstrings;
     procedure ExecuteTest;
   public
     { Public declarations }
+  end;
+
+  TMyButton = class(TButton)
+    procedure WMWindowPosChanged(var Message: TWMWindowPosChanged); message WM_WINDOWPOSCHANGED;
+    procedure WMWindowPosChanging(var Message: TWMWindowPosChanging); message WM_WINDOWPOSCHANGING;
   end;
 
 var
@@ -61,11 +73,24 @@ begin
   i1 := 9;
   i2 := BitScanFirst(i1);
   i2 := BitTestReset(i1, i2);
+end;
 
+procedure TfrmMain.Button3Click(Sender: TObject);
+var
+  WindowPlacement: TWindowPlacement;
+begin
+  with TMyButton.Create(Self) do
+  begin
+    Parent := Self;
+    OnClick := MyButton3Click;
+  end;
+  Exit;
 
-
-
-  //
+  WindowPlacement.Length := SizeOf(WindowPlacement);
+  GetWindowPlacement(Button3.Handle, WindowPlacement);
+  WindowPlacement.rcNormalPosition := Button3.BoundsRect;
+  InflateRect(WindowPlacement.rcNormalPosition, 10, 10);
+  SetWindowPlacement(Button3.Handle, WindowPlacement);
 end;
 
 procedure TfrmMain.ExecuteTest;
@@ -187,6 +212,74 @@ begin
 //  ExecuteTest;
 //  Application.Terminate;
 //  GetMemory(-1)
+end;
+
+procedure TfrmMain.FormMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+var
+  list: tlist;
+  h: THandle;
+  p, p2: TPoint;
+
+  procedure __TestPos;
+  var c: TControl;
+      wControl: TWinControl;
+  begin
+    h  := WindowFromPoint(p2);
+    c  := FindControl(h);
+
+    if (c <> nil) and (c <> self) then
+    begin
+      mouse.CursorPos := p2;
+      //MessageDlg(Format('%s - %s', [c.ClassName, c.Name]), mtWarning, [mbOK], 0);
+    end;
+  end;
+
+begin
+  list := TList.Create;
+  p    := Mouse.CursorPos;
+  try
+    p2 := p;
+    inc(p2.X, 15);
+    __TestPos;
+    inc(p2.Y, 15);
+    __TestPos;
+    inc(p2.Y, -30);
+    __TestPos;
+
+    p2 := p;
+    inc(p2.X, -15);
+    __TestPos;
+    inc(p2.Y, -15);
+    __TestPos;
+    inc(p2.Y, 30);
+    __TestPos;
+  finally
+    list.Free;
+  end;
+end;
+
+procedure TfrmMain.MyButton3Click(Sender: TObject);
+var
+  WindowPlacement: TWindowPlacement;
+begin
+  WindowPlacement.Length := SizeOf(WindowPlacement);
+  GetWindowPlacement( TMyButton(Sender).Handle, WindowPlacement);
+  WindowPlacement.rcNormalPosition := TMyButton(Sender).BoundsRect;
+  InflateRect(WindowPlacement.rcNormalPosition, 10, 10);
+  SetWindowPlacement( TMyButton(Sender).Handle, WindowPlacement);
+end;
+
+{ TMyButton }
+
+procedure TMyButton.WMWindowPosChanged(var Message: TWMWindowPosChanged);
+begin
+  //
+end;
+
+procedure TMyButton.WMWindowPosChanging(var Message: TWMWindowPosChanging);
+begin
+  //
 end;
 
 end.

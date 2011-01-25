@@ -19,6 +19,24 @@ type
     property Duration_msec: integer read FDuration_msec write SetDuration_msec;
   end;
 
+type
+  TTestRecord2 = record
+    P1: Integer;
+    P2: Integer;
+    P3: Integer;
+    P4: Integer;
+    P5: Integer;
+    P6: Integer;
+    P7: Integer;
+    P8: Integer;
+
+    procedure Init;
+  end;
+  PTestRecord2 = ^TTestRecord2;
+
+//var
+//  r1, r2, r3: PTestRecord2;
+
 implementation
 
 uses
@@ -42,6 +60,15 @@ function CAS32(const oldValue: pointer; newValue: pointer; var destination): boo
 asm
   lock cmpxchg dword ptr [destination], newValue
   setz  al
+end; { CAS32 }
+
+function CAS32i(const oldValue: integer; newValue: integer; var destination): boolean;
+asm
+  lock cmpxchg dword ptr [destination], newValue
+  setz  al
+  jz @ok
+  pause // let the CPU know this thread is in a Spin Wait loop
+@ok:
 end; { CAS32 }
 
 type
@@ -69,9 +96,19 @@ begin
 
 end;
 
-//var
+var
 //  GInnerLock,
 //  GOuterLock: Cardinal;
+  ia: array of Integer;
+
+procedure test;
+var
+  i: integer;
+begin
+  SetLength(ia, 10000);
+  for i := 0 to 10000-1 do
+    ia[i] := i;
+end;
 
 procedure TDummyStringThread.Execute;
 var
@@ -79,21 +116,26 @@ var
   s, stest: String;
   pa, pb, pc: pointer;
   p1, p2, p3: pointer;
-  i,j:integer;
+  i,j,k,l:integer;
   tStart: TDateTime;
   obj1, obj2, obj3: TObject;
   ws: WideString;
+
+  r1, r2, r3: PTestRecord2;
 
   iCurrentTID: Cardinal;
 //  pOld, pNew, pDest: pointer;
 //  ia: array of integer;
 begin
-//  SetThreadPriority( Self.Handle, THREAD_PRIORITY_ABOVE_NORMAL);
+    //  SetThreadPriority( Self.Handle, THREAD_PRIORITY_ABOVE_NORMAL);
 
   iCurrentTID := GetCurrentThreadId;
 
-  p1 := GetMemory(255);
-  FreeMem(p1);
+//  p1 := Scale_GetMem(100 * 1000);
+//  Scale_FreeMem(p1);
+
+//  p1 := GetMemory(255);
+//  FreeMem(p1);
 //  FreeMem(p1);
 {
       p1 := GetMemory(10);
@@ -108,13 +150,37 @@ begin
       FreeMem(p2);
       FreeMem(p3);
       }
-
   tStart := now;
   stest  := '12345678901234567890';
+
+  (*
+  for l := 0 to 1000 do
+  for i := 0 to 10000-1 do
+  begin
+    j := ia[i];
+    k := j+1;
+    while not CAS32i(j, k, ia[i]) do
+    begin
+      if not SwitchToThread then
+        Sleep(0);
+      j := ia[i];
+      k := j+1;
+      if CAS32i(j, k, ia[i]) then
+        Break
+      else
+         Sleep(1);
+    end;
+  end;
+  FDuration_msec := MilliSecondsBetween(now, tStart);
+  Exit;
+  *)
+
 
 //  pa := GetMemory(10);
 //  pb := GetMemory(40);
 //  pc := GetMemory(80);
+
+//  GThreadManager.Init;
 
   for j := 0 to 1000 do
     for i := 0 to 10000 do
@@ -141,7 +207,7 @@ begin
       stest := ws + ' ' + ws + ' ' + ws;
       }
 
-//      {
+      {
       p1 := GetMemory(10);
       p2 := GetMemory(40);
       p3 := GetMemory(80);
@@ -153,21 +219,56 @@ begin
       FreeMem(p1);
       FreeMem(p2);
       FreeMem(p3);
-//      }
+      }
 
       {
-      p1 := Scale_GetMem(10);
-      p2 := Scale_GetMem(40);
-      p3 := Scale_GetMem(80);
+      p1 := GetMemory(10);
+      p2 := GetMemory(40);
+      p3 := GetMemory(80);
 
-      p1 := Scale_ReallocMem(p1, 30);
-      p2 := Scale_ReallocMem(p2, 60);
-      p3 := Scale_ReallocMem(p3, 120);
+      p1 := ReallocMemory(p1, 30);
+      p2 := ReallocMemory(p2, 60);
+      p3 := ReallocMemory(p3, 120);
 
-      Scale_FreeMem(p1);
-      Scale_FreeMem(p2);
-      Scale_FreeMem(p3);
+      FreeMemory(p1);
+      FreeMemory(p2);
+      FreeMemory(p3);
       }
+
+//      {
+      p1 := GetMemory(10 * 1024);
+      p2 := GetMemory(40 * 1024);
+      p3 := GetMemory(80 * 1024);
+
+      p1 := ReallocMemory(p1, 10 * 1024 + 10);
+      p2 := ReallocMemory(p2, 40 * 1024 + 10);
+      p3 := ReallocMemory(p3, 80 * 1024 + 10);
+
+      FreeMemory(p1);
+      FreeMemory(p2);
+      FreeMemory(p3);
+//      }
+
+
+      (*
+      r1 := ScaleMM2.GThreadManager.GetMem(SizeOf(TTestRecord2) + 8);
+//      r1.Init;
+//      assert(r1.P1 = 111111111);
+      r2 := ScaleMM2.GThreadManager.GetMem(40 + 8);
+//      r2.Init;
+//      assert(r1.P1 = 111111111);
+      r3 := ScaleMM2.GThreadManager.GetMem(80 + 8);
+//      r3.Init;
+//      assert(r1.P1 = 111111111);
+
+      r1 := ScaleMM2.GThreadManager.ReallocMem(r1, 40 + 8);
+      r2 := ScaleMM2.GThreadManager.ReallocMem(r2, 60 + 8);
+      r3 := ScaleMM2.GThreadManager.ReallocMem(r3, 120 + 8);
+
+      ScaleMM2.GThreadManager.FreeMem(r1);
+      ScaleMM2.GThreadManager.FreeMem(r2);
+      ScaleMM2.GThreadManager.FreeMem(r3);
+      *)
 
       {
       obj1 := TObject.Create;
@@ -192,7 +293,22 @@ begin
   FDuration_msec := Value;
 end;
 
+{ TTestRecord2 }
+
+procedure TTestRecord2.Init;
+begin
+  P1 := 111111111;
+  P2 := 222222222;
+  P3 := 333333333;
+  P4 := 444444444;
+  P5 := 555555555;
+  P6 := 666666666;
+  P7 := 777777777;
+  P8 := 888888888;
+end;
+
 initialization
+  test;
   LinkTest;
 
 end.

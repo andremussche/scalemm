@@ -12,6 +12,7 @@ object frmMain: TfrmMain
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
+  OnMouseDown = FormMouseDown
   DesignSize = (
     482
     447)
@@ -55,5 +56,30 @@ object frmMain: TfrmMain
     Caption = 'Button1'
     TabOrder = 3
     OnClick = Button1Click
+  end
+  object Button2: TButton
+    Left = 400
+    Top = 51
+    Width = 75
+    Height = 25
+    Caption = 'Button2'
+    TabOrder = 4
+  end
+  object Button3: TButton
+    Left = 232
+    Top = 20
+    Width = 75
+    Height = 25
+    Caption = 'Button3'
+    TabOrder = 5
+    OnClick = Button3Click
+  end
+  object Panel1: TPanel
+    Left = 128
+    Top = 42
+    Width = 89
+    Height = 41
+    Caption = 'Panel1'
+    TabOrder = 6
   end
 end

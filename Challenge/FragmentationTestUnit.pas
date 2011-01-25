@@ -22,6 +22,9 @@ type
 
 implementation
 
+uses
+  Windows;
+
 { TFragmentationTest }
 
 class function TFragmentationTest.GetBenchmarkDescription: string;
@@ -54,7 +57,8 @@ var
   i, n: integer;
 begin
   inherited;
-  
+
+  try
   for n := 1 to 3 do     // loop added to have more than 1000 MTicks for this benchmark
   begin
     SetLength(FStrings, 0);
@@ -67,6 +71,9 @@ begin
     end;
     {Update the peak address space usage}
     UpdateUsageStatistics;
+  end;
+  except
+    sleep(0);
   end;
 end;
 
