@@ -153,7 +153,7 @@ uses
   DoubleFPBenchmark2Unit, DoubleFPBenchmark3Unit, SingleFPBenchmark1Unit,
   MoveBenchmark1Unit, MoveBenchmark2Unit,
   AddressSpaceCreepBenchmarkLarge, LinkedListBenchmark, RenameMMForm,
-  BenchmarkUtilities, GeneralFunctions, SystemInfoUnit;
+  BenchmarkUtilities, GeneralFunctions, SystemInfoUnit, DateUtils;
 
 {$R *.dfm}
 
@@ -343,6 +343,7 @@ var
   LWeight: Double;
   CopiedExeFileName: string;
   CurrentFileName: string;
+  t: TDateTime;
 begin
   Caption := Format('%s %s - %s   %s', [Caption, GetFormattedVersion, GetMMName, GetCompilerName]);
   // ShowCPUInfo;
@@ -366,12 +367,14 @@ begin
 
   // make a copy of the application's Exe for later use
   //Skip copy if this is the MM specific exe.
+  {
   if Pos('_' + GetMMName, GetModuleName(HInstance)) = 0 then
   begin
     CopiedExeFileName := Format('%s_%s_%s.exe',
       [ChangeFileExt(Application.ExeName, ''), GetCompilerAbbr, GetMMName]);
     CopyFile(PChar(GetModuleName(HInstance)), PChar(CopiedExeFileName), False);
   end;
+  }
 
   {List the benchmarks}
   for i := 0 to high(Benchmarks) do
@@ -428,7 +431,12 @@ begin
   end;
 
   if ParamCount > 0 then
-    PostMessage(Handle, WM_POSTPROCESSING, 0, 0)
+    PostMessage(Handle, WM_POSTPROCESSING, 0, 0);
+
+  //t := Now;
+  //Halt(0);
+  //TStringThreadTest.CreateBenchmark.RunBenchmark;
+  //MessageDlg(format('%4.3f',[DateUtils.MilliSecondSpan(now,t)]), mtWarning, [mbOK], 0);
 end;
 
 procedure TfBenchmark.FormClose(Sender: TObject; var Action: TCloseAction);

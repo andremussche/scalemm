@@ -86,6 +86,9 @@ begin
     if FBlockSizes[LPointerNumber] > 0 then
     begin
       FPointers[LPointerNumber]^ := #1;
+      //check
+      ReallocMem(FPointers[LPointerNumber], FBlockSizes[LPointerNumber]);
+
       PAnsiChar(Integer(FPointers[LPointerNumber]) + FBlockSizes[LPointerNumber] - 1)^ := #2;
     end;
   end;
