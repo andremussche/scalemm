@@ -12,20 +12,7 @@ type
   PLargeBlockMemory      = ^TLargeBlockMemory;
   PLargeMemThreadManager = ^TLargeMemThreadManager;
 
-  //16 bytes
-  {
   TLargeHeader = record
-    //Block: Pointer;
-    Next : Pointer;  //size
-    AllMemIndex: NativeUInt;
-    Mask: NativeUInt;
-  end;
-  }
-  //16 bytes, single memory item
-  TLargeHeader = record
-    //linked items in one block
-    //NextMem    : PLargeHeader;
-    //PrevMem    : PLargeHeader;
     Size       : NativeUInt;
     /// must be last item of header (same negative offset from mem as TBaseMemHeader)
     OwnerBlock : PLargeBlockMemory;
@@ -34,9 +21,6 @@ type
   TLargeBlockMemory = object
     OwnerThread: PLargeMemThreadManager;
     Size       : NativeUInt;
-    //linked list of blocks of a thread
-    //NextBlock,
-    //PreviousBlock: PLargeBlockMemory;
   end;
 
   TLargeMemThreadManager = object
@@ -66,7 +50,8 @@ function TLargeMemThreadManager.FreeMem(aMemory: Pointer): NativeInt;
 begin
   Result  := 0;
   if not VirtualFree(aMemory, 0, MEM_RELEASE) then
-    Result := 1;
+    //Result := 1;
+    System.Error(reInvalidPtr);
 end;
 
 function TLargeMemThreadManager.FreeMemWithHeader(aMemory: Pointer): NativeInt;
@@ -81,7 +66,7 @@ function TLargeMemThreadManager.GetMem(aSize: NativeUInt): Pointer;
 begin
   Result := VirtualAlloc( nil,
                           aSize,
-                          MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+                          MEM_COMMIT, // {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},  medium blocks cannot use mem > 2gb
                           PAGE_READWRITE);
   if Result = nil then
     System.Error(reOutOfMemory);
@@ -100,15 +85,11 @@ begin
   pblock        := Self.GetMem(iAllocSize);
   pblock.OwnerThread   := @Self;
   pblock.Size          := iAllocSize;
-//  pblock.NextBlock     := nil;
-//  pblock.PreviousBlock := nil;
 
   //first item
   pheader            := PLargeHeader( NativeUInt(pblock) + SizeOf(TLargeBlockMemory));
   pheader.OwnerBlock := pblock;
   pheader.Size       := aSize + SizeOf(TLargeHeader);
-//  pheader.NextMem    := nil;
-//  pheader.PrevMem    := nil;
 
   Result := Pointer(NativeUInt(pheader) + SizeOf(TLargeHeader));
 end;
@@ -128,6 +109,8 @@ begin
   pblock     := PLargeBlockMemory(NativeUInt(aMemory) - SizeOf(TLargeBlockMemory) - SizeOf(TLargeHeader));
   iAllocSize := aSize + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader);
   iOldSize   := pblock.Size - SizeOf(TLargeBlockMemory) - SizeOf(TLargeHeader);
+
+  { TODO -oAM : try to increase current virtual mem using VirtualQuery}
 
   //upscale?
   if iAllocSize > pblock.Size then

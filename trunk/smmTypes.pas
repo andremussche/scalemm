@@ -51,6 +51,8 @@ type
     //extra stuff BEHIND
   end;
 
+  TScanDirection = (sdNone, sdPrevious, sdNext, sdBoth);
+
 implementation
 
 end.

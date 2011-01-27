@@ -137,9 +137,10 @@ begin
   if not aCondition then
   begin
     asm
-      int 3;
+      int 3;   // breakpoint
     end;
-    Sleep(0);  // no exception, just dummy for breakpoint
+    //Sleep(0);  // no exception, just dummy for breakpoint
+    Error(reInvalidOp);
   end;
 end;
 {$ENDIF}

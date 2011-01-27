@@ -124,6 +124,8 @@ type
     procedure Init;
     procedure Reset;
 
+    procedure CheckMem(aMemory: Pointer);
+
     function GetMem(aSize: NativeInt) : Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
     function FreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
     function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
@@ -133,6 +135,8 @@ type
   function Scale_AllocMem(aSize: Cardinal): Pointer;
   function Scale_FreeMem(aMemory: Pointer): Integer;
   function Scale_ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
+
+  procedure Scale_CheckMem(aMemory: Pointer);
 
   function GetThreadMemManager: PThreadMemManager;
 
@@ -333,6 +337,23 @@ begin
   *)
 end;
 
+procedure TThreadMemManager.CheckMem(aMemory: Pointer);
+var
+  pm: PBaseMemHeader;
+  ot: PBaseThreadMemory;
+begin
+  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+  ot := pm.OwnerBlock.OwnerThread;
+
+  if ot = @FSmallMemManager then
+    { TODO -oAM : check if valid memory (small)}
+  else if ot = @FMediumMemManager then
+    FMediumMemManager.CheckMem(aMemory)
+  else if ot = @FLargeMemManager then
+    { TODO -oAM : check if valid memory (large)}
+  else
+end;
+
 function TThreadMemManager.FreeMem(aMemory: Pointer): NativeInt;
 var
   pm: PBaseMemHeader;
@@ -487,6 +508,11 @@ end;
   end;
   {$ENDIF}
 {$ENDIF}
+
+procedure Scale_CheckMem(aMemory: Pointer);
+begin
+  GetThreadMemManager.CheckMem(aMemory);
+end;
 
 {$ifdef USEMEMMANAGEREX}
 function Scale_RegisterMemoryLeak(P: Pointer): Boolean;

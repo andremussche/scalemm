@@ -182,8 +182,8 @@ end;
 
 procedure TSmallMemBlock.FreeBlockMemory;
 begin
-  if OwnerList.FFirstMemBlock = @Self then
-    Exit; //keep one block
+  //if OwnerList.FFirstMemBlock = @Self then
+  //  Exit; //keep one block
 
   // remove ourselves from linked list
   if FPreviousMemBlock <> nil then
