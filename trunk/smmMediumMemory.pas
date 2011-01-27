@@ -261,6 +261,10 @@ end;
 
 procedure TMediumThreadManager.FreeBlock(aBlock: PMediumBlockMemory);
 begin
+  {$IFDEF SCALEMM_DEBUG}
+  aBlock.CheckMem;
+  {$ENDIF}
+
   //remove from linked list
   if FFirstBlock = aBlock then
   begin
@@ -291,7 +295,7 @@ begin
   Assert(header.Magic1 = 123456789); //must be in use!
   {$ENDIF}
   {$IFDEF SCALEMM_DEBUG}
-  header.CheckMem;
+  header.CheckMem(sdNone);
   {$ENDIF}
 
   PutMemToFree(header, header.Size); // NativeUInt(header.NextMem) - NativeUInt(header))
@@ -364,10 +368,12 @@ begin
   {$ENDIF}
   {$IFDEF SCALEMM_MAGICTEST}
   Assert(pheader.Magic1 = 0);  //not in use!
-  pheader.Magic1 := 123456789; //mark in use
   {$ENDIF}
   {$IFDEF SCALEMM_DEBUG}
-  pheader.CheckMem(sdBoth);
+  pheader.CheckMem(sdNone);
+  {$ENDIF}
+  {$IFDEF SCALEMM_MAGICTEST}
+  pheader.Magic1 := 123456789; //mark in use
   {$ENDIF}
 
   //remainder
@@ -470,8 +476,7 @@ begin
   Assert(pmediumheader(pheader).Magic1 = 123456789); //must be in use!
   {$ENDIF}
   {$ifdef SCALEMM_DEBUG}
-  pheader.CheckMem;
-  Self.CheckMem;
+  pheader.CheckMem(sdNone);
   except sleep(0); end;
   {$ENDIF}
 end;
@@ -638,6 +643,10 @@ begin
     //we keep one block in cache
     if FFreeMem[iRemainder] <> nil then
     begin
+      //set higest bit (mark as free)
+      with pheaderremainder^ do
+        NativeInt({pheaderremainder.}NextMem) := NativeInt({pheaderremainder.}NextMem) or (1 shl 31);
+
       FreeBlock(pheaderremainder.OwnerBlock);
       Exit;
     end;
@@ -670,8 +679,8 @@ begin
   end;
 
   {$ifdef SCALEMM_DEBUG}
-  //pheaderremainder.CheckMem(sdBoth);
-  pheaderremainder.OwnerBlock.CheckMem;   //check all because of SCALEMM_FILLFREEMEM
+  pheaderremainder.CheckMem(sdNone);
+  //pheaderremainder.OwnerBlock.CheckMem;   //check all because of SCALEMM_FILLFREEMEM
   except sleep(0); end;
   {$ENDIF}
 end;
@@ -694,7 +703,7 @@ begin
   Assert(header.Magic1 = 123456789); //must be in use!
   {$ENDIF}
   {$ifdef SCALEMM_DEBUG}
-  header.CheckMem;
+  header.CheckMem(sdNone);
   {$ENDIF}
 
   //same?
@@ -738,7 +747,7 @@ begin
       Assert(header.NextMem.Magic1 = 0);    //must be free
       {$ENDIF}
       {$ifdef SCALEMM_DEBUG}
-      header.CheckMem;
+      header.CheckMem(sdNone);
       {$ENDIF}
     end;
   end
@@ -832,8 +841,7 @@ begin
           Assert(header.NextMem.Magic1 = 0);    //must be free
         {$ENDIF}
         {$ifdef SCALEMM_DEBUG}
-        header.CheckMem;
-        Self.CheckMem;
+        header.CheckMem(sdNone);
         {$ENDIF}
       end
       else
