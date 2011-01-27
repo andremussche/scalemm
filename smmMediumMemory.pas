@@ -192,7 +192,7 @@ begin
   FFirstBlock                 := pblock;
   pblock.PreviousBlock        := nil;
 
-  {$IFDEF SCALEMM_MAGICTEST}
+  {$IFDEF SCALEMM_DEBUG}
   pblock.CheckMem;
   CheckMem;
   {$ENDIF}
@@ -289,6 +289,8 @@ begin
   header  := PMediumHeader(NativeUInt(aMemory) - SizeOf(TMediumHeader));
   {$IFDEF SCALEMM_MAGICTEST}
   Assert(header.Magic1 = 123456789); //must be in use!
+  {$ENDIF}
+  {$IFDEF SCALEMM_DEBUG}
   header.CheckMem;
   {$ENDIF}
 
@@ -362,8 +364,10 @@ begin
   {$ENDIF}
   {$IFDEF SCALEMM_MAGICTEST}
   Assert(pheader.Magic1 = 0);  //not in use!
-  pheader.CheckMem(sdBoth);
   pheader.Magic1 := 123456789; //mark in use
+  {$ENDIF}
+  {$IFDEF SCALEMM_DEBUG}
+  pheader.CheckMem(sdBoth);
   {$ENDIF}
 
   //remainder
@@ -464,10 +468,10 @@ begin
 
   {$ifdef SCALEMM_MAGICTEST}
   Assert(pmediumheader(pheader).Magic1 = 123456789); //must be in use!
-  pheader.CheckMem;
-  Self.CheckMem;
   {$ENDIF}
   {$ifdef SCALEMM_DEBUG}
+  pheader.CheckMem;
+  Self.CheckMem;
   except sleep(0); end;
   {$ENDIF}
 end;
@@ -665,12 +669,11 @@ begin
     {pheaderremainder.}PrevFreeItem  := nil; //we are the first
   end;
 
-  {$IFDEF SCALEMM_MAGICTEST}
+  {$ifdef SCALEMM_DEBUG}
   //pheaderremainder.CheckMem(sdBoth);
   pheaderremainder.OwnerBlock.CheckMem;   //check all because of SCALEMM_FILLFREEMEM
+  except sleep(0); end;
   {$ENDIF}
-
-  {$ifdef SCALEMM_DEBUG} except sleep(0); end; {$ENDIF}
 end;
 
 function TMediumThreadManager.ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer;
@@ -689,6 +692,8 @@ begin
   currentsize := header.Size;
   {$IFDEF SCALEMM_MAGICTEST}
   Assert(header.Magic1 = 123456789); //must be in use!
+  {$ENDIF}
+  {$ifdef SCALEMM_DEBUG}
   header.CheckMem;
   {$ENDIF}
 
@@ -731,6 +736,8 @@ begin
       {$IFDEF SCALEMM_MAGICTEST}
       Assert(header.Magic1 = 123456789); //must be in use!
       Assert(header.NextMem.Magic1 = 0);    //must be free
+      {$ENDIF}
+      {$ifdef SCALEMM_DEBUG}
       header.CheckMem;
       {$ENDIF}
     end;
@@ -823,6 +830,8 @@ begin
         Assert(header.Magic1 = 123456789); //must be in use!
         if remaindersize > 0 then
           Assert(header.NextMem.Magic1 = 0);    //must be free
+        {$ENDIF}
+        {$ifdef SCALEMM_DEBUG}
         header.CheckMem;
         Self.CheckMem;
         {$ENDIF}
