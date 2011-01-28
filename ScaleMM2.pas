@@ -88,6 +88,7 @@ interface
 
 uses
   smmStatistics, smmLogging,
+  smmTypes,
   smmSmallMemory, smmMediumMemory, smmLargeMemory;
 
 type
@@ -144,7 +145,7 @@ implementation
 
 // Windows.pas unit dependency should be not used -> seperate file
 uses
-  smmFunctions, smmGlobal, smmTypes;
+  smmFunctions, smmGlobal;
 
 /// internal GetThreadMemManager function is 2% faster with an injected offset
 {$DEFINE SCALE_INJECT_OFFSET}

@@ -3,7 +3,7 @@ unit smmGlobal;
 interface
 
 uses
-  ScaleMM2,
+  ScaleMM2, smmTypes,
   smmSmallMemory, smmMediumMemory;
 
 type

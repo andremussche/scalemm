@@ -8,7 +8,7 @@
   {$OVERFLOWCHECKS ON}
   {$RANGECHECKS    ON}
   {$define SCALEMM_MAGICTEST}
-  {$define SCALEMM_FILLFREEMEM}
+  {.$define SCALEMM_FILLFREEMEM}
   {.$define SCALEMM_OUTPUTSTRING}
 {$ELSE}      // default "release" mode, much faster!
   {$OPTIMIZATION   ON}         // 235% faster!
