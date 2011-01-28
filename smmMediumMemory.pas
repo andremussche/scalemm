@@ -123,6 +123,7 @@ begin
   pblock  := GlobalManager.GetMediumBlockMemory;
   if pblock <> nil then
   repeat
+    pblock.OwnerThread := @Self;
     pheader := ScanBlockForFreeItems(pblock, aMinResultSize);
     //no mem of minimum size?
     if pheader = nil then
@@ -151,6 +152,7 @@ begin
     //alloc
     pblock := PThreadMemManager(Self.OwnerManager).FLargeMemManager.GetMem(iAllocSize);
     pblock.Size        := iAllocSize;
+    pblock.OwnerThread := @Self;
 
     //first item
     pheader            := PMediumHeaderExt( NativeUInt(pblock) + SizeOf(TMediumBlockMemory));
@@ -182,8 +184,6 @@ begin
     FFreeMem[16] := pheader;
   end;
   assert(pheader <> nil);
-
-  pblock.OwnerThread := @Self;
 
   //linked list of thread blocks (replace first)
   if FFirstBlock <> nil then
