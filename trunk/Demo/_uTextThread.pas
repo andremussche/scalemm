@@ -40,7 +40,8 @@ type
 implementation
 
 uses
-  DateUtils, AnsiStrings;
+  DateUtils;
+  //AnsiStrings;
 
 { TDummyStringThread }
 
