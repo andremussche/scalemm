@@ -86,11 +86,12 @@ begin
   end;
   Exit;
 
-  WindowPlacement.Length := SizeOf(WindowPlacement);
+  {  WindowPlacement.Length := SizeOf(WindowPlacement);
   GetWindowPlacement(Button3.Handle, WindowPlacement);
   WindowPlacement.rcNormalPosition := Button3.BoundsRect;
   InflateRect(WindowPlacement.rcNormalPosition, 10, 10);
   SetWindowPlacement(Button3.Handle, WindowPlacement);
+  }
 end;
 
 procedure TfrmMain.ExecuteTest;
@@ -118,7 +119,11 @@ begin
     for i := 0 to iCount-1 do
     begin
       t := l.Items[i];
+      {$if CompilerVersion < 19}
+      t.Resume;
+      {$else}
       t.Start;
+      {$ifend}
     end;
 
     //wait...
@@ -263,11 +268,13 @@ procedure TfrmMain.MyButton3Click(Sender: TObject);
 var
   WindowPlacement: TWindowPlacement;
 begin
+  {
   WindowPlacement.Length := SizeOf(WindowPlacement);
   GetWindowPlacement( TMyButton(Sender).Handle, WindowPlacement);
   WindowPlacement.rcNormalPosition := TMyButton(Sender).BoundsRect;
   InflateRect(WindowPlacement.rcNormalPosition, 10, 10);
   SetWindowPlacement( TMyButton(Sender).Handle, WindowPlacement);
+  }
 end;
 
 { TMyButton }
