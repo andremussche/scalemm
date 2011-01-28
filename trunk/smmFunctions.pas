@@ -2,6 +2,9 @@ unit smmFunctions;
 
 interface
 
+uses
+  smmTypes;
+
 type
   DWORD = LongWord;
   BOOL  = LongBool;
@@ -140,7 +143,7 @@ begin
       int 3;   // breakpoint
     end;
     //Sleep(0);  // no exception, just dummy for breakpoint
-    Error(reInvalidOp);
+    Error(reInvalidPtr);
   end;
 end;
 {$ENDIF}

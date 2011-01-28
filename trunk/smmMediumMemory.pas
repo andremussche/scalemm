@@ -193,7 +193,7 @@ begin
   pblock.PreviousBlock        := nil;
 
   {$IFDEF SCALEMM_DEBUG}
-  pblock.CheckMem;
+  //pblock.CheckMem;
   CheckMem;
   {$ENDIF}
 
@@ -242,6 +242,8 @@ procedure TMediumThreadManager.CheckMem(aMemory: Pointer = nil);
 var
   block: PMediumBlockMemory;
   header: PMediumHeader;
+  headerext: PMediumHeaderExt;
+  i: Integer;
 begin
   if aMemory <> nil then
   begin
@@ -255,6 +257,28 @@ begin
     begin
       block.CheckMem;
       block := block.NextBlock;
+    end;
+
+    //check free mem
+    for i := Low(FFreeMem) to High(FFreeMem) do
+    begin
+      headerext := FFreeMem[i];
+
+      //check mask
+      if headerext = nil then
+        Assert(FFreeMask and (1 shl i) = 0)
+      else
+        Assert(FFreeMask and (1 shl i) <> 0);
+
+      //check linked free items
+      while headerext <> nil do
+      begin
+        {$IFDEF SCALEMM_MAGICTEST}
+        Assert(headerext.Magic1 = 0); //must be free
+        {$ENDIF}
+        headerext.CheckMem(sdNone);
+        headerext := headerext.NextFreeItem;
+      end;
     end;
   end;
 end;
@@ -476,7 +500,7 @@ begin
   Assert(pmediumheader(pheader).Magic1 = 123456789); //must be in use!
   {$ENDIF}
   {$ifdef SCALEMM_DEBUG}
-  pheader.CheckMem(sdNone);
+  PMediumHeader(pheader).CheckMem(sdNone);
   except sleep(0); end;
   {$ENDIF}
 end;
@@ -991,6 +1015,14 @@ begin
 
   //Assert(BlockMask >= 0);
   Assert( {(ArrayPosition >= 0) and} (ArrayPosition <= 16) );
+  Assert( OwnerBlock.OwnerThread.FFreeMem[ArrayPosition] <> nil );
+  Assert( OwnerBlock.OwnerThread.FFreeMask and (1 shl ArrayPosition) <> 0 );
+
+  //check linked free items
+  if Self.NextFreeItem <> nil then
+    Assert( Self.NextFreeItem.PrevFreeItem = @Self );
+  if Self.PrevFreeItem <> nil then
+    Assert( Self.PrevFreeItem.NextFreeItem = @Self );
 end;
 
 { TMediumBlockMemory }
