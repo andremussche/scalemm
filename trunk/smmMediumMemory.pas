@@ -107,7 +107,7 @@ const
 implementation
 
 uses
-  smmGlobal, ScaleMM2, smmFunctions;
+  smmGlobal, ScaleMM2, smmFunctions, smmSmallMemory;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -402,7 +402,9 @@ begin
 
   //remainder
   remaindersize := pheader.Size - allocsize;
-  if remaindersize > SizeOf(TMediumHeaderExt) then
+  //if remaindersize > SizeOf(TMediumHeaderExt) then
+  //less then "small" mem? then do not free remaining (will never be used)
+  if remaindersize > C_MAX_SMALLMEM_SIZE then
   begin
     iWordRemainderSize := remaindersize shr 4;     //div 16 so 1mb fits in 16bit
     iRemainder         := BitScanLast(iWordRemainderSize);  //get highest bit
@@ -741,14 +743,26 @@ begin
   begin
     newsize       := newsize + (aSize div 16);    //alloc some extra mem for small grow
     newsize       := (newsize + 8) shr 3 shl 3;  //8byte aligned: add 8 and remove lowest bits
-    if newsize < SizeOf(TMediumHeaderExt) then
-      newsize := SizeOf(TMediumHeaderExt);
+    //round if downsize a "medium" max size memory
     if newsize > C_MAX_MEDIUMMEM_SIZE then
       newsize := C_MAX_MEDIUMMEM_SIZE;
+    //new size is "small"? then alloc small mem
+    if newsize < C_MAX_SMALLMEM_SIZE then
+    begin
+      //alloc new mem ("small") and copy data
+      Result := PThreadMemManager(Self.OwnerManager).GetMem(newsize);
+      Move(aMemory^, Result^, newsize); // copy (use smaller new size)
+      Self.FreeMem(aMemory); // free old mem
+      Exit;
+    end;
+    //if newsize < SizeOf(TMediumHeaderExt) then
+    //  newsize := SizeOf(TMediumHeaderExt);
 
     remaindersize := NativeInt(currentsize) - NativeInt(newsize);
     //less than 32 bytes left after resize? (can be negative!)
-    if (remaindersize < SizeOf(TMediumHeaderExt)) {or less than div 16 change?} then
+    //if (remaindersize < SizeOf(TMediumHeaderExt)) {or less than div 16 change?} then
+    //less then "small" mem? then do not free remaining (will never be used)
+    if remaindersize < C_MAX_SMALLMEM_SIZE then
     begin
       //do nothing
       Result := aMemory;
@@ -790,8 +804,9 @@ begin
       //todo: backwards scanning too?
       nextfree := PMediumHeaderExt(header.NextMem);
     end
+    //too big, get new "large" mem
     else
-      nextfree := nil; //too big, get new large mem
+      nextfree := nil;
 
     //can we use some mem from next free block?
     if (nextfree <> nil) and
@@ -844,7 +859,9 @@ begin
 
         remaindersize := nextsize - newsize;
         //too small remainder? (can be negative!)
-        if remaindersize < SizeOf(TMediumHeaderExt) then
+        //if remaindersize < SizeOf(TMediumHeaderExt) then
+        //less then "small" mem? then do not free remaining (will never be used)
+        if remaindersize < C_MAX_SMALLMEM_SIZE then
         begin
           newsize := NativeInt(newsize) + remaindersize;
           remaindersize := 0;
