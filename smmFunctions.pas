@@ -8,12 +8,30 @@ uses
 type
   DWORD = LongWord;
   BOOL  = LongBool;
+
+  PMemoryBasicInformation = ^TMemoryBasicInformation;
+  _MEMORY_BASIC_INFORMATION = record
+    BaseAddress : Pointer;
+    AllocationBase : Pointer;
+    AllocationProtect : DWORD;
+    RegionSize : DWORD;
+    State : DWORD;
+    Protect : DWORD;
+    Type_9 : DWORD;
+  end;
+  TMemoryBasicInformation = _MEMORY_BASIC_INFORMATION;
+
 const
-  PAGE_EXECUTE_READWRITE = $40;
   kernel32  = 'kernel32.dll';
-  MEM_COMMIT = $1000;
+  PAGE_EXECUTE_READWRITE = $40;
   PAGE_READWRITE = 4;
-  MEM_RELEASE = $8000;
+  MEM_COMMIT     = $1000;
+  MEM_RESERVE    = $2000;
+  MEM_DECOMMIT   = $4000;
+  MEM_RELEASE    = $8000;
+  MEM_FREE       = $10000;
+  MEM_RESET      = $80000;
+  MEM_TOP_DOWN   = $100000;
 
   function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
   function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
@@ -29,6 +47,7 @@ const
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
   function  VirtualAlloc(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
   function  VirtualFree(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';
+  function  VirtualQuery(lpAddress: Pointer; var lpBuffer: TMemoryBasicInformation; dwLength: DWORD): DWORD; stdcall; external kernel32 name 'VirtualQuery';
 
   procedure OutputDebugString(lpOutputString: PWideChar); stdcall; external kernel32 name 'OutputDebugStringW';
   function  IntToStr(Value: Integer): string;overload;
