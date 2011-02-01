@@ -31,6 +31,9 @@ type
     NextMem    : PMediumHeader;
     PrevMem    : PMediumHeader;
     Size       : NativeUInt;
+
+    { TODO :  type: free, small}
+
     /// must be last item of header (same negative offset from mem as TBaseMemHeader)
     OwnerBlock : PMediumBlockMemory;
 
@@ -306,8 +309,8 @@ begin
   aBlock.NextBlock     := nil;
   aBlock.PreviousBlock := nil;
 
-  PThreadMemManager(Self.OwnerManager).FLargeMemManager.FreeMem(aBlock);
-  //GlobalManager.FreeBlockMemory(aBlock);
+  //PThreadMemManager(Self.OwnerManager).FLargeMemManager.FreeMem(aBlock);
+  GlobalManager.FreeMediumBlockMemory(aBlock);
 end;
 
 function TMediumThreadManager.FreeMem(aMemory: Pointer): NativeInt;
@@ -794,7 +797,8 @@ begin
   begin
     if newsize <= C_MAX_MEDIUMMEM_SIZE then
     begin
-      newsize  := newsize + (aSize div 16);  //alloc some extra mem for small grow
+      //newsize  := newsize + (aSize div 16);   //alloc some extra mem for small grow
+      newsize  := newsize + (aSize div 8);   //alloc some extra mem for small grow
       newsize  := (newsize + 8) shr 3 shl 3;  //8byte aligned: add 8 and remove lowest bits
       if newsize < SizeOf(TMediumHeaderExt) then
         newsize := SizeOf(TMediumHeaderExt);

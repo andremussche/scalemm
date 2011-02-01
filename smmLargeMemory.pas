@@ -49,6 +49,7 @@ uses
 function TLargeMemThreadManager.FreeMem(aMemory: Pointer): NativeInt;
 begin
   Result  := 0;
+
   if not VirtualFree(aMemory, 0, MEM_RELEASE) then
     //Result := 1;
     System.Error(reInvalidPtr);
