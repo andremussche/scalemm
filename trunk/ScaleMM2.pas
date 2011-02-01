@@ -274,6 +274,7 @@ begin
 
   pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
   ot := pm.OwnerBlock.OwnerThread;
+//  ot := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock.OwnerThread;
 
   if ot = @FSmallMemManager then
     Result := FSmallMemManager.ReallocMem(aMemory, aSize)

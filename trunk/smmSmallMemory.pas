@@ -40,6 +40,9 @@ type
     {$IFDEF Align8Bytes}
     Size: NativeUInt;
     {$ENDIF}
+
+    { TODO :  type: free, small}
+
     /// the memory block handler which owns this memory block
     /// must be last item of header (same negative offset from mem as TBaseMemHeader)
     OwnerBlock : PSmallMemBlock;
@@ -158,9 +161,9 @@ type
     procedure MoveAllMemToOtherManager(aOtherManager: PSmallMemThreadManager);
     function  GetBlockListOfSize(aItemSize: NativeUInt): PSmallMemBlockList;
 
-    function GetMem(aSize: NativeUInt) : Pointer;
-    function FreeMem(aMemory: Pointer): NativeInt;
-    function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer;
+    function GetMem(aSize: NativeUInt) : Pointer;                      {$ifdef HASINLINE}inline;{$ENDIF}
+    function FreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
+    function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
   end;
 
 implementation
@@ -457,14 +460,14 @@ var
   iNewSize: NativeUInt;
 begin
   bm := nil;
-  iNewSize := aSize + SizeOf(TSmallMemHeader);
+  iNewSize := aSize + (SizeOf(TSmallMemHeader) - 1);
 
-  if iNewSize <= (length(FMiniMemoryBlocks)*32) then
+  if iNewSize <= ((length(FMiniMemoryBlocks)*32)-1) then
     // blocks of 32: 32, 64, 96, 128, 160, 192, 224
-    bm := @FMiniMemoryBlocks[(iNewSize-1) shr 5]
-  else if iNewSize <= (length(FSmallMemoryBlocks)*256) then
+    bm := @FMiniMemoryBlocks[(iNewSize) shr 5]
+  else if iNewSize <= ((length(FSmallMemoryBlocks)*256)-1) then
     // blocks of 256: 256,512,768,1024,1280,1536,1792 bytes
-    bm := @FSmallMemoryBlocks[(iNewSize-1) shr 8]
+    bm := @FSmallMemoryBlocks[(iNewSize) shr 8]
   else
     Error(reInvalidPtr);
 
@@ -589,6 +592,10 @@ begin
     __ProcessBlockMem( @FSmallMemoryBlocks[i],  @aOtherManager.FSmallMemoryBlocks[i]);
 end;
 
+const
+  SmallBlockDownsizeCheckAdder = 64;
+  SmallBlockUpsizeAdder = 32;
+
 function TSmallMemThreadManager.ReallocMem(aMemory: Pointer;
   aSize: NativeUInt): Pointer;
 var
@@ -596,62 +603,38 @@ var
   {$IFDEF SCALEMM_MAGICTEST}
   p: Pointer;
   {$ENDIF}
-  //iNewSize: NativeUInt;
 begin
   pb := PSmallMemHeader(NativeUInt(aMemory) - SizeOf(TSmallMemHeader)).OwnerBlock;
   {$IFDEF SCALEMM_MAGICTEST}
+  Assert(pb.OwnerList <> nil);
   p  := Pointer(NativeUInt(aMemory) - SizeOf(TSmallMemHeader));
   PSmallMemHeader(p).SCALEMM_MAGICTEST;
   {$ENDIF}
   //iNewSize := aSize + SizeOf(TSmallMemHeader);
 
-//    if (pm <> nil) then
   with pb^ do
   begin
-    Assert(pb.OwnerList <> nil);
-
     //downscaling, new size smaller than current size
     if (NativeUInt(aSize) <= OwnerList.FItemSize) then
     begin
-      if NativeUInt(aSize) > (OwnerList.FItemSize shr 2) then
+      if NativeUInt(aSize + SmallBlockDownsizeCheckAdder) >= (OwnerList.FItemSize shr 2) then
       begin
         Result := aMemory; // no resize needed up to 1/4 the current item size
-
-        {$IFDEF SCALEMM_OUTPUTSTRING}
-        OutputDebugString( PChar('small 1 realloc ' + IntToStr(aMemory) + ' -> ' + IntToStr(Result) +
-                                   ' (' + IntToStr(OwnerList.FItemSize) + ' -> ' + IntToStr(aSize) + ')' ));
-        {$ENDIF}
       end
       else
       // too much downscaling: use move
       begin
         Result := Self.GetMem(aSize); // new mem
-
-        {$IFDEF SCALEMM_OUTPUTSTRING}
-        OutputDebugString( PChar('small 2 realloc ' + IntToStr(aMemory) + ' -> ' + IntToStr(Result) +
-                                 ' (' + IntToStr(OwnerList.FItemSize) + ' -> ' + IntToStr(aSize) + ')' ));
-        {$ENDIF}
-        if aMemory <> Result then
-        begin
-          Move(aMemory^, Result^, aSize); // copy (use smaller new size)
-          Self.FreeMem(aMemory); // free old mem
-        end;
+        Move(aMemory^, Result^, aSize); // copy (use smaller new size)
+        Self.FreeMem(aMemory); // free old mem
       end;
     end
     else
     //upscaling, new size bigger than current size
     begin
-      Result := PThreadMemManager(Self.OwnerManager).GetMem(aSize); // new mem
-
-      {$IFDEF SCALEMM_OUTPUTSTRING}
-      OutputDebugString( PChar('small 3 realloc ' + IntToStr(aMemory) + ' -> ' + IntToStr(Result) +
-                                 ' (' + IntToStr(OwnerList.FItemSize) + ' -> ' + IntToStr(aSize) + ')' ));
-      {$ENDIF}
-      if aMemory <> Result then
-      begin
-        Move(aMemory^, Result^, OwnerList.FItemSize); // copy (use smaller old size)
-        Self.FreeMem(aMemory); // free old mem
-      end;
+      Result := PThreadMemManager(Self.OwnerManager).GetMem(aSize + SmallBlockUpsizeAdder); // new mem
+      Move(aMemory^, Result^, OwnerList.FItemSize); // copy (use smaller old size)
+      Self.FreeMem(aMemory); // free old mem
     end;
   end;
 
