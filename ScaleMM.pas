@@ -12,7 +12,7 @@ Description:
 
 Homepage:
   http://code.google.com/p/scalemm
-  by André Mussche (andre.mussche@gmail.com)
+  by AndrÃ© Mussche (andre.mussche@gmail.com)
 
 Usage:
  - Delphi 6 up to Delphi 2005 with FastMM4:
@@ -46,7 +46,7 @@ License:
 
   The Original Code is ScaleMM - Fast scaling memory manager for Delphi.
 
-  The Initial Developer of the Original Code is André Mussche.
+  The Initial Developer of the Original Code is AndrÃ© Mussche.
 
   Portions created by the Initial Developer are Copyright (C) 2010
   the Initial Developer. All Rights Reserved.
@@ -137,8 +137,9 @@ const
 {.$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
 {$DEFINE USEMEDIUM}      // handling of 2048..16384 bytes blocks
 
-{$if CompilerVersion < 19}
+{$if CompilerVersion <= 20}
   type // from Delphi 6 up to Delphi 2007
+       // also for 2009: http://code.google.com/p/scalemm/issues/detail?id=1
     NativeUInt = Cardinal;
     NativeInt  = Integer;
 {$ifend}
