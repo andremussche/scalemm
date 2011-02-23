@@ -231,7 +231,7 @@ begin
   if aMemory <> nil then
   begin
     header := PMediumHeader(NativeUInt(aMemory) - SizeOf(TMediumHeader));
-    header.CheckMem(sdBoth);
+    header.CheckMem(sdNone{sdBoth});
   end
   else  //all
   begin
