@@ -11,16 +11,25 @@ type
   PLargeHeader           = ^TLargeHeader;
   PLargeBlockMemory      = ^TLargeBlockMemory;
   PLargeMemThreadManager = ^TLargeMemThreadManager;
+  PLargeThreadManagerOffset = ^TLargeThreadManagerOffset;
 
   TLargeHeader = record
     Size       : NativeUInt;
     /// must be last item of header (same negative offset from mem as TBaseMemHeader)
-    OwnerBlock : PLargeBlockMemory;
+    //OwnerBlock : PLargeBlockMemory;
+    OwnerBlock : PLargeThreadManagerOffset;
   end;
 
   TLargeBlockMemory = object
     OwnerThread: PLargeMemThreadManager;
     Size       : NativeUInt;
+  end;
+
+  TLargeThreadManagerOffset = packed record
+  public
+    //SizeType    : TSizeType;
+    Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium block
+    OwnerManager: PBaseThreadManager;
   end;
 
   TLargeMemThreadManager = object
@@ -34,6 +43,8 @@ type
     function FreeMem(aMemory: Pointer): NativeInt;
     //function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer;
 
+    procedure CheckMem(aMemory: Pointer = nil);
+
     function GetMemWithHeader(aSize: NativeUInt) : Pointer;
     function FreeMemWithHeader(aMemory: Pointer): NativeInt;
     function ReallocMemWithHeader(aMemory: Pointer; aSize: NativeUInt): Pointer;
@@ -45,6 +56,11 @@ uses
   smmFunctions, ScaleMM2;
 
 { TLargeMemThreadManager }
+
+procedure TLargeMemThreadManager.CheckMem(aMemory: Pointer);
+begin
+  { TODO -oAM : check if valid memory (large)}
+end;
 
 function TLargeMemThreadManager.FreeMem(aMemory: Pointer): NativeInt;
 begin
@@ -85,6 +101,7 @@ var
   iAllocSize: NativeUInt;
   pheader: PLargeHeader;
   pblock : PLargeBlockMemory;
+  pthreadoffset: PLargeThreadManagerOffset;
 begin
   iAllocSize    := aSize + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader);
   iAllocSize    := (iAllocSize + LargeBlockGranularity) and -LargeBlockGranularity; //round to 64k
@@ -95,7 +112,9 @@ begin
 
   //first item
   pheader            := PLargeHeader( NativeUInt(pblock) + SizeOf(TLargeBlockMemory));
-  pheader.OwnerBlock := pblock;
+  pthreadoffset      := PLargeThreadManagerOffset(NativeUInt(Self.OwnerManager) or 2);
+  //pheader.OwnerBlock := pblock;
+  pheader.OwnerBlock := pthreadoffset;
   pheader.Size       := aSize + SizeOf(TLargeHeader);
 
   Result := Pointer(NativeUInt(pheader) + SizeOf(TLargeHeader));

@@ -50,15 +50,18 @@ const
   function  VirtualQuery(lpAddress: Pointer; var lpBuffer: TMemoryBasicInformation; dwLength: DWORD): DWORD; stdcall; external kernel32 name 'VirtualQuery';
 
   procedure OutputDebugString(lpOutputString: PWideChar); stdcall; external kernel32 name 'OutputDebugStringW';
-  function  IntToStr(Value: Integer): string;overload;
-  function  IntToStr(Value: Pointer): string;overload;
+//  function  IntToStr(Value: Integer): string;overload;
+//  function  IntToStr(Value: Pointer): string;overload;
 
   function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 
   function  CAS32(const oldValue: pointer; newValue: pointer; var destination): boolean;overload;
   function  CAS32(const aOldValue: NativeUInt; aNewValue: NativeUInt; var aDestination): boolean;overload;
-  procedure InterlockedIncrement(var Value: Byte);
-  procedure InterlockedDecrement(var Value: Byte);
+  procedure InterlockedIncrement(var Value: Byte);overload;
+  procedure InterlockedDecrement(var Value: Byte);overload;
+  procedure InterlockedIncrement(var Value: Integer);overload;
+  procedure InterlockedDecrement(var Value: Integer);overload;
+  function  InterlockedAdd(var Addend: Integer): Integer;
   function  BitScanLast(aValue: Word): NativeUInt;
   function  BitScanFirst(aValue: NativeInt): NativeUInt;
 
@@ -75,8 +78,8 @@ const
 
 implementation
 
-uses
-  SysUtils;
+//uses
+//  SysUtils;
 
 function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 begin
@@ -87,6 +90,7 @@ begin
       Scale_VirtualProtect(Code, Size, Permission, Longword(Result));
 end;
 
+{
 function  IntToStr(Value: Integer): string;
 begin
   Result := SysUtils.IntToHex(Value, 8);
@@ -96,7 +100,7 @@ function  IntToStr(Value: Pointer): string;overload;
 begin
   Result := SysUtils.IntToHex(Integer(Value), 8);
 end;
-
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //Assembly functions
@@ -134,6 +138,26 @@ asm
   lock dec byte [Value]
 end;
 
+procedure InterlockedIncrement(var Value: Integer);
+asm
+  lock inc [Value]
+end;
+
+function InterlockedAdd(var Addend: Integer): Integer;
+{ @Addend: EAX }
+{ Result:  EAX }
+asm
+      MOV  EDX, EAX
+      MOV  EAX, 1
+ LOCK XADD [EDX], EAX
+      INC  EAX
+end;
+
+procedure InterlockedDecrement(var Value: Integer);
+asm
+  lock dec [Value]
+end;
+
 //find first bit (0..31)
 //http://www.arl.wustl.edu/~lockwood/class/cs306/books/artofasm/Chapter_6/CH06-4.html
 function BitScanFirst(aValue: NativeInt): NativeUInt;
@@ -162,7 +186,8 @@ begin
       int 3;   // breakpoint
     end;
     //Sleep(0);  // no exception, just dummy for breakpoint
-    Error(reInvalidPtr);
+    if DebugHook = 0 then
+      Error(reInvalidPtr);
   end;
 end;
 {$ENDIF}

@@ -81,7 +81,13 @@ Change log:
  Version 2.0a (25 Januari 2011):
   - added medium memory handling (<1Mb), large memory is direct done via VirtualAlloc etc
   - splitted in seperate units to make developing/testing easier
-  = empty units for stats and logging (will be implemented later)
+  - empty units for stats and logging (will be implemented later)
+ Version 2.0b (23 Februari 2011):
+  - realloc optimizations
+  - lots of internal CheckMem's (for validation)
+  - interthread memory is now handled (alloc in thread 1, free in thread 2)
+  - small (difficult to find) bugs fixed and other optimalizations
+  - check for 8byte alignment (needed for OmniThreadLibrary etc)
 }
 
 interface
@@ -93,16 +99,34 @@ uses
 
 type
   PThreadMemManager = ^TThreadMemManager;
+  PInterThreadMem   = ^TInterThreadMem;
+
+  TInterThreadMem = object
+    FTotalSize: NativeUInt;
+    FItemCount: NativeUInt;
+    FMemArray: array[0..31] of PBaseMemHeader;
+  end;
 
   /// handles per-thread memory managment
   TThreadMemManager = object
+  protected
+    /// link to the list of mem freed in other thread
+    FOtherThreadFreedMemory: PBaseFreeMemHeader;
+    FOtherThreadFreeLock: Boolean;
   public
     FThreadId: LongWord;
     FThreadTerminated: Boolean;  //is this thread memory available to new thread?
 
+    // link to list of items to reuse after thread terminated
+    FNextThreadManager: PThreadMemManager;
+
+    procedure AddFreeMemToOwnerThread(aFirstMem, aLastMem: PBaseFreeMemHeader);
+  public
     FSmallMemManager : TSmallMemThreadManager;
     FMediumMemManager: TMediumThreadManager;
     FLargeMemManager : TLargeMemThreadManager;
+  protected
+    FInterThreadMem: TInterThreadMem;
 
     {$IFDEF SCALEMM_STATISTICS}
     FStatistic: TMemoryStatistics;
@@ -111,21 +135,19 @@ type
     FLogging: TMemoryLogging;
     {$ENDIF}
 
-    // link to list of items to reuse after thread terminated
-    FNextThreadManager: PThreadMemManager;
   protected
-    FOtherThreadFreeLock: Boolean;
-    /// link to the list of mem freed in other thread
-    FOtherThreadFreedMemory: Pointer;
-    procedure ProcessFreedMemFromOtherThreads;
+    procedure FreeMemOfOtherThread(aMemory: PBaseMemHeader);
+    function  ReallocMemOfOtherThread(aMemory: Pointer; aSize: NativeUInt): Pointer;
 
-    procedure AddFreedMemFromOtherThread(aMemory: Pointer);
-    function  ReallocMemFromOtherThread(aMemory: Pointer; aSize: Integer): Pointer;
+    function  FreeMemFromOtherThread(aMemory: PBaseMemHeader): NativeInt;
   public
     procedure Init;
     procedure Reset;
 
     procedure CheckMem(aMemory: Pointer);
+
+    function  IsMemoryFromOtherThreadsPresent: Boolean;
+    procedure ProcessFreedMemFromOtherThreads;
 
     function GetMem(aSize: NativeInt) : Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
     function FreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
@@ -140,6 +162,7 @@ type
   procedure Scale_CheckMem(aMemory: Pointer);
 
   function GetThreadMemManager: PThreadMemManager;
+  function CreateMemoryManager: PThreadMemManager;
 
 implementation
 
@@ -162,8 +185,6 @@ uses
   {$define USEMEMMANAGEREX}
 {$ifend}
 
-function CreateMemoryManager: PThreadMemManager; forward;
-
 {$IFDEF PURE_PASCAL}
 threadvar
   GCurrentThreadManager: PThreadMemManager;
@@ -173,6 +194,13 @@ begin
   Result := GCurrentThreadManager;
   if Result = nil then
     Result := CreateMemoryManager;
+
+  Assert(not Result.FThreadTerminated);
+  Assert(Result.FThreadId = GetCurrentThreadId);
+  Assert(Result.FSmallMemManager.OwnerManager = PBaseThreadManager(Result));
+  Assert(Result.FMediumMemManager.OwnerManager = PBaseThreadManager(Result));
+  Assert(not Result.FSmallMemManager.OwnerManager.FThreadTerminated);
+  Assert(Result.FSmallMemManager.OwnerManager.FThreadId = GetCurrentThreadId);
 end;
 {$ELSE}
 var
@@ -233,34 +261,39 @@ end;
 { TThreadMemManager }
 
 procedure TThreadMemManager.ProcessFreedMemFromOtherThreads;
-//var
-//  pcurrentmem, ptempmem: PSmallMemHeader;
+var
+  pcurrentmem, ptempmem: PBaseFreeMemHeader;
 begin
-  { TODO -oAM : process interthread mem }
-  (*
-  //reset first item (to get all mem in linked list)
-  repeat
-    pcurrentmem := FOtherThreadFreedMemory;
-    if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
-      Break;
+  if FOtherThreadFreedMemory = nil then Exit;
+
+  //LOCK
+  while not CAS32(0, 1, FOtherThreadFreeLock) do
+  begin
+    //small wait: try to swith to other pending thread (if any) else direct continue
     if not SwitchToThread then
       sleep(0);
-    pcurrentmem := FOtherThreadFreedMemory;
-    if CAS32(pcurrentmem, nil, FOtherThreadFreedMemory) then
+    //try again
+    if CAS32(0, 1, FOtherThreadFreeLock) then
       Break;
+    //wait some longer: force swith to any other thread
     sleep(1);
-  until false;
+  end;
+
+  pcurrentmem := FOtherThreadFreedMemory;
+  FOtherThreadFreedMemory := nil;
+
+  //UNLOCK
+  FOtherThreadFreeLock := False;
 
   //free all mem in linked list
   while pcurrentmem <> nil do
   begin
     ptempmem    := pcurrentmem;
-    pcurrentmem := pcurrentmem.NextMem;
+    pcurrentmem := pcurrentmem.NextThreadFree;
 
     //free
-    ptempmem.Owner.FreeMem(ptempmem);
+    Self.FreeMemFromOtherThread( PBaseMemHeader(ptempmem) );
   end;
-  *)
 end;
 
 function TThreadMemManager.ReallocMem(aMemory: Pointer;
@@ -273,26 +306,61 @@ begin
     ProcessFreedMemFromOtherThreads;
 
   pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-  ot := pm.OwnerBlock.OwnerThread;
-//  ot := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock.OwnerThread;
+  //check realloc of freed mem
+  if (pm.Size and 1 = 0) then
+  begin
+    //medium+large mem has ownerthread instead of ownerblock (optimization)
+    if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+    begin
+      //other thread?
+      if PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4) <> @Self then
+      begin
+        Result := ReallocMemOfOtherThread(aMemory, aSize);
+        Exit;
+      end;
 
-  if ot = @FSmallMemManager then
-    Result := FSmallMemManager.ReallocMem(aMemory, aSize)
-  else if ot = @FMediumMemManager then
-    Result := FMediumMemManager.ReallocMem(aMemory, aSize)
-  else if ot = @FLargeMemManager then
-    Result := FLargeMemManager.ReallocMemWithHeader(aMemory, aSize)
+      //large or medium?
+      if NativeUInt(pm.OwnerBlock) and 2 = 0 then
+        Result := FMediumMemManager.ReallocMem(aMemory, aSize)
+      else
+        Result := FLargeMemManager.ReallocMemWithHeader(aMemory, aSize)
+    end
+    else
+    //small mem
+    begin
+      ot := pm.OwnerBlock.OwnerThread;
+
+      if ot = @FSmallMemManager then
+        Result := FSmallMemManager.ReallocMem(aMemory, aSize)
+//      else if ot = PBaseThreadMemory(FCacheMediumMemManager) then
+//        Result := FCacheMediumMemManager.ReallocMem(aMemory, aSize)
+//      else if ot = PBaseThreadMemory(FCacheLargeMemManager) then
+//        Result := FCacheLargeMemManager.ReallocMemWithHeader(aMemory, aSize)
+      else
+        Result := ReallocMemOfOtherThread(aMemory, aSize);
+    end
+  end
   else
-    Result := ReallocMemFromOtherThread(aMemory, aSize);
+  begin
+    Result := nil;
+    Error(reInvalidPtr);  //double free?
+  end;
 end;
 
-function TThreadMemManager.ReallocMemFromOtherThread(aMemory: Pointer;
-  aSize: Integer): Pointer;
+function TThreadMemManager.ReallocMemOfOtherThread(aMemory: Pointer;
+  aSize: NativeUInt): Pointer;
+var
+  pm: PBaseMemHeader;
 begin
-  Result := Scale_GetMem(aSize);
-  { TODO -oAM : use header.size? }
-  Move(aMemory^, Result^, aSize); // copy (use bigger? new size)
-  Scale_FreeMem(aMemory);
+  Result := Self.GetMem(aSize);
+
+  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+  if aSize > pm.Size then
+    Move(aMemory^, Result^, pm.Size)  // copy (use smaller old size)
+  else
+    Move(aMemory^, Result^, aSize);   // copy (use smaller new size)
+
+  Self.FreeMemOfOtherThread(pm);
 end;
 
 procedure TThreadMemManager.Reset;
@@ -302,29 +370,169 @@ begin
   FOtherThreadFreedMemory := nil;
   FNextThreadManager := nil;
 
+  //FillChar(FInterThreadMem, sizeof(TInterThreadMem), 0);
+
   FSmallMemManager.Reset;
   FMediumMemManager.Reset;
 end;
 
-procedure TThreadMemManager.AddFreedMemFromOtherThread(aMemory: Pointer);
+procedure TThreadMemManager.FreeMemOfOtherThread(aMemory: PBaseMemHeader);
 var
-  ph: PBaseMemHeader;
+  p: Pointer;
 begin
-  ph := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-
   //large mem can be direct freed
-  if ph.OwnerBlock.OwnerThread.SizeType = stLarge then
+  if NativeUInt(aMemory.OwnerBlock) and 2 <> 0 then
+  //if aMemory.OwnerBlock.OwnerThread.SizeType = stLarge then
   begin
-    FLargeMemManager.FreeMem(aMemory);
+    //convert to "client" pointer again to be able to use the normal functions
+    p  := Pointer(NativeUInt(aMemory) + SizeOf(TBaseMemHeader));
+    FLargeMemManager.FreeMem(p);
     Exit;
   end;
 
-  { TODO -oAM : interthread memory, buffer 25 or 1mb of mem, then release via
-    globalmanager with a lock}
+  //buffer mem (no need to lock everytime)
+  inc(FInterThreadMem.FTotalSize, aMemory.Size);
+  FInterThreadMem.FMemArray[FInterThreadMem.FItemCount] := aMemory;
+  PBaseFreeMemHeader(aMemory).NextThreadFree := nil;
+  inc(FInterThreadMem.FItemCount);
 
+  //too much cached? then free all buffered mem in one go
+  if (FInterThreadMem.FItemCount >= 32) or       //32 items or
+     (FInterThreadMem.FTotalSize > 512 * 1024)   //512kb, whichever comes first
+  then
+    GlobalManager.FreeInterThreadMemory(@FInterThreadMem);
+end;
+
+procedure TThreadMemManager.CheckMem(aMemory: Pointer);
+var
+  pm: PBaseMemHeader;
+  ot: PBaseThreadMemory;
+  tm: PThreadMemManager;
+begin
+  Assert(aMemory <> nil);
+  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+  Assert(pm.OwnerBlock <> nil);  
+
+  //medium or large mem?
+  if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+  begin
+    //other thread?
+    tm := PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4);
+    //if tm <> @Self then
+    //  Exit;
+    Assert(tm <> nil);
+
+    //large or medium?
+    if NativeUInt(pm.OwnerBlock) and 2 = 0 then
+      tm.FMediumMemManager.CheckMem(aMemory)
+      //FMediumMemManager.CheckMem(aMemory)
+    else
+      tm.FLargeMemManager.CheckMem(aMemory);
+      //FLargeMemManager.CheckMem(aMemory)
+  end
+  else
+  //small mem
+  begin
+    ot := pm.OwnerBlock.OwnerThread;
+    //if ot = @FSmallMemManager then
+    //  FSmallMemManager.CheckMem(aMemory)
+    PThreadMemManager(ot.OwnerManager).FSmallMemManager.CheckMem(aMemory);
+  end;
+end;
+
+function TThreadMemManager.FreeMem(aMemory: Pointer): NativeInt;
+var
+  pm: PBaseMemHeader;
+  ot: PBaseThreadMemory;
+begin
+    if FOtherThreadFreedMemory <> nil then
+      ProcessFreedMemFromOtherThreads;
+
+    pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+    //check double free
+    if (pm.Size and 1 <> 0) then
+      Error(reInvalidPtr);
+
+    //medium or large mem?
+    if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+    begin
+      //other thread?
+      if PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4) <> @Self then
+      begin
+        FreeMemOfOtherThread(pm);
+        Result := 0;
+        Exit;
+      end;
+
+      //large or medium?
+      if NativeUInt(pm.OwnerBlock) and 2 = 0 then
+        Result := FMediumMemManager.FreeMem(aMemory)
+      else
+        Result := FLargeMemManager.FreeMemWithHeader(aMemory)
+    end
+    else
+    begin
+      ot := pm.OwnerBlock.OwnerThread;
+
+      if ot = @FSmallMemManager then
+        Result := FSmallMemManager.FreeMem(aMemory)
+      else
+      begi
+        FreeMemOfOtherThread(pm);
+        Result := 0;
+      end;
+    end;
+end;
+
+function TThreadMemManager.FreeMemFromOtherThread(
+  aMemory: PBaseMemHeader): NativeInt;
+var
+  ot: PBaseThreadMemory;
+  op: PThreadMemManager;
+  p:  Pointer;
+begin
+  //check double free
+  if (aMemory.Size and 1 <> 0) then
+    Error(reInvalidPtr);
+
+  //convert to "client" pointer again to be able to use the normal functions
+  p  := Pointer(NativeUInt(aMemory) + SizeOf(TBaseMemHeader));
+
+  if NativeUInt(aMemory.OwnerBlock) and 3 <> 0 then
+  begin
+    op := PThreadMemManager( NativeUInt(aMemory.OwnerBlock) and -4);
+    //check owner (can be changed in the meantime!)
+    if op <> @Self then
+    begin
+      FreeMemOfOtherThread(aMemory);
+      Result := 0;
+      Exit;
+    end;
+
+    //large or medium?
+    if NativeUInt(aMemory.OwnerBlock) and 2 = 0 then
+      Result := FMediumMemManager.FreeMem(p)
+    else
+      Result := FLargeMemManager.FreeMemWithHeader(p)
+  end
+  else
+  begin
+    ot := aMemory.OwnerBlock.OwnerThread;
+    if ot = @FSmallMemManager then
+      Result := FSmallMemManager.FreeMem(p)
+    else
+    begin
+      FreeMemOfOtherThread(aMemory);
+      Result := 0;
+    end;
+  end;
+end;
+
+procedure TThreadMemManager.AddFreeMemToOwnerThread(aFirstMem,
+  aLastMem: PBaseFreeMemHeader);
+begin
   //LOCK
-  (*
-  while not CAS32(0, 1, ph.OwnerBlock.OwnerThread.FOtherThreadFreeLock) do
+  while not CAS32(0, 1, FOtherThreadFreeLock) do
   begin
     //small wait: try to swith to other pending thread (if any) else direct continue
     if not SwitchToThread then
@@ -335,49 +543,13 @@ begin
     //wait some longer: force swith to any other thread
     sleep(1);
   end;
+
+  //put new mem to front of linked list
+  aLastMem.NextThreadFree := FOtherThreadFreedMemory;
+  FOtherThreadFreedMemory := aFirstMem;
+
+  //UNLOCK
   FOtherThreadFreeLock := False;
-  *)
-end;
-
-procedure TThreadMemManager.CheckMem(aMemory: Pointer);
-var
-  pm: PBaseMemHeader;
-  ot: PBaseThreadMemory;
-begin
-  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-  ot := pm.OwnerBlock.OwnerThread;
-
-  if ot = @FSmallMemManager then
-    { TODO -oAM : check if valid memory (small)}
-  else if ot = @FMediumMemManager then
-    FMediumMemManager.CheckMem(aMemory)
-  else if ot = @FLargeMemManager then
-    { TODO -oAM : check if valid memory (large)}
-  else
-end;
-
-function TThreadMemManager.FreeMem(aMemory: Pointer): NativeInt;
-var
-  pm: PBaseMemHeader;
-  ot: PBaseThreadMemory;
-begin
-  if FOtherThreadFreedMemory <> nil then
-    ProcessFreedMemFromOtherThreads;
-
-  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-  ot := pm.OwnerBlock.OwnerThread;
-
-  if ot = @FSmallMemManager then
-    Result := FSmallMemManager.FreeMem(aMemory)
-  else if ot = @FMediumMemManager then
-    Result := FMediumMemManager.FreeMem(aMemory)
-  else if ot = @FLargeMemManager then
-    Result := FLargeMemManager.FreeMemWithHeader(aMemory)
-  else
-  begin
-    AddFreedMemFromOtherThread(aMemory);
-    Result := 0;
-  end;
 end;
 
 function TThreadMemManager.GetMem(aSize: NativeInt): Pointer;
@@ -401,6 +573,10 @@ begin
   begin
     Result := FLargeMemManager.GetMemWithHeader(aSize);
   end;
+
+  {$IFDEF Align8Bytes}
+  Assert( NativeUInt(Result) AND 7 = 0);
+  {$ENDIF}
 end;
 
 procedure TThreadMemManager.Init;
@@ -415,14 +591,65 @@ begin
 
   FLargeMemManager.Init;
   FLargeMemManager.OwnerManager  := @Self;
+
+  FillChar(FInterThreadMem, sizeof(TInterThreadMem), 0);
+end;
+
+function TThreadMemManager.IsMemoryFromOtherThreadsPresent: Boolean;
+begin
+  Result := FOtherThreadFreedMemory <> nil;
 end;
 
 function Scale_ReallocMem(aMemory: Pointer; aSize: Integer): Pointer;
+var
+//  pm: PBaseMemHeader;
+  iSize: NativeUInt;
 begin
   // ReAlloc can be misued as GetMem or FreeMem (documented in delphi help) so check what the user wants
   // Normal realloc of exisiting data?
   if (aMemory <> nil) and (aSize > 0) then
   begin
+    //general resize: if size within 1/4 we do nothing (also possible in other thread!)
+    iSize := NativeUInt(Pointer(NativeUInt(aMemory) - SizeOf(TBaseMemHeader))^);
+
+    //downsize...
+    if (NativeUInt(aSize) <= iSize) then
+    begin
+      Result := aMemory;
+      if iSize <= C_MAX_SMALLMEM_SIZE then  //small mem?
+      begin
+        //within 1/4?
+        if (NativeUInt(aSize) + 32 > iSize shr 2) then
+          Exit;
+      end
+      else
+      begin
+        //medium + large mem has included their header size in the size too
+        if iSize <= C_MAX_MEDIUMMEM_SIZE then  //medium mem?
+        begin
+          Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 = 0 ); //must be marked as medium!
+          //within 1/2?
+          if (NativeUInt(aSize) + SizeOf(TMediumHeader) < iSize) and
+             (NativeUInt(aSize) > iSize shr 1) then
+            Exit
+        end
+        else                                  //large mem
+        begin
+          Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 <> 0); //must marked as large!
+          //within 1/2?
+          if (NativeUInt(aSize) + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader) < iSize) and
+             (NativeUInt(aSize) > iSize shr 1) then
+            Exit
+        end;
+      end;
+
+      //too much downsize: realloc anyway
+      Result := GetThreadMemManager.GetMem(aSize);
+      Move(aMemory^, Result^, aSize); // copy (use smaller new size)
+      Scale_FreeMem(aMemory);  //free mem (possible from other thread!)
+      Exit;
+    end;
+
     Result := GetThreadMemManager.ReallocMem(aMemory, aSize);
   end
   else
@@ -617,11 +844,15 @@ begin
   PatchThread;
 end;
 
+//var i: Integer;
+
 initialization
   ScaleMMInstall;
-
+  //i := SizeOf(TThreadMemManager);  //508
 finalization
+  SetMemoryManager(OldMM);
+
   { TODO : check for memory leaks }
-  // GlobalManager.FreeAllMemory;
+  GlobalManager.FreeAllMemory;
 
 end.
