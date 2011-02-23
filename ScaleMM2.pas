@@ -477,7 +477,7 @@ begin
       if ot = @FSmallMemManager then
         Result := FSmallMemManager.FreeMem(aMemory)
       else
-      begi
+      begin
         FreeMemOfOtherThread(pm);
         Result := 0;
       end;

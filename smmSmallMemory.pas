@@ -95,6 +95,7 @@ type
     FPreviousFreedMemBlock: PSmallMemBlock;
     {$IFDEF SCALEMM_DEBUG}
     OwnerThreadId: NativeUInt;
+    Filler1: NativeUInt; //8byte aligned
     {$ENDIF}
 
     function  GetUsedMemoryItem: PSmallMemHeader;    {$ifdef HASINLINE}inline;{$ENDIF}
