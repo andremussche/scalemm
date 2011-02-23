@@ -19,6 +19,15 @@ type
     procedure ReallocFromSmallToLargeToSmall_Test;
   end;
 
+  TSeperateThread = class(TThread)
+  private
+    FThreadProc: TThreadProcedure;
+  protected
+    procedure Execute;override;
+  public
+    property ThreadProc: TThreadProcedure read FThreadProc write FThreadProc;
+  end;
+
 implementation
 
 procedure TGeneralTests.AllocAllReallocThenFreeAll_Test;
@@ -33,7 +42,17 @@ end;
 
 procedure TGeneralTests.MediumBlockPreviousMemFree_Test;
 begin
-  MediumBlockPreviousMemFree;
+  with TSeperateThread.Create(True) do
+  begin
+    ThreadProc :=
+      procedure
+      begin
+        MediumBlockPreviousMemFree;
+      end;
+    Start;
+    WaitFor;
+    Free;
+  end;
 end;
 
 procedure TGeneralTests.ReallocFromSmallToLargeToSmall_Test;
@@ -56,6 +75,14 @@ begin
   Assert(p = nil);
   p := GetMemory(-1);
   Assert(p = nil);
+end;
+
+{ TSeperateThread }
+
+procedure TSeperateThread.Execute;
+begin
+  FThreadProc();
+  //FreeOnTerminate := True;
 end;
 
 initialization
