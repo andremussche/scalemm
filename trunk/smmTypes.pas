@@ -3,41 +3,42 @@ unit smmTypes;
 interface
 
 type
-  {$if CompilerVersion < 19}
+  {$if CompilerVersion <= 20}
   // from Delphi 6 up to Delphi 2007
+  // also for 2009: http://code.google.com/p/scalemm/issues/detail?id=1
   NativeUInt = Cardinal;
   NativeInt  = Integer;
   {$ifend}
 
   PBaseMemHeader     = ^TBaseMemHeader;
+  PBaseFreeMemHeader = ^TBaseFreeMemHeader;
   PBaseBlockMemory   = ^TBaseBlockMemory;
   PBaseThreadMemory  = ^TBaseThreadMemory;
   PBaseThreadManager = ^TBaseThreadManager;
 
   TBaseMemHeader = object
     //small, medium and large mem can add extra stuff IN FRONT
-    //Size : NativeUInt;
-
+    Size : NativeUInt;  
     //must be last of "universal" header!
     OwnerBlock: PBaseBlockMemory;
   end;
 
   TBaseFreeMemHeader = object
     //small, medium and large mem can add extra stuff IN FRONT
-    //Size  : NativeUInt;
-
-    Owner : PBaseBlockMemory;
+    Size  : NativeUInt;
+    OwnerBlock : PBaseBlockMemory;
 
     //Extra data of free item:---------------------------------
-    NextThreadFree: Pointer;  //linked list of interthread memory
-  end;
-
-  TBaseBlockMemory = object
-    OwnerThread: PBaseThreadMemory;
-    //small, medium and large mem can add extra stuff BEHIND
+    NextThreadFree: PBaseFreeMemHeader;  //linked list of interthread memory
   end;
 
   TSizeType = (stSmall, stMedium, stLarge);
+
+  TBaseBlockMemory = object
+    //SizeType   : TSizeType;
+    OwnerThread: PBaseThreadMemory;
+    //small, medium and large mem can add extra stuff BEHIND
+  end;
 
   TBaseThreadMemory = object
     SizeType    : TSizeType;
@@ -46,6 +47,9 @@ type
   end;
 
   TBaseThreadManager = object
+    FOtherThreadFreedMemory: PBaseFreeMemHeader;
+    FOtherThreadFreeLock: Boolean;
+
     FThreadId: LongWord;
     FThreadTerminated: Boolean;
     //extra stuff BEHIND
