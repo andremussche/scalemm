@@ -242,7 +242,7 @@ var
   firstmem: PMediumHeader;
 begin
   //keep max 10 blocks in buffer
-  if FFreeBlockCount >= 10 then
+  //if FFreeBlockCount >= 10 then
   begin
     firstmem := PMediumHeader( NativeUInt(aBlockMem) + SizeOf(TMediumBlockMemory));
     //is free mem?
