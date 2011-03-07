@@ -13,8 +13,9 @@ type
   PBaseMemHeader     = ^TBaseMemHeader;
   PBaseFreeMemHeader = ^TBaseFreeMemHeader;
   PBaseBlockMemory   = ^TBaseBlockMemory;
-  PBaseThreadMemory  = ^TBaseThreadMemory;
+  PBaseSizeManager   = ^TBaseSizeManager;
   PBaseThreadManager = ^TBaseThreadManager;
+  PBaseThreadManagerOffset = ^TBaseThreadManagerOffset;
 
   TBaseMemHeader = object
     //small, medium and large mem can add extra stuff IN FRONT
@@ -36,14 +37,26 @@ type
 
   TBaseBlockMemory = object
     //SizeType   : TSizeType;
-    OwnerThread: PBaseThreadMemory;
+    OwnerManager: PBaseSizeManager;
     //small, medium and large mem can add extra stuff BEHIND
   end;
 
-  TBaseThreadMemory = object
+  TBaseSizeManager = object
     SizeType    : TSizeType;
-    OwnerManager: PBaseThreadManager;
+    OwnerThread: PBaseThreadManager;
     //small, medium and large mem can add extra stuff BEHIND
+  end;
+
+  TBaseThreadManagerOffset = packed record
+  public
+    //FOtherThreadFreedMemory: PBaseFreeMemHeader;
+    //Filler0: Byte;   //1 or 2 (lowest bits) = medium or large
+    Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium or large block
+    FOtherThreadFreeLock: LongBool;
+
+    FThreadId: LongWord;
+    FThreadTerminated: LongBool;
+    //extra stuff BEHIND
   end;
 
   TBaseThreadManager = object

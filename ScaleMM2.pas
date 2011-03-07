@@ -197,10 +197,10 @@ begin
 
   Assert(not Result.FThreadTerminated);
   Assert(Result.FThreadId = GetCurrentThreadId);
-  Assert(Result.FSmallMemManager.OwnerManager = PBaseThreadManager(Result));
-  Assert(Result.FMediumMemManager.OwnerManager = PBaseThreadManager(Result));
-  Assert(not Result.FSmallMemManager.OwnerManager.FThreadTerminated);
-  Assert(Result.FSmallMemManager.OwnerManager.FThreadId = GetCurrentThreadId);
+  Assert(Result.FSmallMemManager.OwnerThread = PBaseThreadManager(Result));
+  Assert(Result.FMediumMemManager.OwnerThread = PBaseThreadManager(Result));
+  Assert(not Result.FSmallMemManager.OwnerThread.FThreadTerminated);
+  Assert(Result.FSmallMemManager.OwnerThread.FThreadId = GetCurrentThreadId);
 end;
 {$ELSE}
 var
@@ -251,6 +251,10 @@ begin
     Result.FThreadTerminated := False;
   end;
 
+  {$IFDEF SCALEMM_DEBUG}
+  Result.CheckMem(nil);
+  {$ENDIF}
+
   {$IFDEF PURE_PASCAL}
   GCurrentThreadManager := Result;
   {$ELSE}
@@ -300,7 +304,7 @@ function TThreadMemManager.ReallocMem(aMemory: Pointer;
   aSize: NativeUInt): Pointer;
 var
   pm: PBaseMemHeader;
-  ot: PBaseThreadMemory;
+  ot: PBaseSizeManager;
 begin
   if FOtherThreadFreedMemory <> nil then
     ProcessFreedMemFromOtherThreads;
@@ -328,14 +332,10 @@ begin
     else
     //small mem
     begin
-      ot := pm.OwnerBlock.OwnerThread;
+      ot := pm.OwnerBlock.OwnerManager;
 
       if ot = @FSmallMemManager then
         Result := FSmallMemManager.ReallocMem(aMemory, aSize)
-//      else if ot = PBaseThreadMemory(FCacheMediumMemManager) then
-//        Result := FCacheMediumMemManager.ReallocMem(aMemory, aSize)
-//      else if ot = PBaseThreadMemory(FCacheLargeMemManager) then
-//        Result := FCacheLargeMemManager.ReallocMemWithHeader(aMemory, aSize)
       else
         Result := ReallocMemOfOtherThread(aMemory, aSize);
     end
@@ -406,9 +406,16 @@ end;
 procedure TThreadMemManager.CheckMem(aMemory: Pointer);
 var
   pm: PBaseMemHeader;
-  ot: PBaseThreadMemory;
+  ot: PBaseSizeManager;
   tm: PThreadMemManager;
 begin
+  if aMemory = nil then
+  begin
+    FSmallMemManager.CheckAllMem;
+    FMediumMemManager.CheckMem(nil);
+    Exit;
+  end;
+
   Assert(aMemory <> nil);
   pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
   Assert(pm.OwnerBlock <> nil);  
@@ -425,69 +432,65 @@ begin
     //large or medium?
     if NativeUInt(pm.OwnerBlock) and 2 = 0 then
       tm.FMediumMemManager.CheckMem(aMemory)
-      //FMediumMemManager.CheckMem(aMemory)
     else
       tm.FLargeMemManager.CheckMem(aMemory);
-      //FLargeMemManager.CheckMem(aMemory)
   end
   else
   //small mem
   begin
-    ot := pm.OwnerBlock.OwnerThread;
-    //if ot = @FSmallMemManager then
-    //  FSmallMemManager.CheckMem(aMemory)
-    PThreadMemManager(ot.OwnerManager).FSmallMemManager.CheckMem(aMemory);
+    ot := pm.OwnerBlock.OwnerManager;
+    PThreadMemManager(ot.OwnerThread).FSmallMemManager.CheckMem(aMemory);
   end;
 end;
 
 function TThreadMemManager.FreeMem(aMemory: Pointer): NativeInt;
 var
   pm: PBaseMemHeader;
-  ot: PBaseThreadMemory;
+  ot: PBaseSizeManager;
 begin
-    if FOtherThreadFreedMemory <> nil then
-      ProcessFreedMemFromOtherThreads;
+  if FOtherThreadFreedMemory <> nil then
+    ProcessFreedMemFromOtherThreads;
 
-    pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-    //check double free
-    if (pm.Size and 1 <> 0) then
-      Error(reInvalidPtr);
+  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+  //check double free
+  if (pm.Size and 1 <> 0) then
+    Error(reInvalidPtr);
 
-    //medium or large mem?
-    if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+  //medium or large mem?
+  if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+  begin
+    //other thread?
+    if PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4) <> @Self then
     begin
-      //other thread?
-      if PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4) <> @Self then
-      begin
-        FreeMemOfOtherThread(pm);
-        Result := 0;
-        Exit;
-      end;
+      FreeMemOfOtherThread(pm);
+      Result := 0;
+      Exit;
+    end;
 
-      //large or medium?
-      if NativeUInt(pm.OwnerBlock) and 2 = 0 then
-        Result := FMediumMemManager.FreeMem(aMemory)
-      else
-        Result := FLargeMemManager.FreeMemWithHeader(aMemory)
-    end
+    //large or medium?
+    if NativeUInt(pm.OwnerBlock) and 2 = 0 then
+      Result := FMediumMemManager.FreeMem(aMemory)
+    else
+      Result := FLargeMemManager.FreeMemWithHeader(aMemory)
+  end
+  else
+  begin
+    ot := pm.OwnerBlock.OwnerManager;
+
+    if ot = @FSmallMemManager then
+      Result := FSmallMemManager.FreeMem(aMemory)
     else
     begin
-      ot := pm.OwnerBlock.OwnerThread;
-
-      if ot = @FSmallMemManager then
-        Result := FSmallMemManager.FreeMem(aMemory)
-      else
-      begin
-        FreeMemOfOtherThread(pm);
-        Result := 0;
-      end;
+      FreeMemOfOtherThread(pm);
+      Result := 0;
     end;
+  end;
 end;
 
 function TThreadMemManager.FreeMemFromOtherThread(
   aMemory: PBaseMemHeader): NativeInt;
 var
-  ot: PBaseThreadMemory;
+  ot: PBaseSizeManager;
   op: PThreadMemManager;
   p:  Pointer;
 begin
@@ -498,6 +501,7 @@ begin
   //convert to "client" pointer again to be able to use the normal functions
   p  := Pointer(NativeUInt(aMemory) + SizeOf(TBaseMemHeader));
 
+  //large or medium?
   if NativeUInt(aMemory.OwnerBlock) and 3 <> 0 then
   begin
     op := PThreadMemManager( NativeUInt(aMemory.OwnerBlock) and -4);
@@ -517,7 +521,7 @@ begin
   end
   else
   begin
-    ot := aMemory.OwnerBlock.OwnerThread;
+    ot := aMemory.OwnerBlock.OwnerManager;
     if ot = @FSmallMemManager then
       Result := FSmallMemManager.FreeMem(p)
     else
@@ -526,6 +530,10 @@ begin
       Result := 0;
     end;
   end;
+
+  {$ifdef SCALEMM_DEBUG}
+  Self.CheckMem(nil);
+  {$ENDIF}
 end;
 
 procedure TThreadMemManager.AddFreeMemToOwnerThread(aFirstMem,
@@ -584,13 +592,13 @@ begin
   FThreadId := GetCurrentThreadId;
 
   FSmallMemManager.Init;
-  FSmallMemManager.OwnerManager  := @Self;
+  FSmallMemManager.OwnerThread  := @Self;
 
   FMediumMemManager.Init;
-  FMediumMemManager.OwnerManager := @Self;
+  FMediumMemManager.OwnerThread := @Self;
 
   FLargeMemManager.Init;
-  FLargeMemManager.OwnerManager  := @Self;
+  FLargeMemManager.OwnerThread  := @Self;
 
   FillChar(FInterThreadMem, sizeof(TInterThreadMem), 0);
 end;
@@ -844,14 +852,11 @@ begin
   PatchThread;
 end;
 
-//var i: Integer;
-
 initialization
   ScaleMMInstall;
-  //i := SizeOf(TThreadMemManager);  //508
+
 finalization
   SetMemoryManager(OldMM);
-
   { TODO : check for memory leaks }
   GlobalManager.FreeAllMemory;
 

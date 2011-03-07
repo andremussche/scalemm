@@ -1,4 +1,5 @@
 {.$DEFINE SCALEMM_DEBUG}  // slower but better debugging (no inline functions etc)
+{.$DEFINE IntelVTune}      //debug info in release build
 
 {$IFDEF SCALEMM_DEBUG}
   {$OPTIMIZATION   OFF}
@@ -17,19 +18,26 @@
   {$ASSERTIONS     OFF}
   {$OVERFLOWCHECKS OFF}
   {$RANGECHECKS    OFF}
-  {$if CompilerVersion >= 17}
-    {.$define HASINLINE}        // Delphi 2005 or newer
+  {$if CompilerVersion >= 17}  // Delphi 2005 or newer
+    {$define HASINLINE}
   {$ifend}
-  {.$define INLINEGOWN}
-  //{$D-}  //disable this to get line debug info in Intel vTune
-  //{$L-}  //disable this to get line debug info in Intel vTune
+  {$define INLINEGOWN}
+  {$D-}
+  {$L-}
+{$ENDIF}
+
+//use this to get line debug info in Intel vTune
+{$IFDEF IntelVTune}
+  {$undef HASINLINE}
+  {$undef INLINEGOWN}
+  {$D+}
+  {$L+}
 {$ENDIF}
 
 // other posible defines:
 {.$DEFINE PURE_PASCAL}    // no assembly, pure delphi code
 {$DEFINE Align8Bytes}     // 8 byte aligned header, needed for OmniThreadLibrary etc
 {.$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
-{.$DEFINE USEMEDIUM}      // handling of 2048..16384 bytes blocks
 
 {$IFDEF DEBUG}
   {.$DEFINE SCALEMM_FILLFREEMEM}

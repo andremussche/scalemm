@@ -21,6 +21,36 @@ type
   end;
   TMemoryBasicInformation = _MEMORY_BASIC_INFORMATION;
 
+  PListEntry = ^TListEntry;
+  _LIST_ENTRY = record
+    Flink: PListEntry;
+    Blink: PListEntry;
+  end;
+  TListEntry = _LIST_ENTRY;
+
+  PRTLCriticalSection = ^TRTLCriticalSection;
+  PRTLCriticalSectionDebug = ^TRTLCriticalSectionDebug;
+  _RTL_CRITICAL_SECTION_DEBUG = record
+    Type_18: Word;
+    CreatorBackTraceIndex: Word;
+    CriticalSection: PRTLCriticalSection;
+    ProcessLocksList: TListEntry;
+    EntryCount: DWORD;
+    ContentionCount: DWORD;
+    Spare: array[0..1] of DWORD;
+  end;
+  TRTLCriticalSectionDebug = _RTL_CRITICAL_SECTION_DEBUG;
+
+  _RTL_CRITICAL_SECTION = record
+    DebugInfo: PRTLCriticalSectionDebug;
+    LockCount: Longint;
+    RecursionCount: Longint;
+    OwningThread: THandle;
+    LockSemaphore: THandle;
+    Reserved: DWORD;
+  end;
+  TRTLCriticalSection = _RTL_CRITICAL_SECTION;
+
 const
   kernel32  = 'kernel32.dll';
   PAGE_EXECUTE_READWRITE = $40;
@@ -42,6 +72,7 @@ const
   function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
   function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
   function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
+  function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
   function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
               var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
@@ -64,6 +95,16 @@ const
   function  InterlockedAdd(var Addend: Integer): Integer;
   function  BitScanLast(aValue: Word): NativeUInt;
   function  BitScanFirst(aValue: NativeInt): NativeUInt;
+
+
+  procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'InitializeCriticalSection';
+  procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'EnterCriticalSection';
+  procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'LeaveCriticalSection';
+  function InitializeCriticalSectionAndSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): BOOL; stdcall; external kernel32 name 'InitializeCriticalSectionAndSpinCount';
+  function SetCriticalSectionSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): DWORD; stdcall; external kernel32 name 'SetCriticalSectionSpinCount';
+  function TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL; stdcall; external kernel32 name 'TryEnterCriticalSection';
+  procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'DeleteCriticalSection';
+
 
   {$ifdef SCALEMM_DEBUG}
   procedure Assert(aCondition: boolean);
@@ -186,6 +227,7 @@ begin
       int 3;   // breakpoint
     end;
     //Sleep(0);  // no exception, just dummy for breakpoint
+    {$WARN SYMBOL_PLATFORM OFF}
     if DebugHook = 0 then
       Error(reInvalidPtr);
   end;
