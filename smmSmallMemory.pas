@@ -10,9 +10,9 @@ uses
 const
   /// alloc memory blocks with 64 memory items each time
   //  64 = 1 shl 6, therefore any multiplication compiles into nice shl opcode
-  C_ARRAYSIZE = 32;  //32 instead of 64 -> smaller overhead
+  C_ARRAYSIZE         = 32;  //32 instead of 64 -> smaller overhead
   /// Maximum index of 256 bytes granularity Small blocks
-  MAX_SMALLMEMBLOCK  = 8;
+  MAX_SMALLMEMBLOCK   = 8;
   /// 0 - 2048 bytes
   C_MAX_SMALLMEM_SIZE = MAX_SMALLMEMBLOCK * 256; //=2048;
 
@@ -305,9 +305,20 @@ begin
   OwnerList.CheckMem;
   {$ENDIF}
 
+  // free mem block
+  FFreedArray[FFreedIndex] := aMemoryItem;
+  inc(FFreedIndex);
+
+  {$IFDEF SCALEMM_DEBUG}
+  aMemoryItem.CheckMem;
+  CheckMem;
+  OwnerList.CheckMem;
+  {$ENDIF}
+
   // first free item of block?
   // then we add this block to (linked) list with available mem
-  if FFreedIndex = 0 then
+  if FFreedIndex = 1 then
+  begin
     if ({self}FNextFreedMemBlock = nil) and       //not already in free list?
        ({self}FPreviousFreedMemBlock = nil) then
     with OwnerList^ do  //faster
@@ -322,20 +333,11 @@ begin
         {Self}FNextFreedMemBlock.FPreviousFreedMemBlock := @Self; //back link
       {Owner}FFirstFreedMemBlock := @Self; //replace first list
     end;
-
-  // free mem block
-  FFreedArray[FFreedIndex] := aMemoryItem;
-  inc(FFreedIndex);
-
-  {$IFDEF SCALEMM_DEBUG}
-  aMemoryItem.CheckMem;
-  CheckMem;
-  OwnerList.CheckMem;
-  {$ENDIF}
-
-  // all memory available?
-  if FFreedIndex = C_ARRAYSIZE then
-    FreeBlockMemory;
+  end
+  else
+    // all memory available?
+    if FFreedIndex = C_ARRAYSIZE then
+      FreeBlockMemory;
 end;
 
 function TSmallMemBlock.GetUsedMemoryItem: PSmallMemHeader;

@@ -390,7 +390,9 @@ begin
 
   if Result <> nil then
   begin
+    {$IFDEF SCALEMM_DEBUG}
     Result.OwnerThreadId := 2;
+    {$ENDIF}
     Result.OwnerList     := Pointer(1);
     Result.OwnerManager  := Pointer(2);
     Result.FNextFreedMemBlock      := nil;
