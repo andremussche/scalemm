@@ -69,7 +69,7 @@ type
   /// memory block handler
   TSmallMemBlock = object
     /// Thread owner, must be first item of block (same offset as PBaseBlockMemory)
-    OwnerThread: PSmallMemThreadManager;
+    OwnerManager: PSmallMemThreadManager;
     /// the memory block list which owns this memory block handler
     OwnerList: PSmallMemBlockList;
 
@@ -110,7 +110,7 @@ type
   // - current size if 16 bytes (this is a packed object)
   TSmallMemBlockList = object
     /// the per-thread memory manager which created this block
-    OwnerThread: PSmallMemThreadManager;
+    OwnerManager: PSmallMemThreadManager;
 
     /// list containing freed memory (which this block owns)
     // - used to implement a fast caching of memory blocks
@@ -119,7 +119,8 @@ type
     FFirstMemBlock: PSmallMemBlock;
 
     /// size of memory items (32, 64 etc bytes)
-    FItemSize : word;
+    //FItemSize : word;
+    FItemSize : NativeUInt;
     /// recursive check when we alloc memory for this blocksize (new memory list)
     FRecursive: boolean;
 
@@ -139,7 +140,7 @@ type
   TSmallMemThreadManager = object
   public
     SizeType: TSizeType;
-    OwnerManager: PBaseThreadManager;
+    OwnerThread: PBaseThreadManager;
   private
     /// array with memory per block size of 32 bytes (mini blocks)
     // - i.e. 32, 64, 96, 128, 160, 192, 224 bytes
@@ -193,24 +194,24 @@ begin
   {$IFDEF SCALEMM_DEBUG}
   if OwnerThreadId = 1 then
   begin
-    Assert(OwnerThread <> nil);
-    Assert(OwnerThread.OwnerManager <> nil);
-    Assert(OwnerThreadId = OwnerThread.OwnerManager.FThreadId);
+    Assert(OwnerManager <> nil);
+    Assert(OwnerManager.OwnerThread <> nil);
+    Assert(OwnerThreadId = OwnerManager.OwnerThread.FThreadId);
   end
   else
     Assert(OwnerThreadId = GetCurrentThreadId);
   {$ENDIF}
   Assert(OwnerList <> nil);
   Assert(OwnerList <> Pointer(1));
-  Assert(OwnerList.OwnerThread <> nil);
-  Assert(OwnerList.OwnerThread.OwnerManager <> nil);
-  Assert(not OwnerList.OwnerThread.OwnerManager.FThreadTerminated);
-  Assert(OwnerThread <> nil);
-  Assert(OwnerThread <> Pointer(2));
-  Assert(OwnerThread = OwnerList.OwnerThread);
+  Assert(OwnerList.OwnerManager <> nil);
+  Assert(OwnerList.OwnerManager.OwnerThread <> nil);
+  Assert(not OwnerList.OwnerManager.OwnerThread.FThreadTerminated);
+  Assert(OwnerManager <> nil);
+  Assert(OwnerManager <> Pointer(2));
+  Assert(OwnerManager = OwnerList.OwnerManager);
 
-  Assert(FFreedIndex <= Length(FFreedArray));
-  Assert(FUsageCount <= Length(FFreedArray));
+  Assert(FFreedIndex <= NativeUInt(Length(FFreedArray)));
+  Assert(FUsageCount <= NativeUInt(Length(FFreedArray)));
   Assert(FMemoryArray <> nil);
 
   if FPreviousMemBlock <> nil then
@@ -289,7 +290,7 @@ begin
   {$ENDIF}
 
   //release medium block
-  PThreadMemManager(OwnerList.OwnerThread.OwnerManager).FMediumMemManager.FreeMem(@Self);
+  PThreadMemManager(OwnerList.OwnerManager.OwnerThread).FMediumMemManager.FreeMem(@Self);
 
   {$IFDEF SCALEMM_DEBUG}
   pOwnerList.CheckMem;
@@ -415,7 +416,7 @@ begin
   if pm = nil then
   begin
     // create own one
-    pm := PThreadMemManager(OwnerThread.OwnerManager).FMediumMemManager.GetFilledMem
+    pm := PThreadMemManager(OwnerManager.OwnerThread).FMediumMemManager.GetMem
       ( SizeOf(pm^) +
         (FItemSize + SizeOf(TSmallMemHeader) + 1) * C_ARRAYSIZE );
 //    with pm^ do // put zero only to needed properties
@@ -430,8 +431,8 @@ begin
     Assert( NativeUInt(pm.FMemoryArray) AND 7 = 0);
     {$ENDIF}
     {$IFDEF SCALEMM_DEBUG}
-    pm.OwnerList   := Pointer(1);
-    pm.OwnerThread := Pointer(2);
+    pm.OwnerList     := Pointer(1);
+    pm.OwnerManager  := Pointer(2);
     pm.OwnerThreadId := 2;
     {$ENDIF}
   end;
@@ -445,14 +446,12 @@ begin
   begin
     {$IFDEF SCALEMM_DEBUG}
     Assert(pm.OwnerThreadId = 2);
-//    Assert(pm.OwnerThread = nil);
-//    Assert(pm.OwnerList = nil);
-    Assert(pm.OwnerThread = Pointer(2));
+    Assert(pm.OwnerManager = Pointer(2));
     Assert(pm.OwnerList = Pointer(1));
     pm.OwnerThreadId := GetCurrentThreadId;
     {$ENDIF}
 
-    pm.OwnerThread       := Self.OwnerThread;
+    pm.OwnerManager       := Self.OwnerManager;
     pm.OwnerList         := @Self;
     // set new memlist as first, add link to current item
     {pm.}FNextMemBlock     := {self}FFirstMemBlock;
@@ -499,15 +498,15 @@ begin
     Assert(FFirstFreedMemBlock.OwnerList = @Self);
   end;
 
-  Assert(OwnerThread <> nil);
-  Assert(OwnerThread.OwnerManager <> nil);
-  Assert(not OwnerThread.OwnerManager.FThreadTerminated);
-  if OwnerThread.OwnerManager.FThreadId = 1 then
+  Assert(OwnerManager <> nil);
+  Assert(OwnerManager.OwnerThread <> nil);
+  Assert(not OwnerManager.OwnerThread.FThreadTerminated);
+  if OwnerManager.OwnerThread.FThreadId = 1 then
   begin
     //is global mem
   end
   else
-    Assert(OwnerThread.OwnerManager.FThreadId = GetCurrentThreadId);
+    Assert(OwnerManager.OwnerThread.FThreadId = GetCurrentThreadId);
 end;
 
 function TSmallMemBlockList.GetMemFromNewBlock: Pointer;
@@ -536,7 +535,7 @@ begin
       //Result := FMemoryArray;
       //FMemoryArray := Pointer( NativeUInt(FMemoryArray) +
       //                         (FItemSize + SizeOf(TSmallMemHeader)) );
-      //calculate by multiply to reduce cache writes 
+      //calculate by multiply to reduce cache writes?
       Result       := Pointer( NativeUInt(FMemoryArray) +
                                (FUsageCount * (FItemSize + SizeOf(TSmallMemHeader))) );
       inc(FUsageCount);
@@ -665,14 +664,14 @@ begin
   j := 32;
   for i := Low(FMiniMemoryBlocks) to High(FMiniMemoryBlocks) do
   begin // 32, 64, 96, 128, 160, 192, 224 bytes
-    FMiniMemoryBlocks[i].OwnerThread := @Self;
+    FMiniMemoryBlocks[i].OwnerManager := @Self;
     FMiniMemoryBlocks[i].FItemSize := j;
     inc(j,32);
   end;
   assert(j=256);
   for i := Low(FSmallMemoryBlocks) to High(FSmallMemoryBlocks) do
   begin // 256,512,768,1024,1280,1536,1792 bytes
-    FSmallMemoryBlocks[i].OwnerThread := @Self;
+    FSmallMemoryBlocks[i].OwnerManager := @Self;
     FSmallMemoryBlocks[i].FItemSize := j;
     inc(j,256);
   end;
@@ -697,9 +696,6 @@ var
     // scan all memoryblocks and filter unused blocks
     while allmem <> nil do
     begin
-//      if allmem.OwnerList = nil then
-//        Break; // loop?
-
       allmem.FNextFreedMemBlock     := nil;
       allmem.FPreviousMemBlock      := nil;
       allmem.FPreviousFreedMemBlock := nil;
@@ -712,7 +708,7 @@ var
         allmem  := allmem.FNextMemBlock;
         // dispose
         //allmem.FreeBlockMemory;
-        PThreadMemManager(OwnerManager).FMediumMemManager.FreeMem(tempmem);
+        PThreadMemManager(OwnerThread).FMediumMemManager.FreeMem(tempmem);
         Continue;
       end
       else
@@ -737,7 +733,7 @@ var
       allmem.OwnerThreadId := 1;
 //      allmem.CheckMem;
       {$ENDIF}
-      allmem.OwnerThread            := aOtherManager;
+      allmem.OwnerManager            := aOtherManager;
       allmem.OwnerList              := aGlobalBlock;
 
       // next one
@@ -749,27 +745,9 @@ var
     if firstinusemem <> nil then
     begin
       assert(lastinusemem <> nil);
-
       // add freemem list to front (replace first item, link previous to last item)
       lastinusemem.FNextFreedMemBlock  := aGlobalBlock.FFirstFreedMemBlock;
       aGlobalBlock.FFirstFreedMemBlock := firstinusemem;
-
-      (*
-      // add freemem list to front (replace first item, link previous to last item)
-      repeat
-        prevmem := aGlobalBlock.FFirstFreedMemBlock;
-        lastinusemem.FNextFreedMemBlock := prevmem;
-        if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
-          break;
-        if not SwitchToThread then
-          sleep(0);
-        prevmem := aGlobalBlock.FFirstFreedMemBlock;
-        lastinusemem.FNextFreedMemBlock := prevmem;
-        if CAS32(prevmem, inusemem, aGlobalBlock.FFirstFreedMemBlock) then
-          break;
-        sleep(1);
-      until false;
-      *)
     end;
   end;
 
@@ -788,21 +766,17 @@ function TSmallMemThreadManager.ReallocMem(aMemory: Pointer;
   aSize: NativeUInt): Pointer;
 var
   ph: PSmallMemHeader;
-//  pb: PSmallMemBlock;
   {$IFDEF SCALEMM_DEBUG}
   p: Pointer;
   {$ENDIF}
 begin
-  //pb := PSmallMemHeader(NativeUInt(aMemory) - SizeOf(TSmallMemHeader)).OwnerBlock;
   ph := PSmallMemHeader(NativeUInt(aMemory) - SizeOf(TSmallMemHeader));
   {$IFDEF SCALEMM_DEBUG}
   Assert(ph.OwnerBlock.OwnerList <> nil);
   p  := Pointer(NativeUInt(aMemory) - SizeOf(TSmallMemHeader));
   PSmallMemHeader(p).CheckMem;
   {$ENDIF}
-  //iNewSize := aSize + SizeOf(TSmallMemHeader);
 
-  //with ph.OwnerBlock^ do
   with ph^ do
   begin
     //downscaling, new size smaller than current size
@@ -827,7 +801,7 @@ begin
       if aSize <= C_MAX_SMALLMEM_SIZE then   //1 till 2048
         Result := Self.GetMem(aSize + SmallBlockUpsizeAdder)
       else  //bigger mem?
-        Result := PThreadMemManager(Self.OwnerManager).GetMem(aSize + SmallBlockUpsizeAdder); // new mem
+        Result := PThreadMemManager(Self.OwnerThread).GetMem(aSize + SmallBlockUpsizeAdder); // new mem
       Move(aMemory^, Result^, Size); // copy (use smaller old size)
       //Self.FreeMem(aMemory); // free old mem
       ph.OwnerBlock.FreeMem(ph);
@@ -836,7 +810,7 @@ begin
 
   {$IFDEF SCALEMM_DEBUG}
   p := PBaseMemHeader(NativeUInt(Result) - SizeOf(TBaseMemHeader));
-  if PBaseMemHeader(p).OwnerBlock.OwnerThread = @Self then
+  if PBaseMemHeader(p).OwnerBlock.OwnerManager = @Self then
   begin
     p := Pointer(NativeUInt(Result) - SizeOf(TSmallMemHeader));
     PSmallMemHeader(p).CheckMem;

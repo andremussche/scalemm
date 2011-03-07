@@ -11,17 +11,15 @@ type
   PLargeHeader           = ^TLargeHeader;
   PLargeBlockMemory      = ^TLargeBlockMemory;
   PLargeMemThreadManager = ^TLargeMemThreadManager;
-  PLargeThreadManagerOffset = ^TLargeThreadManagerOffset;
+  //PLargeThreadManagerOffset = ^TLargeThreadManagerOffset;
 
   TLargeHeader = record
     Size       : NativeUInt;
-    /// must be last item of header (same negative offset from mem as TBaseMemHeader)
-    //OwnerBlock : PLargeBlockMemory;
-    OwnerBlock : PLargeThreadManagerOffset;
+    OwnerBlock : PBaseThreadManagerOffset;
   end;
 
   TLargeBlockMemory = object
-    OwnerThread: PLargeMemThreadManager;
+    OwnerManager: PLargeMemThreadManager;
     Size       : NativeUInt;
   end;
 
@@ -29,13 +27,13 @@ type
   public
     //SizeType    : TSizeType;
     Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium block
-    OwnerManager: PBaseThreadManager;
+    OwnerThread: PBaseThreadManager;
   end;
 
   TLargeMemThreadManager = object
   public
     SizeType: TSizeType;
-    OwnerManager: PBaseThreadManager;
+    OwnerThread: PBaseThreadManager;
   public
     procedure Init;
 
@@ -101,18 +99,18 @@ var
   iAllocSize: NativeUInt;
   pheader: PLargeHeader;
   pblock : PLargeBlockMemory;
-  pthreadoffset: PLargeThreadManagerOffset;
+  pthreadoffset: PBaseThreadManagerOffset;
 begin
   iAllocSize    := aSize + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader);
   iAllocSize    := (iAllocSize + LargeBlockGranularity) and -LargeBlockGranularity; //round to 64k
   //block
   pblock        := Self.GetMem(iAllocSize);
-  pblock.OwnerThread   := @Self;
+  pblock.OwnerManager   := @Self;
   pblock.Size          := iAllocSize;
 
   //first item
   pheader            := PLargeHeader( NativeUInt(pblock) + SizeOf(TLargeBlockMemory));
-  pthreadoffset      := PLargeThreadManagerOffset(NativeUInt(Self.OwnerManager) or 2);
+  pthreadoffset      := PBaseThreadManagerOffset(NativeUInt(Self.OwnerThread) or 2);
   //pheader.OwnerBlock := pblock;
   pheader.OwnerBlock := pthreadoffset;
   pheader.Size       := aSize + SizeOf(TLargeHeader);
@@ -129,7 +127,6 @@ function TLargeMemThreadManager.ReallocMemWithHeader(aMemory: Pointer;
   aSize: NativeUInt): Pointer;
 var
   iAllocSize, iOldSize, iExtraSize: NativeUInt;
-  //pheader: PLargeHeader;
   pblock,
   pnextblock : PLargeBlockMemory;
   meminfo: TMemoryBasicInformation;
@@ -176,8 +173,7 @@ begin
   else
   //too much downscale
   begin
-    //Result := GetMemWithHeader(iAllocSize);
-    Result := PThreadMemManager(Self.OwnerManager).GetMem(iAllocSize); //possible "medium" or "small" mem!
+    Result := PThreadMemManager(Self.OwnerThread).GetMem(iAllocSize); //possible "medium" or "small" mem!
     Move(aMemory^, Result^, aSize); // copy (use smaller new size)
     Self.FreeMem(pblock);
   end;

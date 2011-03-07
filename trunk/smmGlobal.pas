@@ -65,6 +65,9 @@ implementation
 uses
   smmFunctions;
 
+//var
+//  _ThreadLock: TRTLCriticalSection;
+
 { TGlobalManager }
 
 procedure TGlobalMemManager.AddNewThreadManagerToList(aThreadMem: PThreadMemManager);
@@ -161,7 +164,7 @@ var
   firstmem, nextmem, tempmem: PBaseMemHeader;
   thread: PBaseThreadManager;
   j: Integer;
-  ot: PBaseThreadMemory;
+  ot: PBaseSizeManager;
 begin
   { TODO -oAM : Make GC thread which processes all freed mem in background, now only one FreeThreadManager or FreeInterThreadMemory can be active at a time}
 
@@ -176,10 +179,10 @@ begin
     if tempmem <> nil then
     begin
       if NativeUInt(tempmem.OwnerBlock) and 3 <> 0 then
-        ot := PBaseThreadMemory( NativeUInt(tempmem.OwnerBlock) and -4)
+        ot := PBaseSizeManager( NativeUInt(tempmem.OwnerBlock) and -4)
       else
-        ot := tempmem.OwnerBlock.OwnerThread;
-      memownerthreads[i] := ot.OwnerManager
+        ot := tempmem.OwnerBlock.OwnerManager;
+      memownerthreads[i] := ot.OwnerThread
     end
     else
       memownerthreads[i] := nil;
@@ -256,14 +259,14 @@ begin
         VirtualFree(aBlockMem, 0 {all}, MEM_RELEASE);
         //exit!
         Exit;
-      end
+      end;
     end;
+    Assert(False);
   end;
 
   aBlockMem.ChangeOwnerThread(@Self.FGlobalThreadMemory.FMediumMemManager);
 
   Threadlock;
-
   ProcessFreedMemoryFromOtherThreads;
 
   //LOCK
@@ -290,7 +293,6 @@ begin
 
   //UNLOCK
   FBlockLock := 0;
-
   ThreadUnlock;
 end;
 
@@ -326,8 +328,6 @@ begin
 end;
 
 procedure TGlobalMemManager.FreeThreadManager(aThreadMem: PThreadMemManager);
-//var
-//  pprevthreadmem: PThreadMemManager;
 begin
   aThreadMem.FThreadTerminated := True;
 
@@ -351,37 +351,16 @@ begin
 
   //UNLOCK
   ThreadUnLock;
-
-  (*
-  // add to available list
-  repeat
-    pprevthreadmem := FFirstFreedThreadMemory;
-    // make linked list: new one is first item (global var), next item is previous item
-    aThreadMem.FNextThreadManager := pprevthreadmem;
-    // try to set "result" in global var
-    if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
-      break;
-    if not SwitchToThread then
-      sleep(0);
-    pprevthreadmem := FFirstFreedThreadMemory;
-    aThreadMem.FNextThreadManager := pprevthreadmem;
-    if CAS32(pprevthreadmem, aThreadMem, FFirstFreedThreadMemory) then
-      break;
-    sleep(1);
-  until false;
-  *)
 end;
 
 function TGlobalMemManager.GetSmallBlockMemory(aItemSize: NativeUInt): PSmallMemBlock;
 var bl: PSmallMemBlockList;
 begin
   Result := nil;
-
   bl := Self.FGlobalThreadMemory.FSmallMemManager.GetBlockListOfSize(aItemSize - 1);
   if bl.FFirstFreedMemBlock = nil then Exit;
 
   ThreadLock;
-
   //in the mean time some inuse memory can be freed in an other thread
   ProcessFreedMemoryFromOtherThreads;
 
@@ -403,11 +382,6 @@ begin
   begin
     Result                 := bl.FFirstFreedMemBlock;
     bl.FFirstFreedMemBlock := Result.FNextFreedMemBlock;
-
-    Result.FNextFreedMemBlock      := nil;
-    Result.FNextMemBlock           := nil;
-    Result.FPreviousMemBlock       := nil;
-    Result.FPreviousFreedMemBlock  := nil;
   end;
 
   //UNLOCK
@@ -416,14 +390,9 @@ begin
 
   if Result <> nil then
   begin
-//    Result.OwnerList   := nil;
-//    Result.OwnerThread := nil;
-    Result.OwnerList   := Pointer(1);
-    Result.OwnerThread := Pointer(2);
-    {$IFDEF SCALEMM_DEBUG}
-    Assert(Result.OwnerThreadId = 1);
     Result.OwnerThreadId := 2;
-    {$ENDIF}
+    Result.OwnerList     := Pointer(1);
+    Result.OwnerManager  := Pointer(2);
     Result.FNextFreedMemBlock      := nil;
     Result.FNextMemBlock           := nil;
     Result.FPreviousMemBlock       := nil;
@@ -437,7 +406,6 @@ begin
   if FFirstBlock = nil then Exit;
 
   Threadlock;
-
   ProcessFreedMemoryFromOtherThreads;
 
   //LOCK
@@ -459,27 +427,26 @@ begin
   if Result <> nil then
   begin
     //rearrange linked list (replace first item)
-    FFirstBlock := FFirstBlock.NextBlock;
+    FFirstBlock := Result.NextBlock;
     if FFirstBlock <> nil then
       FFirstBlock.PreviousBlock := nil;
-
-    Result.NextBlock     := nil;
-    Result.PreviousBlock := nil;
     dec(FFreeBlockCount);
-
-    //must be locked before owner can be changed (in case some memory is freed in other thread?)
-    Result.ChangeOwnerThread(aNewOwner);
   end;
 
   //UNLOCK
   FBlockLock := 0;
-
   ThreadUnlock;
+
+  //got a block?
+  if Result <> nil then
+  begin
+    Result.NextBlock     := nil;
+    Result.PreviousBlock := nil;
+    Result.ChangeOwnerThread(aNewOwner);
+  end;
 end;
 
 function TGlobalMemManager.GetNewThreadManager: PThreadMemManager;
-//var
-//  pprevthreadmem, newthreadmem: PThreadMemManager;
 begin
   Result := nil;
 
@@ -496,53 +463,16 @@ begin
 
     ThreadUnLock;
   end;
-
-  (*
-  // get one cached instance from freed list
-  while FFirstFreedThreadMemory <> nil do
-  begin
-    pprevthreadmem := FFirstFreedThreadMemory;
-    if pprevthreadmem <> nil then
-      newthreadmem := pprevthreadmem.FNextThreadManager
-    else
-      newthreadmem := nil;
-
-    // try to set "result" in global var
-    if CAS32(pprevthreadmem, newthreadmem, FFirstFreedThreadMemory) then
-    begin
-      Result := pprevthreadmem;
-      if Result <> nil then
-        Result.FNextThreadManager := nil;
-      break;
-    end;
-    if not SwitchToThread then
-      sleep(0);
-    pprevthreadmem := FFirstFreedThreadMemory;
-    if pprevthreadmem <> nil then
-      newthreadmem := pprevthreadmem.FNextThreadManager
-    else
-      newthreadmem := nil;
-    // try to set "result" in global var
-    if CAS32(pprevthreadmem, newthreadmem, FFirstFreedThreadMemory) then
-    begin
-      Result := pprevthreadmem;
-      if Result <> nil then
-        Result.FNextThreadManager := nil;
-      break;
-    end;
-    sleep(1);
-  end;
-  *)
 end;
 
 procedure TGlobalMemManager.Init;
 begin
-    FGlobalThreadMemory := VirtualAlloc( nil,
-                            SizeOf(TThreadMemManager),
-                            MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
-                            PAGE_READWRITE);
-    FGlobalThreadMemory.Init;
-    FGlobalThreadMemory.FThreadId := 1;
+  FGlobalThreadMemory := VirtualAlloc( nil,
+                          SizeOf(TThreadMemManager),
+                          MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+                          PAGE_READWRITE);
+  FGlobalThreadMemory.Init;
+  FGlobalThreadMemory.FThreadId := 1;
 end;
 
 procedure TGlobalMemManager.ProcessFreedMemoryFromOtherThreads;
@@ -563,6 +493,8 @@ procedure TGlobalMemManager.ThreadLock;
 var
   iCurrentThreadId: NativeUInt;
 begin
+  //EnterCriticalSection(_ThreadLock);
+
   iCurrentThreadId := GetCurrentThreadId;
   if (FThreadLock = iCurrentThreadId) and
      (FThreadLockRecursion > 0) then
@@ -590,11 +522,15 @@ end;
 
 procedure TGlobalMemManager.ThreadUnLock;
 begin
+  //LeaveCriticalSection(_ThreadLock);
   dec(FThreadLockRecursion);
 
   if FThreadLockRecursion = 0 then
     //UNLOCK
     FThreadLock := 0;
 end;
+
+//initialization
+//  InitializeCriticalSection(_ThreadLock);
 
 end.
