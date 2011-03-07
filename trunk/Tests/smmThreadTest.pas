@@ -6,6 +6,11 @@ uses
   Classes, SyncObjs;
 
 type
+  TSmallAllocTestThread = class(TThread)
+  protected
+    procedure Execute;override;
+  end;
+
   TMediumAllocTestThread = class(TThread)
   protected
     procedure Execute;override;
@@ -36,6 +41,7 @@ type
 implementation
 
 uses
+  smmSmallMemory,
   smmFunctions;
 
 { TTestTest }
@@ -161,6 +167,29 @@ procedure TInterThreadMemTestThread.SetOtherThread(
   const Value: TInterThreadMemTestThread);
 begin
   FOtherThread := Value;
+end;
+
+{ TSmallAllocTestThread }
+
+procedure TSmallAllocTestThread.Execute;
+var
+  p1, p2, p3, p4: Pointer;
+  ap: array of Pointer;
+  i: Integer;
+begin
+  SetLength(ap, C_ARRAYSIZE * 6);
+
+  for i := 0 to High(ap) do
+    ap[i] := GetMemory(10);
+
+  for i := High(ap) downto High(ap) div 2 do
+  begin
+    FreeMemory( ap[i] );
+    ap[i] := nil;
+  end;
+
+  for i := 0 to High(ap) do
+    FreeMemory( ap[i] );
 end;
 
 end.

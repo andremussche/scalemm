@@ -12,6 +12,7 @@ type
     procedure SetUp; override;
     procedure TearDown; override;
   published
+    procedure SmallMem_AllocFree_Test;
     procedure MediumMem_AllocFree_Test;
     procedure InterThreadAllocFree_Test;
     procedure DoubleInterThreadAllocFree_Test;
@@ -62,6 +63,15 @@ end;
 
 procedure TThreadTests.SetUp;
 begin
+end;
+
+procedure TThreadTests.SmallMem_AllocFree_Test;
+var
+  _TestThread: TSmallAllocTestThread;
+begin
+  _TestThread := TSmallAllocTestThread.Create(False);
+  _TestThread.WaitFor;
+  _TestThread.Free;
 end;
 
 procedure TThreadTests.TearDown;

@@ -30,6 +30,9 @@ type
 
 implementation
 
+uses
+  ScaleMM2;
+
 procedure TGeneralTests.AllocAllReallocThenFreeAll_Test;
 begin
   AllocAllReallocThenFreeAll(0, 1024 * 10, 1, 1);  //0-10kb
@@ -62,6 +65,7 @@ end;
 
 procedure TGeneralTests.SetUp;
 begin
+  ScaleMM2.Scale_CheckMem(nil);
 end;
 
 procedure TGeneralTests.TearDown;
