@@ -20,7 +20,7 @@ type
   end;
 
 type
-  TTestRecord2 = record
+  TTestRecord2 = object
     P1: Integer;
     P2: Integer;
     P3: Integer;
@@ -208,7 +208,7 @@ begin
       stest := ws + ' ' + ws + ' ' + ws;
       }
 
-      {
+//      {
       p1 := GetMemory(10);
       p2 := GetMemory(40);
       p3 := GetMemory(80);
@@ -220,7 +220,7 @@ begin
       FreeMem(p1);
       FreeMem(p2);
       FreeMem(p3);
-      }
+//      }
 
       {
       p1 := GetMemory(10);
@@ -236,7 +236,7 @@ begin
       FreeMemory(p3);
       }
 
-//      {
+      {
       p1 := GetMemory(10 * 1024);
       p2 := GetMemory(40 * 1024);
       p3 := GetMemory(80 * 1024);
@@ -248,7 +248,7 @@ begin
       FreeMemory(p1);
       FreeMemory(p2);
       FreeMemory(p3);
-//      }
+      }
 
 
       (*
