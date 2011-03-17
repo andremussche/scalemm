@@ -23,7 +23,7 @@ type
     Size       : NativeUInt;
   end;
 
-  TLargeThreadManagerOffset = packed record
+  TLargeThreadManagerOffset = packed object
   public
     //SizeType    : TSizeType;
     Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium block

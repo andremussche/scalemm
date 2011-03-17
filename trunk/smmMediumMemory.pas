@@ -15,7 +15,7 @@ type
   //PMediumThreadManagerOffset = ^TMediumThreadManagerOffset;
 
   //16 bytes, single memory item
-  TMediumHeader = record
+  TMediumHeader = object
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1     : NativeInt;
     Magic2     : NativeInt;  //8byte aligned
@@ -30,7 +30,7 @@ type
     procedure CheckMem(aDirection: TScanDirection = sdBoth);
   end;
   //40 bytes, first 16 are the same, rest are use for a free block
-  TMediumHeaderExt = record
+  TMediumHeaderExt = object
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1       : NativeInt;
     Magic2       : NativeInt;  //8byte aligned
@@ -55,7 +55,7 @@ type
   end;
 
   //Block of 1Mb
-  TMediumBlockMemory = record           //16bytes
+  TMediumBlockMemory = object           //16bytes
     /// Thread owner, must be first item of block (same offset as PBaseBlockMemory)
     OwnerManager  : PMediumThreadManager;
     Size         : NativeUInt;
@@ -67,7 +67,7 @@ type
     procedure ChangeOwnerThread(aOwnerThread: PMediumThreadManager);
   end;
 
-  TMediumThreadManagerOffset = packed record
+  TMediumThreadManagerOffset = packed object
   public
     //SizeType    : TSizeType;
     Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium block
@@ -76,7 +76,7 @@ type
   end;
 
   //Medium memory manager of a thread
-  TMediumThreadManager = record
+  TMediumThreadManager = object
   public
     SizeType: TSizeType;
     OwnerThread: PBaseThreadManager;
