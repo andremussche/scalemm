@@ -47,7 +47,7 @@ type
     //small, medium and large mem can add extra stuff BEHIND
   end;
 
-  TBaseThreadManagerOffset = packed record
+  TBaseThreadManagerOffset = packed object
   public
     //FOtherThreadFreedMemory: PBaseFreeMemHeader;
     //Filler0: Byte;   //1 or 2 (lowest bits) = medium or large
