@@ -12,6 +12,8 @@ type
     procedure SetUp; override;
     procedure TearDown; override;
   published
+    procedure LargeArrayFillTest;
+
     procedure ZeroOrNegativeAlloc_Test;
     procedure AllocAllThenFreeAll_Test;
     procedure AllocAllReallocThenFreeAll_Test;
@@ -41,6 +43,11 @@ end;
 procedure TGeneralTests.AllocAllThenFreeAll_Test;
 begin
   AllocAllThenFreeAll(0, 1024 * 20, 1);  //0 - 20kb
+end;
+
+procedure TGeneralTests.LargeArrayFillTest;
+begin
+  smmArrayTest.LargeArrayFillTest;
 end;
 
 procedure TGeneralTests.MediumBlockPreviousMemFree_Test;

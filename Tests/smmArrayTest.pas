@@ -2,6 +2,7 @@ unit smmArrayTest;
 
 interface
 
+  procedure LargeArrayFillTest;
   procedure AllocAllThenFreeAll(aStart, aCount, aStep: NativeUInt);
   procedure AllocAllReallocThenFreeAll(aStart, aCount, aStep, aReallocInc: NativeUInt);
   procedure MediumBlockPreviousMemFree;
@@ -10,7 +11,65 @@ interface
 implementation
 
 uses
-  smmMediumMemory;
+  smmMediumMemory, smmLargeMemory;
+
+procedure LargeArrayFillTest;
+var
+  SomeArray : array of Cardinal;
+  i: integer;
+  iMax: integer;
+  p: pointer;
+begin
+  //i := 262120;
+  //i := 262118;
+  i := (C_MAX_MEDIUMMEM_SIZE - SizeOf(TMediumHeader)) div SizeOf(Cardinal) - 4;
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+  inc(i);
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+  inc(i);
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+  inc(i);
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+
+  dec(i);
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+  dec(i);
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+  dec(i);
+  SetLength(SomeArray, i);
+  SomeArray[i-1] := i;
+
+  i := (C_MAX_MEDIUMMEM_SIZE - SizeOf(TMediumHeader)) - 4;
+  p := GetMemory(i);
+  inc(i);
+  ReallocMem(p, i);
+  inc(i);
+  ReallocMem(p, i);
+  inc(i);
+  ReallocMem(p, i);
+  inc(i);
+  ReallocMem(p, i);
+  inc(i);
+  ReallocMem(p, i);
+
+
+
+  iMax := C_MAX_MEDIUMMEM_SIZE;
+
+  for i := 0 to iMax do
+  begin
+    SetLength(SomeArray, i+1);
+    SomeArray[i] := i+1;
+  end;
+
+end;
+
 
 procedure AllocAllThenFreeAll(aStart, aCount, aStep: NativeUInt);
 var
