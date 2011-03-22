@@ -67,7 +67,9 @@ type
     procedure ChangeOwnerThread(aOwnerThread: PMediumThreadManager);
   end;
 
-  TMediumThreadManagerOffset = packed object
+  TMediumThreadManagerOffset = packed
+                               {$if CompilerVersion >= 18} //Delphi 2007 and higher?
+                               record {$ELSE} object {$ifend}
   public
     //SizeType    : TSizeType;
     Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium block
@@ -107,8 +109,9 @@ const
   C_MAX_MEDIUMMEM_SIZE =  (1 shl 16 shl 4) - //1Mb
                           //(1 shl 16 shl 3) - //100kb
                           SizeOf(TMediumBlockMemory) -
-                          SizeOf(TMediumHeader) -
-                          SizeOf(TMediumHeader);
+                          SizeOf(TMediumHeader) -   //start
+                          SizeOf(TMediumHeader) -   //header of each block
+                          SizeOf(TMediumHeader);    //end
 
 implementation
 
@@ -159,8 +162,9 @@ begin
     pheader.Size       := iAllocSize -
                           SizeOf(TMediumBlockMemory) -  //block
                           SizeOf(TMediumHeader) -       //start
+                          SizeOf(TMediumHeader) -       //header of each mem
                           SizeOf(TMediumHeader);        //end(!)
-    pheader.NextMem    := PMediumHeader( NativeUInt(pheader) + pheader.Size);
+    pheader.NextMem    := PMediumHeader( NativeUInt(pheader) + pheader.Size ); 
     //reset end
     pheader.NextMem.Size        := 0;
     pheader.NextMem.OwnerThread := pthreadoffset;
@@ -519,6 +523,7 @@ begin
   iMSB      := BitScanLast(                   //get highest bit
                            allocsize shr 4);  //div 16 so 1mb fits in 16bit
   allocsize := allocsize and -8;              //8byte aligned: we've add 8 before and remove lowest bits now
+  Assert(allocsize >= aSize);
   iFreeMemIndex := 0;
 
   //first without +1 and check if size is OK (otherwise alloc of same size after alloc + free will fail)
@@ -1181,7 +1186,7 @@ begin
   if (PrevMem <> nil) then
   begin
     Assert( NativeUInt(PrevMem) < NativeUInt(@Self) );
-    Assert( NativeUInt(@Self) - NativeUInt(PrevMem) <= C_MAX_MEDIUMMEM_SIZE );
+    Assert( NativeUInt(@Self) - NativeUInt(PrevMem) <= C_MAX_MEDIUMMEM_SIZE + SizeOf(TMediumHeader));
     Assert( OwnerThread = PrevMem.OwnerThread );
     //pheader := PMediumHeader(NativeUInt(PrevMem) + (PrevMem.Size and -2) );
     //pheader := PrevMem.NextMem;
@@ -1196,7 +1201,7 @@ begin
 //    pheader := PMediumHeader(NativeUInt(@Self) + (Self.Size and -2));
     pheader := NextMem;
     Assert( NativeUInt(pheader) > NativeUInt(@Self) );
-    Assert( NativeUInt(pheader) - NativeUInt(@Self) <= C_MAX_MEDIUMMEM_SIZE );
+    Assert( NativeUInt(pheader) - NativeUInt(@Self) <= C_MAX_MEDIUMMEM_SIZE + SizeOf(TMediumHeader) );
     Assert( OwnerThread = pheader.OwnerThread );
     Assert( pheader.PrevMem = @Self );
 
