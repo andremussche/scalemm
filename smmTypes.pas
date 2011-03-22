@@ -47,7 +47,9 @@ type
     //small, medium and large mem can add extra stuff BEHIND
   end;
 
-  TBaseThreadManagerOffset = packed object
+  TBaseThreadManagerOffset = packed
+                             {$if CompilerVersion >= 18} //Delphi 2007 and higher?
+                             record {$ELSE} object {$ifend}
   public
     //FOtherThreadFreedMemory: PBaseFreeMemHeader;
     //Filler0: Byte;   //1 or 2 (lowest bits) = medium or large

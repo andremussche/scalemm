@@ -23,7 +23,9 @@ type
     Size       : NativeUInt;
   end;
 
-  TLargeThreadManagerOffset = packed object
+  TLargeThreadManagerOffset = packed
+                              {$if CompilerVersion >= 18} //Delphi 2007 and higher?
+                              record {$ELSE} object {$ifend}
   public
     //SizeType    : TSizeType;
     Filler1, Filler2, Filler3: Byte;  //offset of 1 to distinguish of being medium block
@@ -51,6 +53,7 @@ type
 implementation
 
 uses
+  smmMediumMemory,
   smmFunctions, ScaleMM2;
 
 { TLargeMemThreadManager }
@@ -103,9 +106,11 @@ var
 begin
   iAllocSize    := aSize + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader);
   iAllocSize    := (iAllocSize + LargeBlockGranularity) and -LargeBlockGranularity; //round to 64k
+  if iAllocSize <= C_MAX_MEDIUMMEM_SIZE then
+    iAllocSize  := C_MAX_MEDIUMMEM_SIZE + SizeOf(TLargeHeader);
   //block
   pblock        := Self.GetMem(iAllocSize);
-  pblock.OwnerManager   := @Self;
+  pblock.OwnerManager  := @Self;
   pblock.Size          := iAllocSize;
 
   //first item
@@ -113,7 +118,8 @@ begin
   pthreadoffset      := PBaseThreadManagerOffset(NativeUInt(Self.OwnerThread) or 2);
   //pheader.OwnerBlock := pblock;
   pheader.OwnerBlock := pthreadoffset;
-  pheader.Size       := aSize + SizeOf(TLargeHeader);
+  //pheader.Size       := aSize + SizeOf(TLargeHeader);
+  pheader.Size       := iAllocSize - SizeOf(TLargeBlockMemory);
 
   Result := Pointer(NativeUInt(pheader) + SizeOf(TLargeHeader));
 end;

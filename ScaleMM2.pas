@@ -575,7 +575,7 @@ begin
       Exit;
     end
   end
-  else if aSize <= C_MAX_MEDIUMMEM_SIZE then  //till 1Mb
+  else if aSize <= C_MAX_MEDIUMMEM_SIZE - SizeOf(TMediumHeader) then  //till 1Mb
     Result := FMediumMemManager.GetMem(aSize)
   else
   begin
@@ -637,7 +637,7 @@ begin
         begin
           Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 = 0 ); //must be marked as medium!
           //within 1/2?
-          if (NativeUInt(aSize) + SizeOf(TMediumHeader) < iSize) and
+          if (NativeUInt(aSize) + SizeOf(TMediumHeader) <= iSize) and
              (NativeUInt(aSize) > iSize shr 1) then
             Exit
         end
@@ -645,7 +645,7 @@ begin
         begin
           Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 <> 0); //must marked as large!
           //within 1/2?
-          if (NativeUInt(aSize) + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader) < iSize) and
+          if (NativeUInt(aSize) + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader) <= iSize) and
              (NativeUInt(aSize) > iSize shr 1) then
             Exit
         end;
