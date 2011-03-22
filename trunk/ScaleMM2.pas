@@ -78,16 +78,18 @@ Change log:
  Version 1.1 (6 December 2010):
   - Some optimizations for better "Fast Code MM Challenge Benchmark" results
     (lower memory overhead, more memory reuse, less locking)
- Version 2.0a (25 Januari 2011):
+ Version 2.02a (25 Januari 2011):
   - added medium memory handling (<1Mb), large memory is direct done via VirtualAlloc etc
   - splitted in seperate units to make developing/testing easier
   - empty units for stats and logging (will be implemented later)
- Version 2.0b (23 Februari 2011):
+ Version 2.04b (23 Februari 2011):
   - realloc optimizations
   - lots of internal CheckMem's (for validation)
   - interthread memory is now handled (alloc in thread 1, free in thread 2)
   - small (difficult to find) bugs fixed and other optimalizations
   - check for 8byte alignment (needed for OmniThreadLibrary etc)
+ Version 2.05 (19 March 2011):
+  - small size realloc bug fixed, now passes FastCode validations (D2007 and D2010)
 }
 
 interface
