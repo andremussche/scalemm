@@ -639,17 +639,31 @@ begin
         begin
           Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 = 0 ); //must be marked as medium!
           //within 1/2?
-          if (NativeUInt(aSize) + SizeOf(TMediumHeader) <= iSize) and
-             (NativeUInt(aSize) > iSize shr 1) then
-            Exit
+          if (NativeUInt(aSize) + SizeOf(TMediumHeader) <= iSize) then
+          begin
+             if (NativeUInt(aSize) > iSize shr 1) then
+               Exit
+          end
+          else
+          begin
+            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2));
+            Exit;
+          end;
         end
         else                                  //large mem
         begin
           Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 <> 0); //must marked as large!
           //within 1/2?
-          if (NativeUInt(aSize) + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader) <= iSize) and
-             (NativeUInt(aSize) > iSize shr 1) then
-            Exit
+          if (NativeUInt(aSize) + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader) <= iSize) then
+          begin
+            if (NativeUInt(aSize) > iSize shr 1) then
+              Exit
+          end
+          else
+          begin
+            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2));
+            Exit;
+          end;
         end;
       end;
 
@@ -660,7 +674,7 @@ begin
       Exit;
     end;
 
-    Result := GetThreadMemManager.ReallocMem(aMemory, aSize);
+    Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2) );
   end
   else
   begin
