@@ -255,8 +255,8 @@ var
   pOwnerList: PSmallMemBlockList;
 {$ENDIF}
 begin
-  //if OwnerList.FFirstMemBlock = @Self then
-  //  Exit; //keep one block
+  if OwnerList.FFirstMemBlock = @Self then
+    Exit; //keep one block
 
   {$IFDEF SCALEMM_DEBUG}
   Self.CheckMem(sdBoth);
