@@ -654,7 +654,7 @@ begin
         begin
           Assert( NativeUInt(PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader)).OwnerBlock) and 2 <> 0); //must marked as large!
           //within 1/2?
-          if (NativeUInt(aSize) + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader) <= iSize) then
+          if (NativeUInt(aSize) + SizeOf(TLargeHeader) {+ SizeOf(TLargeBlockMemory)} <= iSize) then
           begin
             if (NativeUInt(aSize) > iSize shr 1) then
               Exit

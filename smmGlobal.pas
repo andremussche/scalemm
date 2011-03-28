@@ -261,7 +261,7 @@ begin
         Exit;
       end;
     end;
-    Assert(False);
+    //(False);
   end;
 
   aBlockMem.ChangeOwnerThread(@Self.FGlobalThreadMemory.FMediumMemManager);
