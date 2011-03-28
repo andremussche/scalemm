@@ -39,6 +39,11 @@
 {$DEFINE Align8Bytes}     // 8 byte aligned header, needed for OmniThreadLibrary etc
 {.$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
 
+{$IFDEF CPUX64}
+  {$DEFINE PURE_PASCAL}    // no assembly, pure delphi code
+  {$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
+{$ENDIF}
+
 {$IFDEF DEBUG}
   {.$DEFINE SCALEMM_FILLFREEMEM}
 {$ENDIF}

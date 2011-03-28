@@ -86,13 +86,14 @@ const
 
   function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 
-  function  CAS32(const oldValue: pointer; newValue: pointer; var destination): boolean;overload;
-  function  CAS32(const aOldValue: NativeUInt; aNewValue: NativeUInt; var aDestination): boolean;overload;
-  procedure InterlockedIncrement(var Value: Byte);overload;
-  procedure InterlockedDecrement(var Value: Byte);overload;
-  procedure InterlockedIncrement(var Value: Integer);overload;
-  procedure InterlockedDecrement(var Value: Integer);overload;
-  function  InterlockedAdd(var Addend: Integer): Integer;
+  function  CAS32(aOldValue, aNewValue: Byte; aDestination: Pointer): boolean;overload;
+  function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
+  function  CAS32(aOldValue, aNewValue: Pointer; aDestination: Pointer): boolean;overload;
+//  procedure InterlockedIncrement(var Value: Byte);overload;
+//  procedure InterlockedDecrement(var Value: Byte);overload;
+//  procedure InterlockedIncrement(var Value: Integer);overload;
+//  procedure InterlockedDecrement(var Value: Integer);overload;
+//  function  InterlockedAdd(var Addend: Integer): Integer;
   function  BitScanLast(aValue: Word): NativeUInt;
   function  BitScanFirst(aValue: NativeInt): NativeUInt;
 
@@ -146,29 +147,55 @@ end;
 ////////////////////////////////////////////////////////////////////////////////
 //Assembly functions
 
-// compare oldvalue with destination: if equal then newvalue is set
-function CAS32(const oldValue: pointer; newValue: pointer; var destination): boolean;
-asm // eax=oldValue, edx=newValue, ecx=Destination
-  lock cmpxchg dword ptr [Destination],newValue
+function  CAS32(aOldValue, aNewValue: Pointer; aDestination: Pointer): boolean;overload;
+asm
+  //                          Win32 Win64
+  // aOldValue     : byte    EAX   RCX
+  // aNewValue     : byte    EDX   RDX
+  // aDestination  : pointer ECX   R8
+{$IFDEF CPU386}
+  lock cmpxchg [aDestination], aNewValue
+  setz al
+{$ELSE} .NOFRAME
+  mov  rax, aOldValue
+  lock cmpxchg [aDestination], aNewValue
   setz  al
-{$ifdef SPINWAITBACKOFF}
-  jz @ok
-  pause // let the CPU know this thread is in a Spin Wait loop
-@ok:
 {$endif}
 end;
 
-function  CAS32(const aOldValue: NativeUInt; aNewValue: NativeUInt; var aDestination): boolean;overload;
-asm // eax=oldValue, edx=newValue, ecx=Destination
-  lock cmpxchg dword ptr [aDestination], aNewValue
+function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
+asm
+  //                          Win32 Win64
+  // aOldValue     : byte    EAX   RCX
+  // aNewValue     : byte    EDX   RDX
+  // aDestination  : pointer ECX   R8
+{$IFDEF CPU386}
+  lock cmpxchg [aDestination], aNewValue
+  setz al
+{$ELSE} .NOFRAME
+  mov  rax, aOldValue
+  lock cmpxchg [aDestination], aNewValue
   setz  al
-{$ifdef SPINWAITBACKOFF}
-  jz @ok
-  pause // let the CPU know this thread is in a Spin Wait loop
-@ok:
 {$endif}
 end;
 
+function CAS32(aOldValue: Byte; aNewValue: Byte; aDestination: Pointer): boolean;overload;
+asm
+  //                          Win32 Win64
+  // aOldValue     : byte    AL    CL
+  // aNewValue     : byte    DL    DL
+  // aDestination  : pointer ECX   R8
+{$IFDEF CPU386}
+  lock cmpxchg [aDestination],dl
+  setz al
+{$ELSE} .NOFRAME
+  mov  al, cl
+  lock cmpxchg [aDestination], aNewValue
+  setz  al
+{$endif}
+end;
+
+(*
 procedure InterlockedIncrement(var Value: Byte);
 asm
   lock inc byte [Value]
@@ -198,17 +225,26 @@ procedure InterlockedDecrement(var Value: Integer);
 asm
   lock dec [Value]
 end;
+*)
 
 //find first bit (0..31)
 //http://www.arl.wustl.edu/~lockwood/class/cs306/books/artofasm/Chapter_6/CH06-4.html
 function BitScanFirst(aValue: NativeInt): NativeUInt;
 asm
+{$IFDEF CPU386}
   BSF	EAX, aValue;
+{$ELSE} .NOFRAME
+  BSF	RAX, aValue;
+{$ENDIF}
 end;
 
 function BitScanLast(aValue: Word): NativeUInt;
 asm
+{$IFDEF CPU386}
   BSR	AX, aValue;
+{$ELSE} .NOFRAME
+  BSR	AX, aValue;
+{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////////////////////////

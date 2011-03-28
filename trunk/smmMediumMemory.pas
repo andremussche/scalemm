@@ -19,7 +19,14 @@ type
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1     : NativeInt;
     Magic2     : NativeInt;  //8byte aligned
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
     {$ENDIF}
+
     //linked items in one block
     NextMem    : PMediumHeader;
     PrevMem    : PMediumHeader;
@@ -34,7 +41,14 @@ type
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1       : NativeInt;
     Magic2       : NativeInt;  //8byte aligned
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
     {$ENDIF}
+
     NextMem      : PMediumHeader;
     PrevMem      : PMediumHeader;
     Size         : NativeUInt;
@@ -481,7 +495,7 @@ const
    a multiple of this size plus MediumBlockSizeOffset, to avoid cache line
    conflicts}
   //MediumBlockGranularity = 256;
-  MediumBlockSizeOffset = 48;
+  C_MediumBlockSizeOffset = 48;
 
 function TMediumThreadManager.GetFilledMem(aSize: NativeUInt): Pointer;
 var
@@ -514,7 +528,7 @@ begin
   allocsize := ( aSize +
                  SizeOf(TMediumHeader) +      //alloc extra for header
                  //8 );                       //8byte aligned: add 8 and remove lowest bits (later)
-                 MediumBlockSizeOffset );
+                 C_MediumBlockSizeOffset );
   if allocsize < SizeOf(TMediumHeaderExt) then
     allocsize := SizeOf(TMediumHeaderExt);
   if allocsize > C_MAX_MEDIUMMEM_SIZE then
@@ -522,7 +536,12 @@ begin
   Assert(allocsize <= C_MAX_MEDIUMMEM_SIZE);
   iMSB      := BitScanLast(                   //get highest bit
                            allocsize shr 4);  //div 16 so 1mb fits in 16bit
+  {$IFDEF Align16Bytes}
+  allocsize := allocsize and -16;
+  {$ELSE}
   allocsize := allocsize and -8;              //8byte aligned: we've add 8 before and remove lowest bits now
+  {$ENDIF}
+
   Assert(allocsize >= aSize);
   iFreeMemIndex := 0;
 
@@ -916,8 +935,11 @@ begin
   //downscaling?
   else if (newsize <= currentsize) then
   begin
-    //newsize       := newsize + (aSize div 8);    //alloc some extra mem for small grow
-    newsize       := (newsize + MediumBlockSizeOffset) and -8;  //8byte aligned: add 8 and remove lowest bits
+    {$IFDEF Align16Bytes}
+    newsize       := (newsize + C_MediumBlockSizeOffset) and -16;
+    {$ELSE}
+    newsize       := (newsize + C_MediumBlockSizeOffset) and -8;  //8byte aligned: add 8 and remove lowest bits
+    {$ENDIF}
 
     //round if downsize a "medium" max size memory
     if newsize > C_MAX_MEDIUMMEM_SIZE then
@@ -986,8 +1008,13 @@ begin
     if newsize <= C_MAX_MEDIUMMEM_SIZE then
     begin
       //newsize  := newsize + (aSize div 16); //alloc some extra mem for small grow
-      newsize  := newsize + (aSize shr 3);    //alloc some extra mem (12,5%) to grow
-      newsize  := (newsize + MediumBlockSizeOffset) and -8;       //8byte aligned: add 8 and remove lowest bits
+      //newsize  := newsize + (aSize shr 3);    //alloc some extra mem (12,5%) to grow: already done in ScaleMM2.realloc
+      {$IFDEF Align16Bytes}
+      newsize  := (newsize + C_MediumBlockSizeOffset) and -16;
+      {$ELSE}
+      newsize  := (newsize + C_MediumBlockSizeOffset) and -8;       //8byte aligned: add 8 and remove lowest bits
+      {$ENDIF}
+
       if newsize < SizeOf(TMediumHeaderExt) then
         newsize := SizeOf(TMediumHeaderExt);
       if newsize > C_MAX_MEDIUMMEM_SIZE then

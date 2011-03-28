@@ -26,15 +26,16 @@ type
 
   /// Header appended to the beginning of every allocated memory block
   TSmallMemHeader = object
-    {$IFDEF Align16Bytes}
-      {$ifndef CPUX64}
-      Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
-      Filer2: Pointer;
-      {$endif}
-    {$ENDIF}
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1: Integer;
     Magic2: Integer;
+    {$ELSE}
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
     {$ENDIF}
 
     Size: NativeUInt;
@@ -46,15 +47,16 @@ type
   end;
 
   TSmallMemHeaderFree = object
-    {$IFDEF Align16Bytes}
-      {$ifndef CPUX64}
-      Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
-      Filer2: Pointer;
-      {$endif}
-    {$ENDIF}
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1: Integer;
     Magic2: Integer;
+    {$ELSE}
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
     {$ENDIF}
 
     Size: NativeUInt;
@@ -93,9 +95,23 @@ type
     FNextFreedMemBlock: PSmallMemBlock;
     /// link to the previous list with freed memory
     FPreviousFreedMemBlock: PSmallMemBlock;
+
     {$IFDEF SCALEMM_DEBUG}
     OwnerThreadId: NativeUInt;
     Filler1: NativeUInt; //8byte aligned
+//      {$IFDEF Align16Bytes}
+//        {$ifndef CPUX64}
+//        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+//        Filer2: Pointer;
+//        {$endif}
+//      {$ENDIF}
+//    {$ELSE}
+//      {$IFDEF Align16Bytes}
+//        {$ifndef CPUX64}
+//        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+//        Filer2: Pointer;
+//        {$endif}
+//      {$ENDIF}
     {$ENDIF}
 
     function  GetUsedMemoryItem: PSmallMemHeader;    {$ifdef HASINLINE}inline;{$ENDIF}
@@ -431,6 +447,9 @@ begin
     pm.FMemoryArray := Pointer(NativeUInt(pm) + SizeOf(pm^));
     {$IFDEF Align8Bytes}
     Assert( NativeUInt(pm.FMemoryArray) AND 7 = 0);
+    {$ENDIF}
+    {$IFDEF Align16Bytes}
+    Assert( NativeUInt(pm.FMemoryArray) AND 15 = 0);
     {$ENDIF}
     {$IFDEF SCALEMM_DEBUG}
     pm.OwnerList     := Pointer(1);
