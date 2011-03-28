@@ -166,6 +166,10 @@ type
   function GetThreadMemManager: PThreadMemManager;
   function CreateMemoryManager: PThreadMemManager;
 
+{$IFDEF PURE_PASCAL}
+threadvar
+  GCurrentThreadManager: PThreadMemManager;
+{$ENDIF}
 implementation
 
 // Windows.pas unit dependency should be not used -> seperate file
@@ -188,8 +192,6 @@ uses
 {$ifend}
 
 {$IFDEF PURE_PASCAL}
-threadvar
-  GCurrentThreadManager: PThreadMemManager;
 
 function GetThreadMemManager: PThreadMemManager; {$ifdef HASINLINE}inline;{$ENDIF}
 begin
@@ -273,13 +275,13 @@ begin
   if FOtherThreadFreedMemory = nil then Exit;
 
   //LOCK
-  while not CAS32(0, 1, FOtherThreadFreeLock) do
+  while not CAS32(0, 1, @FOtherThreadFreeLock) do
   begin
     //small wait: try to swith to other pending thread (if any) else direct continue
     if not SwitchToThread then
       sleep(0);
     //try again
-    if CAS32(0, 1, FOtherThreadFreeLock) then
+    if CAS32(0, 1, @FOtherThreadFreeLock) then
       Break;
     //wait some longer: force swith to any other thread
     sleep(1);
@@ -542,13 +544,13 @@ procedure TThreadMemManager.AddFreeMemToOwnerThread(aFirstMem,
   aLastMem: PBaseFreeMemHeader);
 begin
   //LOCK
-  while not CAS32(0, 1, FOtherThreadFreeLock) do
+  while not CAS32(0, 1, @FOtherThreadFreeLock) do
   begin
     //small wait: try to swith to other pending thread (if any) else direct continue
     if not SwitchToThread then
       sleep(0);
     //try again
-    if CAS32(0, 1, FOtherThreadFreeLock) then
+    if CAS32(0, 1, @FOtherThreadFreeLock) then
       Break;
     //wait some longer: force swith to any other thread
     sleep(1);
@@ -586,6 +588,9 @@ begin
 
   {$IFDEF Align8Bytes}
   Assert( NativeUInt(Result) AND 7 = 0);
+  {$ENDIF}
+  {$IFDEF Align16Bytes}
+  Assert( NativeUInt(Result) AND 15 = 0);
   {$ENDIF}
 end;
 
@@ -646,7 +651,7 @@ begin
           end
           else
           begin
-            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2));
+            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 3));  //add extra size (12,5%)
             Exit;
           end;
         end
@@ -661,7 +666,7 @@ begin
           end
           else
           begin
-            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2));
+            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 3));  //add extra size (12,5%)
             Exit;
           end;
         end;

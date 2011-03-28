@@ -267,33 +267,36 @@ begin
   aBlockMem.ChangeOwnerThread(@Self.FGlobalThreadMemory.FMediumMemManager);
 
   Threadlock;
-  ProcessFreedMemoryFromOtherThreads;
+  try
+    ProcessFreedMemoryFromOtherThreads;
 
-  //LOCK
-  while not CAS32(0, 1, FBlockLock) do
-  begin
-    //small wait: try to swith to other pending thread (if any) else direct continue
-    if not SwitchToThread then
-      sleep(0);
-    //try again
-    if CAS32(0, 1, FBlockLock) then
-      Break;
-    //wait some longer: force swith to any other thread
-    sleep(1);
+    //LOCK
+    while not CAS32(0, 1, @FBlockLock) do
+    begin
+      //small wait: try to swith to other pending thread (if any) else direct continue
+      if not SwitchToThread then
+        sleep(0);
+      //try again
+      if CAS32(0, 1, @FBlockLock) then
+        Break;
+      //wait some longer: force swith to any other thread
+      sleep(1);
+    end;
+
+    //linked list of thread blocks: replace first item
+    if FFirstBlock <> nil then
+      FFirstBlock.PreviousBlock := aBlockMem;
+    aBlockMem.NextBlock         := FFirstBlock;
+    aBlockMem.PreviousBlock     := nil;
+    FFirstBlock                 := aBlockMem;
+
+    inc(FFreeBlockCount);
+
+  finally
+    //UNLOCK
+    FBlockLock := 0;
+    ThreadUnlock;
   end;
-
-  //linked list of thread blocks: replace first item
-  if FFirstBlock <> nil then
-    FFirstBlock.PreviousBlock := aBlockMem;
-  aBlockMem.NextBlock         := FFirstBlock;
-  aBlockMem.PreviousBlock     := nil;
-  FFirstBlock                 := aBlockMem;
-
-  inc(FFreeBlockCount);
-
-  //UNLOCK
-  FBlockLock := 0;
-  ThreadUnlock;
 end;
 
 procedure TGlobalMemManager.FreeMediumBlocksFromThreadMemory(
@@ -361,32 +364,34 @@ begin
   if bl.FFirstFreedMemBlock = nil then Exit;
 
   ThreadLock;
-  //in the mean time some inuse memory can be freed in an other thread
-  ProcessFreedMemoryFromOtherThreads;
+  try
+    //in the mean time some inuse memory can be freed in an other thread
+    ProcessFreedMemoryFromOtherThreads;
 
-  //LOCK
-  while not CAS32(0, 1, FBlockLock) do
-  begin
-    //small wait: try to swith to other pending thread (if any) else direct continue
-    if not SwitchToThread then
-      sleep(0);
-    //try again
-    if CAS32(0, 1, FBlockLock) then
-      Break;
-    //wait some longer: force swith to any other thread
-    sleep(1);
+    //LOCK
+    while not CAS32(0, 1, @FBlockLock) do
+    begin
+      //small wait: try to swith to other pending thread (if any) else direct continue
+      if not SwitchToThread then
+        sleep(0);
+      //try again
+      if CAS32(0, 1, @FBlockLock) then
+        Break;
+      //wait some longer: force swith to any other thread
+      sleep(1);
+    end;
+
+    // get freed mem from list from front (replace first item)
+    if bl.FFirstFreedMemBlock <> nil then
+    begin
+      Result                 := bl.FFirstFreedMemBlock;
+      bl.FFirstFreedMemBlock := Result.FNextFreedMemBlock;
+    end;
+  finally
+    //UNLOCK
+    FBlockLock := 0;
+    ThreadUnlock;
   end;
-
-  // get freed mem from list from front (replace first item)
-  if bl.FFirstFreedMemBlock <> nil then
-  begin
-    Result                 := bl.FFirstFreedMemBlock;
-    bl.FFirstFreedMemBlock := Result.FNextFreedMemBlock;
-  end;
-
-  //UNLOCK
-  FBlockLock := 0;
-  ThreadUnlock;
 
   if Result <> nil then
   begin
@@ -408,36 +413,38 @@ begin
   if FFirstBlock = nil then Exit;
 
   Threadlock;
-  ProcessFreedMemoryFromOtherThreads;
+  try
+    ProcessFreedMemoryFromOtherThreads;
 
-  //LOCK
-  while not CAS32(0, 1, FBlockLock) do
-  begin
-    //small wait: try to swith to other pending thread (if any) else direct continue
-    if not SwitchToThread then
-      sleep(0);
-    //try again
-    if CAS32(0, 1, FBlockLock) then
-      Break;
-    //wait some longer: force swith to any other thread
-    sleep(1);
+    //LOCK
+    while not CAS32(0, 1, @FBlockLock) do
+    begin
+      //small wait: try to swith to other pending thread (if any) else direct continue
+      if not SwitchToThread then
+        sleep(0);
+      //try again
+      if CAS32(0, 1, @FBlockLock) then
+        Break;
+      //wait some longer: force swith to any other thread
+      sleep(1);
+    end;
+
+    //get block
+    Result := FFirstBlock;
+    //got a block?
+    if Result <> nil then
+    begin
+      //rearrange linked list (replace first item)
+      FFirstBlock := Result.NextBlock;
+      if FFirstBlock <> nil then
+        FFirstBlock.PreviousBlock := nil;
+      dec(FFreeBlockCount);
+    end;
+  finally
+    //UNLOCK
+    FBlockLock := 0;
+    ThreadUnlock;
   end;
-
-  //get block
-  Result := FFirstBlock;
-  //got a block?
-  if Result <> nil then
-  begin
-    //rearrange linked list (replace first item)
-    FFirstBlock := Result.NextBlock;
-    if FFirstBlock <> nil then
-      FFirstBlock.PreviousBlock := nil;
-    dec(FFreeBlockCount);
-  end;
-
-  //UNLOCK
-  FBlockLock := 0;
-  ThreadUnlock;
 
   //got a block?
   if Result <> nil then
@@ -483,12 +490,13 @@ begin
 
   //LOCK: no threads may be removed/freed now
   ThreadLock;
-
-  //in the mean time some inuse memory can be freed in an other thread
-  FGlobalThreadMemory.ProcessFreedMemFromOtherThreads;
-
-  //UNLOCK
-  ThreadUnLock;
+  try
+    //in the mean time some inuse memory can be freed in an other thread
+    FGlobalThreadMemory.ProcessFreedMemFromOtherThreads;
+  finally
+    //UNLOCK
+    ThreadUnLock;
+  end;
 end;
 
 procedure TGlobalMemManager.ThreadLock;
@@ -501,19 +509,19 @@ begin
   if (FThreadLock = iCurrentThreadId) and
      (FThreadLockRecursion > 0) then
   begin
-    Assert( CAS32(iCurrentThreadId, iCurrentThreadId, FThreadLock) );
+    Assert( CAS32(iCurrentThreadId, iCurrentThreadId, @FThreadLock) );
     inc(FThreadLockRecursion);
     Exit;
   end;
 
   //LOCK: no threads may be removed/freed now
-  while not CAS32(0, iCurrentThreadId, FThreadLock) do
+  while not CAS32(0, iCurrentThreadId, @FThreadLock) do
   begin
     //small wait: try to swith to other pending thread (if any) else direct continue
     if not SwitchToThread then
       sleep(0);
     //try again
-    if CAS32(0, iCurrentThreadId, FThreadLock) then
+    if CAS32(0, iCurrentThreadId, @FThreadLock) then
       Break;
     //wait some longer: force swith to any other thread
     sleep(1);
