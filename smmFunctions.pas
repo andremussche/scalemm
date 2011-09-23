@@ -2,8 +2,10 @@ unit smmFunctions;
 
 interface
 
-uses
-  smmTypes;
+{$Include smmOptions.inc}
+
+//uses
+//  smmTypes;
 
 type
   DWORD = LongWord;
@@ -89,23 +91,27 @@ const
   function  CAS32(aOldValue, aNewValue: Byte; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: Pointer; aDestination: Pointer): boolean;overload;
+  function  CAS64(const aOldData: Pointer; aOldReference: Cardinal; aNewData: Pointer; aNewReference: Cardinal; var aDestination): Boolean;
+  procedure Move64(aNewData: Pointer; aNewReference: Cardinal; var aDestination);
+
+  procedure InterlockedExchange(aTarget: Pointer; aValue: NativeUInt);
 //  procedure InterlockedIncrement(var Value: Byte);overload;
 //  procedure InterlockedDecrement(var Value: Byte);overload;
 //  procedure InterlockedIncrement(var Value: Integer);overload;
 //  procedure InterlockedDecrement(var Value: Integer);overload;
-//  function  InterlockedAdd(var Addend: Integer): Integer;
+  function  InterlockedAdd(var Addend: Integer): Integer;
   function  BitScanLast(aValue: Word): NativeUInt;
   function  BitScanFirst(aValue: NativeInt): NativeUInt;
 
+  function InterlockedExchangeAdd(var Addend: Longint; Value: Longint): Longint; stdcall; external kernel32 name 'InterlockedExchangeAdd';
 
   procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'InitializeCriticalSection';
   procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'EnterCriticalSection';
   procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'LeaveCriticalSection';
-  function InitializeCriticalSectionAndSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): BOOL; stdcall; external kernel32 name 'InitializeCriticalSectionAndSpinCount';
-  function SetCriticalSectionSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): DWORD; stdcall; external kernel32 name 'SetCriticalSectionSpinCount';
-  function TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL; stdcall; external kernel32 name 'TryEnterCriticalSection';
+  function  InitializeCriticalSectionAndSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): BOOL; stdcall; external kernel32 name 'InitializeCriticalSectionAndSpinCount';
+  function  SetCriticalSectionSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): DWORD; stdcall; external kernel32 name 'SetCriticalSectionSpinCount';
+  function  TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL; stdcall; external kernel32 name 'TryEnterCriticalSection';
   procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'DeleteCriticalSection';
-
 
   {$ifdef SCALEMM_DEBUG}
   procedure Assert(aCondition: boolean);
@@ -146,6 +152,23 @@ end;
 
 ////////////////////////////////////////////////////////////////////////////////
 //Assembly functions
+
+procedure InterlockedExchange(aTarget: Pointer; aValue: NativeUInt);
+asm
+{ -> EAX Target }
+{ EDX Value }
+{ <- EAX Result }
+//{$IFDEF INTERLOCKEDWIN32}
+//          MOV ECX, EAX
+//          MOV EAX, [ECX]
+//@@1:
+//LOCK CMPXCHG [ECX], EDX
+//          JNZ @@1
+//{$ELSE}
+//          XCHG EAX, EDX
+  LOCK XCHG [aTarget], aValue // LOCK is implicit on XCHG with memory
+//{$ENDIF}
+end;
 
 function  CAS32(aOldValue, aNewValue: Pointer; aDestination: Pointer): boolean;overload;
 asm
@@ -195,6 +218,28 @@ asm
 {$endif}
 end;
 
+function  CAS64(const aOldData: Pointer; aOldReference: Cardinal; aNewData: Pointer; aNewReference: Cardinal; var aDestination): Boolean;
+asm
+  push  edi
+  push  ebx
+  mov   ebx, aNewData
+  mov   ecx, aNewReference
+  mov   edi, aDestination
+  lock cmpxchg8b qword ptr [edi]
+  setz  al
+  pop   ebx
+  pop   edi
+end; { CAS64 }
+
+procedure Move64(aNewData: Pointer; aNewReference: Cardinal; var aDestination);
+//Move 8 bytes atomically into 8-byte Destination!
+asm
+  movd  xmm0, eax
+  movd  xmm1, edx
+  punpckldq xmm0, xmm1
+  movq  qword [aDestination], xmm0
+end; { Move64 }
+
 (*
 procedure InterlockedIncrement(var Value: Byte);
 asm
@@ -210,6 +255,7 @@ procedure InterlockedIncrement(var Value: Integer);
 asm
   lock inc [Value]
 end;
+*)
 
 function InterlockedAdd(var Addend: Integer): Integer;
 { @Addend: EAX }
@@ -225,7 +271,6 @@ procedure InterlockedDecrement(var Value: Integer);
 asm
   lock dec [Value]
 end;
-*)
 
 //find first bit (0..31)
 //http://www.arl.wustl.edu/~lockwood/class/cs306/books/artofasm/Chapter_6/CH06-4.html

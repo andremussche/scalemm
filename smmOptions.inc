@@ -1,5 +1,5 @@
-{.$DEFINE SCALEMM_DEBUG}  // slower but better debugging (no inline functions etc)
-{.$DEFINE IntelVTune}      //debug info in release build
+{$DEFINE SCALEMM_DEBUG}  // slower but better debugging (no inline functions etc)
+{$DEFINE IntelVTune}      //debug info in release build
 
 {$IFDEF SCALEMM_DEBUG}
   {$OPTIMIZATION   OFF}
@@ -22,8 +22,8 @@
     {$define HASINLINE}
   {$ifend}
   {$define INLINEGOWN}
-  {$D-}
-  {$L-}
+//  {$D-}
+//  {$L-}
 {$ENDIF}
 
 //use this to get line debug info in Intel vTune
@@ -47,3 +47,8 @@
 {$IFDEF DEBUG}
   {.$DEFINE SCALEMM_FILLFREEMEM}
 {$ENDIF}
+
+{$if CompilerVersion >= 17}
+  {$define USEMEMMANAGEREX}
+{$ifend}
+

@@ -17,8 +17,9 @@ type
   //16 bytes, single memory item
   TMediumHeader = object
     {$IFDEF SCALEMM_MAGICTEST}
-    Magic1     : NativeInt;
-    Magic2     : NativeInt;  //8byte aligned
+    Magic1: Integer;
+    Magic2: Integer;
+    {$ELSE}
       {$IFDEF Align16Bytes}
         {$ifndef CPUX64}
         Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
@@ -26,7 +27,6 @@ type
         {$endif}
       {$ENDIF}
     {$ENDIF}
-
     //linked items in one block
     NextMem    : PMediumHeader;
     PrevMem    : PMediumHeader;
@@ -39,8 +39,9 @@ type
   //40 bytes, first 16 are the same, rest are use for a free block
   TMediumHeaderExt = object
     {$IFDEF SCALEMM_MAGICTEST}
-    Magic1       : NativeInt;
-    Magic2       : NativeInt;  //8byte aligned
+    Magic1: Integer;
+    Magic2: Integer;
+    {$ELSE}
       {$IFDEF Align16Bytes}
         {$ifndef CPUX64}
         Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
@@ -48,22 +49,22 @@ type
         {$endif}
       {$ENDIF}
     {$ENDIF}
-
     NextMem      : PMediumHeader;
     PrevMem      : PMediumHeader;
     Size         : NativeUInt;
     OwnerThread  : PBaseThreadManagerOffset;
 
     //Extra data of free item:---------------------------------
+    //linked list of free mem, freed in other thread
+    NextThreadFree: PMediumHeaderExt;
+    PrevThreadFree: PMediumHeaderExt;
+
     //linked list of free mem of the same size of a thread
     NextFreeItem : PMediumHeaderExt;
     PrevFreeItem : PMediumHeaderExt;
     //simple storage of size calculation:
     BlockMask    : NativeUInt;
     ArrayPosition: NativeUInt;
-    //linked list of free mem, freed in other thread
-    NextThreadFree: PMediumHeaderExt;
-    PrevThreadFree: PMediumHeaderExt;
 
     procedure CheckMem(aDirection: TScanDirection = sdBoth);
   end;
@@ -71,11 +72,14 @@ type
   //Block of 1Mb
   TMediumBlockMemory = object           //16bytes
     /// Thread owner, must be first item of block (same offset as PBaseBlockMemory)
-    OwnerManager  : PMediumThreadManager;
+    OwnerManager : PMediumThreadManager;
     Size         : NativeUInt;
     //linked list of blocks of a thread
     NextBlock,
     PreviousBlock: PMediumBlockMemory;
+
+    OtherThreadFreedMemCount: NativeUInt;
+    Dummy: NativeUInt;
 
     procedure CheckMem;
     procedure ChangeOwnerThread(aOwnerThread: PMediumThreadManager);
@@ -97,6 +101,8 @@ type
     SizeType: TSizeType;
     OwnerThread: PBaseThreadManager;
     FFirstBlock : PMediumBlockMemory;
+
+    TotalOtherThreadFreedMemCount: NativeUInt;
   private
     FFreeMem  : array[0..16] of PMediumHeaderExt;
     FFreeMask : NativeUInt; //word, 16 bit, 65535
@@ -226,6 +232,10 @@ var
   headerext: PMediumHeaderExt;
   i: Integer;
 begin
+  {$IFDEF SCALEMM_DEBUG}
+  if GSkipCheckMem then Exit;
+  {$ENDIF}
+
   if aMemory <> nil then
   begin
     header := PMediumHeader(NativeUInt(aMemory) - SizeOf(TMediumHeader));
@@ -240,6 +250,7 @@ begin
       block := block.NextBlock;
     end;
 
+    //todoam if Self.OwnerThread.FThreadId > 2 then   //do not check global (does not use FFreeMem etc)
     //check free mem
     for i := Low(FFreeMem) to High(FFreeMem) do
     begin
@@ -265,6 +276,12 @@ begin
 end;
 
 procedure TMediumThreadManager.FreeBlock(aBlock: PMediumBlockMemory);
+{$IFDEF SCALEMM_FILLFREEMEM}
+var
+  pheader, pheader2: PMediumHeader;
+  isize: NativeUInt;
+  temppointer: Pointer;
+{$ENDIF}
 begin
   {$IFDEF SCALEMM_DEBUG}
   aBlock.CheckMem;
@@ -287,7 +304,28 @@ begin
   aBlock.NextBlock     := nil;
   aBlock.PreviousBlock := nil;
 
+  {$IFDEF SCALEMM_FILLFREEMEM}
+  //get first mem item
+  pheader := PMediumHeader(NativeUInt(aBlock) + SizeOf(TMediumBlockMemory));
+  pheader.CheckMem(sdNext);
+  //get last one
+  isize   := (aBlock.Size and -2) -
+             SizeOf(TMediumBlockMemory) -  //block
+             SizeOf(TMediumHeader) -       //start
+             SizeOf(TMediumHeader) -       //header of each mem
+             SizeOf(TMediumHeader);        //end(!)
+  pheader2 := PMediumHeader( NativeUInt(pheader) + iSize);
+  pheader2.CheckMem(sdPrevious);
+  //reset old mem
+  temppointer := Pointer(NativeUInt(pHeader) + SizeOf(TMediumHeader)); //do no reset header
+  FillChar( temppointer^, isize - SizeOf(TMediumHeader), $80);
+  pheader.NextMem  := pheader2;
+  pheader2.PrevMem := pheader;
+  {$ENDIF}
+
   GlobalManager.FreeMediumBlockMemory(aBlock);
+
+  CheckMem(nil);
 end;
 
 function TMediumThreadManager.FreeMem(aMemory: Pointer): NativeInt;
@@ -331,8 +369,10 @@ begin
 
   //create remainder
   pheaderremainder := PMediumHeaderExt(aHeader);
+  Assert( pheaderremainder.OwnerThread.FThreadId = GetCurrentThreadId );
   //next
   pnext            := PMediumHeaderExt(NativeUInt(pheaderremainder) + newsize);
+  Assert(pnext.OwnerThread.FThreadId = GetCurrentThreadId);
   {$ifdef SCALEMM_MAGICTEST}
   pheaderremainder.Magic1 := 0;//free
   {$ENDIF}
@@ -354,16 +394,21 @@ begin
       //same index? then reposition
       if NativeUint(iRemainder) = pnext.ArrayPosition then
       begin
+        Assert( (1 shl pnext.ArrayPosition) = pnext.BlockMask);
         pheaderremainder.BlockMask     := pnext.BlockMask;
         pheaderremainder.ArrayPosition := pnext.ArrayPosition;
         pheaderremainder.NextFreeItem  := pnext.NextFreeItem;
         if pnext.NextFreeItem <> nil then
+        begin
+          Assert(pnext.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           pnext.NextFreeItem.PrevFreeItem := pheaderremainder;
+        end;
         pheaderremainder.PrevFreeItem  := pnext.PrevFreeItem;
 
         if pnext.PrevFreeItem = nil then {first?}
         begin
           FFreeMem[iRemainder] := pheaderremainder;
+          Assert(FFreeMask and (1 shl iRemainder) <> 0);
           {$IFDEF SCALEMM_MAGICTEST}
           Assert(pheaderremainder.Magic1 = 0); //must be free
           {$ENDIF}
@@ -375,7 +420,10 @@ begin
           //pheaderremainder.OwnerBlock    := pnext.OwnerBlock;  done by caller
         end
         else
+        begin
+          Assert(pnext.PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           pnext.PrevFreeItem.NextFreeItem := pheaderremainder;
+        end;
         pnext         := PMediumHeaderExt(pnext.NextMem);
         pnext.PrevMem := PMediumHeader(pheaderremainder);
         pheaderremainder.NextMem := PMediumHeader(pnext);
@@ -390,26 +438,44 @@ begin
 
     //remove old size
     with pnext^ do
+    if BlockMask <> 0 then  //skip aHeader itself
     begin
       {$IFDEF SCALEMM_MAGICTEST}
       Assert( (NextFreeItem = nil) or (NextFreeItem.Magic1 = 0) ); //must be free
       {$ENDIF}
+      Assert( (1 shl pnext.ArrayPosition) = pnext.BlockMask);
+      Assert( (pnext.Size >= C_MAX_MEDIUMMEM_SIZE) or (pnext.ArrayPosition = BitScanLast(pnext.Size shr 4)) );
 
       if {next.}PrevFreeItem = nil then {first?}
       begin
         //replace first item with next
         FFreeMem[{next.}ArrayPosition] := {next.}NextFreeItem;
         if {next.}NextFreeItem = nil then
-          FFreeMask := FFreeMask xor {next.}BlockMask
+        begin
+          if FFreeMask and BlockMask <> 0 then   //in case it is freed in other thread
+          begin
+            Assert(FFreeMask and (1 shl ArrayPosition) <> 0);
+            FFreeMask := FFreeMask xor {next.}BlockMask;
+          end;
+          Assert(FFreeMask and (1 shl ArrayPosition) = 0);
+        end
         else
+        begin
+          Assert(NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           {next.}NextFreeItem.PrevFreeItem := nil;
+          Assert(FFreeMask and (1 shl ArrayPosition) <> 0);
+        end;
       end
       else
       begin
+        Assert(PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
         //remove from linked list
         {next.}PrevFreeItem.NextFreeItem := {next.}NextFreeItem;
         if {next.}NextFreeItem <> nil then
+        begin
+          Assert(NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           {next.}NextFreeItem.PrevFreeItem := {next.}PrevFreeItem;
+        end;
       end;
     end;
 
@@ -466,6 +532,7 @@ begin
   FFreeMask := FFreeMask or (1 shl iRemainder);
   //get first
   pnext     := FFreeMem[iRemainder];
+  Assert( ( pnext = nil) or (pnext.OwnerThread.FThreadId = GetCurrentThreadId) );
   //replace first
   FFreeMem[iRemainder] := pheaderremainder;
   //set previous of the next
@@ -579,6 +646,11 @@ begin
     begin
       iFreeMemIndex := 16;
       pheader       := AllocBlock(allocsize);
+      if pheader <> nil then  //mem available
+      begin
+        Result := GetMem(aSize);
+        Exit;
+      end;
     end;
   end;
 
@@ -587,6 +659,7 @@ begin
   Assert(pheader.Size >= allocsize);
   Assert( pheader.Size and 1 <> 0); //lowest bit (free mark)
   pheader.CheckMem(sdNone);
+  Assert(pheader.OwnerThread.FThreadId = GetCurrentThreadId);
   {$ENDIF}
   {$IFDEF SCALEMM_MAGICTEST}
   Assert(pheader.Magic1 = 0);  //not in use!
@@ -620,6 +693,9 @@ begin
     //copy header
     with pheaderremainder^ do
     begin
+      Assert( (1 shl pheader.ArrayPosition) = pheader.BlockMask);
+      Assert( (pheader.Size >= C_MAX_MEDIUMMEM_SIZE) or (pheader.ArrayPosition = BitScanLast(pheader.Size shr 4)) );
+
       {pheaderremainder.}OwnerThread   := pheader.OwnerThread;
       {pheaderremainder.}Size          := remaindersize or 1;
       {$IFDEF SCALEMM_MAGICTEST}
@@ -636,6 +712,7 @@ begin
     //keep same block as free
     //only change to new offset
     FFreeMem[iFreeMemIndex] := pheaderremainder;
+    Assert(FFreeMask and (1 shl iFreeMemIndex) <> 0);
 
     //relink block after remainder
     pnext := PMediumHeaderExt(NativeUInt(pheaderremainder) + remaindersize);
@@ -649,9 +726,15 @@ begin
 
       //relink next one to our new offset
       if {pheader.}NextFreeItem <> nil then
+      begin
+        Assert(NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
         {pheader.}NextFreeItem.PrevFreeItem := pheaderremainder;
+      end;
       if {pheader.}PrevFreeItem <> nil then
+      begin
+        Assert(PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
         {pheader.}PrevFreeItem.NextFreeItem := pheaderremainder;
+      end;
 
       {$IFDEF SCALEMM_DEBUG}
       Assert(iFreeMemIndex = pheader.ArrayPosition);
@@ -667,6 +750,8 @@ begin
     Assert( (pheader.NextFreeItem = nil) or
             (pheader.NextFreeItem.Magic1 = 0) ); {must be free}
     {$ENDIF}
+    Assert( (1 shl pheader.ArrayPosition) = pheader.BlockMask);
+    Assert( (pheader.Size >= C_MAX_MEDIUMMEM_SIZE) or (pheader.ArrayPosition = BitScanLast(pheader.Size shr 4)) );
 
     //first one?
     if PrevFreeItem = nil then
@@ -679,13 +764,25 @@ begin
       FFreeMem[iFreeMemIndex] := {pheader.}NextFreeItem;
       //reset bit if nothing free anymore
       if {pheader.}NextFreeItem = nil then
-        FFreeMask := FFreeMask xor {pheader.}BlockMask
+      begin
+        if FFreeMask and BlockMask <> 0 then   //in case it is freed in other thread
+        begin
+          Assert(FFreeMask and (1 shl ArrayPosition) <> 0);
+          FFreeMask := FFreeMask xor {pheader.}BlockMask;
+        end;
+        Assert(FFreeMask and (1 shl ArrayPosition) = 0);
+      end
       else
+      begin
+        Assert(pheader.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
         pheader.NextFreeItem.PrevFreeItem := nil;
+      end;
     end
     else
     begin
+      Assert(PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
       Assert(FFreeMem[iFreeMemIndex] <> pheader);
+      Assert(FFreeMask and (1 shl ArrayPosition) <> 0);
       //remove from linked list
       //if pheader.PrevFreeItem <> nil then
       pheader.PrevFreeItem.NextFreeItem := pheader.NextFreeItem;
@@ -748,6 +845,7 @@ begin
 
   //create remainder
   pheaderremainder := PMediumHeaderExt(aHeader);
+  Assert( pheaderremainder.OwnerThread.FThreadId = GetCurrentThreadId );
   //next
   pnext            := PMediumHeaderExt(NativeUInt(pheaderremainder) + newsize);
   pnext.PrevMem    := PMediumHeader(pheaderremainder);
@@ -774,7 +872,10 @@ begin
     newsize := 0;                        //re-calc from first block
 
     {$IFDEF SCALEMM_MAGICTEST}
-    Assert(pprev.Magic1 = 0); //must be free
+    if not GSkipCheckMem then
+      Assert(pprev.Magic1 = 0) //must be free
+    else
+      pprev.Magic1 := 0;
     {$ENDIF}
     pheaderremainder := PMediumHeaderExt(pprev);  //start point!
     pprev            := pprev.PrevMem;            //get previous of previous
@@ -796,7 +897,10 @@ begin
     newsize := newsize + (pnext.Size and -2);  //remove lowest bit
 
     {$IFDEF SCALEMM_MAGICTEST}
-    Assert(pnext.Magic1 = 0); //must be free
+    if not GSkipCheckMem then
+      Assert(pnext.Magic1 = 0) //must be free
+    else
+      pnext.Magic1 := 0;
     {$ENDIF}
 
     //remove old size
@@ -806,22 +910,39 @@ begin
       {$IFDEF SCALEMM_MAGICTEST}
       Assert( (NextFreeItem = nil) or (NextFreeItem.Magic1 = 0) ); //must be free
       {$ENDIF}
+      Assert( (1 shl pnext.ArrayPosition) = pnext.BlockMask);
+      Assert( (pnext.Size >= C_MAX_MEDIUMMEM_SIZE) or (pnext.ArrayPosition = BitScanLast(pnext.Size shr 4)) );
 
       if {next.}PrevFreeItem = nil then {first?}
       begin
         //replace first item with next
         FFreeMem[{next.}ArrayPosition] := {next.}NextFreeItem;
         if {next.}NextFreeItem = nil then
-          FFreeMask := FFreeMask xor {next.}BlockMask
+        begin
+          if FFreeMask and BlockMask <> 0 then  //in case it is freed in other thread
+          begin
+            Assert(FFreeMask and (1 shl ArrayPosition) <> 0);
+            FFreeMask := FFreeMask xor {next.}BlockMask;
+          end;
+          Assert(FFreeMask and (1 shl ArrayPosition) = 0);
+        end
         else
+        begin
+          Assert(NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           {next.}NextFreeItem.PrevFreeItem := nil;
+          Assert(FFreeMask and (1 shl ArrayPosition) <> 0);
+        end;
       end
       else
       begin
+        Assert(PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
         //remove from linked list
         {next.}PrevFreeItem.NextFreeItem := {next.}NextFreeItem;
         if {next.}NextFreeItem <> nil then
+        begin
+          Assert(NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           {next.}NextFreeItem.PrevFreeItem := {next.}PrevFreeItem;
+        end;
       end;
     end;
 
@@ -880,6 +1001,7 @@ begin
 
   //get first
   pnext     := FFreeMem[iRemainder];
+  Assert( ( pnext = nil) or (pnext.OwnerThread.FThreadId = GetCurrentThreadId) );
   //replace first
   FFreeMem[iRemainder] := pheaderremainder;
   //set previous of the next
@@ -1044,6 +1166,9 @@ begin
         nextfree.Magic1 := -1; //reset
         Assert( (nextfree.NextFreeItem = nil) or (nextfree.NextFreeItem.Magic1 = 0) ); //must be free
         {$ENDIF}
+        Assert(nextfree.OwnerThread.FThreadId = GetCurrentThreadId);
+        Assert( (1 shl nextfree.ArrayPosition) = nextfree.BlockMask);
+        Assert( (nextfree.Size >= C_MAX_MEDIUMMEM_SIZE) or (nextfree.ArrayPosition = BitScanLast(nextfree.Size shr 4)) );
 
         { TODO -oAM : use same "alloc from free block" as GetMem }
 
@@ -1054,16 +1179,28 @@ begin
           FFreeMem[nextfree.ArrayPosition] := nextfree.NextFreeItem;
           //reset bit if nothing free anymore
           if nextfree.NextFreeItem {FreeMem2[nextfree.ArrayPosition]} = nil then
-            FFreeMask := FFreeMask xor nextfree.BlockMask
+          begin
+            Assert(FFreeMask and (1 shl nextfree.ArrayPosition) <> 0);
+            FFreeMask := FFreeMask xor nextfree.BlockMask;
+            Assert(FFreeMask and (1 shl nextfree.ArrayPosition) = 0);
+          end
           else
+          begin
+            Assert(nextfree.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
+            Assert(FFreeMask and (1 shl nextfree.ArrayPosition) <> 0);
             nextfree.NextFreeItem.PrevFreeItem := nil;
+          end;
         end
         else
         begin
+          Assert(nextfree.PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
           //remove from linked list
           nextfree.PrevFreeItem.NextFreeItem := nextfree.NextFreeItem;
           if nextfree.NextFreeItem <> nil then
+          begin
+            Assert(nextfree.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
             nextfree.NextFreeItem.PrevFreeItem := nextfree.PrevFreeItem;
+          end;
         end;
 
         //check
@@ -1155,10 +1292,16 @@ begin
 
     //next block is free?
     while (nextmem <> nil) and
-          (nextmem.Size and 1 <> 0) do
+          //(nextmem.Size and 1 <> 0) do
+          (nextmem.Size and 3 <> 0) do
     begin
       Assert( Cardinal(nextmem.NextMem) <> $80808080);
-      isize   := (nextmem.Size and -2);
+      {$ifdef SCALEMM_MAGICTEST}
+      nextmem.Magic1 := 0; //free, in case not done due to interthread mem
+      {$ENDIF}
+
+      //isize   := (nextmem.Size and -2);
+      isize   := (nextmem.Size and -4);
       //make one block
       newsize := newsize + isize;
       //get next item
@@ -1168,8 +1311,11 @@ begin
 
     //put mem as free in our mem array
     if (prevmem <> nil) and (newsize > 0) and
-       (prevmem.Size and 1 <> 0) then
+       //(prevmem.Size and 1 <> 0) then
+       (prevmem.Size and 3 <> 0) then
     begin
+      Assert(prevmem.NextFreeItem = nil);
+      Assert(prevmem.PrevFreeItem = nil);
       prevmem.NextFreeItem := nil;
       prevmem.PrevFreeItem := nil;
 
@@ -1177,10 +1323,23 @@ begin
         if newsize >= aMinResultSize then
         begin
           Result := prevmem;
-          Result.BlockMask := 0;
+          (*
+          Result.Size      := newsize or 1;  //set lowest bit = free
+          {$IFDEF SCALEMM_MAGICTEST}
+          Result.Magic1    := 0; //free
+          {$ENDIF}
+          Result.ArrayPosition := BitScanLast(                    //get highest bit
+                                              newsize shr 4);     //div 16 so 1mb fits in 16bit
+          Result.BlockMask     := (1 shl Result.ArrayPosition);
+          Result.NextMem       := PMediumHeader(nextmem);
+          nextmem.PrevMem      := PMediumHeader(Result);
+          *)
         end;
-      if Result <> prevmem then
+      //if Result <> prevmem then
+      begin
+        prevmem.BlockMask := 0;
         PutMemToFree(PMediumHeader(prevmem), newsize);
+      end;
     end;
 
     newsize := 0;
@@ -1209,6 +1368,10 @@ begin
   Assert( Size <= C_MAX_MEDIUMMEM_SIZE+1 );
 //  Assert( NativeUInt(OwnerBlock) < NativeUInt(@Self) );
 //  Assert( NativeUInt(@Self) - NativeUInt(OwnerBlock) <= C_MAX_MEDIUMMEM_SIZE + SizeOf(TMediumBlockMemory ) );
+  if (Self.OwnerThread <> nil) //and
+     //todoam (Self.OwnerThread.FThreadId > 2)    //do not check global (does not use FFreeMem etc)
+  then
+    Assert( Self.OwnerThread.FThreadId = GetCurrentThreadId);
 
   if (PrevMem <> nil) then
   begin
@@ -1217,10 +1380,13 @@ begin
     Assert( OwnerThread = PrevMem.OwnerThread );
     //pheader := PMediumHeader(NativeUInt(PrevMem) + (PrevMem.Size and -2) );
     //pheader := PrevMem.NextMem;
-    Assert( PrevMem.NextMem = @Self );
+    //todoam if Self.OwnerThread.FThreadId > 2 then   //do not check global (does not use FFreeMem etc)
+    begin
+      Assert( PrevMem.NextMem = @Self );
 
-    if (aDirection in [sdBoth, sdPrevious]) then
-      PrevMem.CheckMem(sdPrevious);
+      if (aDirection in [sdBoth, sdPrevious]) then
+        PrevMem.CheckMem(sdPrevious);
+    end;
   end;
 
   if (NextMem <> nil) then
@@ -1230,7 +1396,11 @@ begin
     Assert( NativeUInt(pheader) > NativeUInt(@Self) );
     Assert( NativeUInt(pheader) - NativeUInt(@Self) <= C_MAX_MEDIUMMEM_SIZE + SizeOf(TMediumHeader) );
     Assert( OwnerThread = pheader.OwnerThread );
-    Assert( pheader.PrevMem = @Self );
+
+    //todoam if Self.OwnerThread.FThreadId > 2 then   //do not check global (does not use FFreeMem etc)
+    begin
+      //todo? Assert( pheader.PrevMem = @Self );
+    end;
 
     //not a free block?
     if Size and 1 = 0 then
@@ -1246,9 +1416,15 @@ begin
       {$IFDEF SCALEMM_MAGICTEST}
       Assert(Magic1 = 0); //must be free
       if PMediumHeaderExt(@Self).PrevFreeItem <> nil then
+      begin
+        Assert(PMediumHeaderExt(@Self).PrevFreeItem.OwnerThread.FThreadId = Self.OwnerThread.FThreadId );
         Assert(PMediumHeaderExt(@Self).PrevFreeItem.Magic1 = 0); //must be free
+      end;
       if PMediumHeaderExt(@Self).NextFreeItem <> nil then
+      begin
+        Assert(PMediumHeaderExt(@Self).NextFreeItem.OwnerThread.FThreadId = Self.OwnerThread.FThreadId );
         Assert(PMediumHeaderExt(@Self).NextFreeItem.Magic1 = 0); //must be free
+      end;
 
       Assert(Magic1 = 0); //must be free
       {$ENDIF}
@@ -1271,12 +1447,20 @@ begin
   Assert( {(ArrayPosition >= 0) and} (ArrayPosition <= 16) );
 //  Assert( OwnerBlock.OwnerThread.FFreeMem[ArrayPosition] <> nil );
 //  Assert( OwnerBlock.OwnerThread.FFreeMask and (1 shl ArrayPosition) <> 0 );
+  Assert( (1 shl Self.ArrayPosition) = Self.BlockMask);
+  Assert( (Self.Size >= C_MAX_MEDIUMMEM_SIZE) or (Self.ArrayPosition = BitScanLast(Self.Size shr 4)) );
 
   //check linked free items
   if Self.NextFreeItem <> nil then
+  begin
+    Assert(NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
     Assert( Self.NextFreeItem.PrevFreeItem = @Self );
+  end;
   if Self.PrevFreeItem <> nil then
+  begin
+    Assert(PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId);
     Assert( Self.PrevFreeItem.NextFreeItem = @Self );
+  end;
 end;
 
 { TMediumBlockMemory }
@@ -1287,6 +1471,7 @@ var
   pheader       : PMediumHeader;
   pthreadoffset : PBaseThreadManagerOffset;
 begin
+  Assert( (aOwnerThread.OwnerThread.FThreadId <= 2) or (Self.OwnerManager.OwnerThread.FThreadId <= 2) );
   Self.OwnerManager := aOwnerThread;
   //pthreadoffset    := PMediumThreadManagerOffset(NativeUInt(aOwnerThread) or 1);
   Assert(OwnerManager <> nil);
@@ -1298,7 +1483,16 @@ begin
   //set owner of all memory
   while pheader <> nil do
   begin
+    //InterlockedExchange(@pheader.OwnerThread, NativeUInt(pthreadoffset));
     pheader.OwnerThread := pthreadoffset;
+
+    if (pheader.Size and 1 <> 0) then   //free?
+    begin
+      //reset
+      PMediumHeaderExt(pheader).NextFreeItem := nil;
+      PMediumHeaderExt(pheader).PrevFreeItem := nil;
+    end;
+
     pheader := pheader.NextMem;
   end;
 end;
@@ -1308,9 +1502,12 @@ var
   pheader: PMediumHeader;
   isize: NativeUInt;
 begin
+  Assert( Self.OwnerManager.OwnerThread.FThreadId = GetCurrentThreadId);
+
   //get first mem item
   pheader := PMediumHeader(NativeUInt(@Self) + SizeOf(TMediumBlockMemory));
   pheader.CheckMem(sdNext);
+  Assert( pheader.OwnerThread.FThreadId = GetCurrentThreadId);
 
   //get last one
   isize   := (Self.Size and -2) -
