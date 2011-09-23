@@ -2,6 +2,8 @@ unit smmTypes;
 
 interface
 
+{$Include smmOptions.inc}
+
 type
   {$if CompilerVersion <= 20}
   // from Delphi 6 up to Delphi 2007
@@ -19,14 +21,14 @@ type
 
   TBaseMemHeader = object
     //small, medium and large mem can add extra stuff IN FRONT
-    Size : NativeUInt;  
+    Size      : NativeUInt;
     //must be last of "universal" header!
     OwnerBlock: PBaseBlockMemory;
   end;
 
   TBaseFreeMemHeader = object
     //small, medium and large mem can add extra stuff IN FRONT
-    Size  : NativeUInt;
+    Size       : NativeUInt;
     OwnerBlock : PBaseBlockMemory;
 
     //Extra data of free item:---------------------------------
