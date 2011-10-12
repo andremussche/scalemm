@@ -1,0 +1,132 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{C89A7BBE-0AD9-427F-AE31-54E0D6C6C92C}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="SimpleChallengeD2010.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeHoardMM.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeJEmalloc.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeJEmallocFF.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeMSvcrt.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeTCmalloc.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeTopMM.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeScaleMM2.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SimpleChallengeScaleMM3.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="SimpleChallengeD2010">
+			<MSBuild Projects="SimpleChallengeD2010.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeD2010:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeD2010.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeD2010:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeD2010.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeHoardMM">
+			<MSBuild Projects="SimpleChallengeHoardMM.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeHoardMM:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeHoardMM.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeHoardMM:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeHoardMM.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeJEmalloc">
+			<MSBuild Projects="SimpleChallengeJEmalloc.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeJEmalloc:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeJEmalloc.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeJEmalloc:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeJEmalloc.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeJEmallocFF">
+			<MSBuild Projects="SimpleChallengeJEmallocFF.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeJEmallocFF:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeJEmallocFF.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeJEmallocFF:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeJEmallocFF.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeMSvcrt">
+			<MSBuild Projects="SimpleChallengeMSvcrt.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeMSvcrt:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeMSvcrt.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeMSvcrt:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeMSvcrt.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeTCmalloc">
+			<MSBuild Projects="SimpleChallengeTCmalloc.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeTCmalloc:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeTCmalloc.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeTCmalloc:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeTCmalloc.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeTopMM">
+			<MSBuild Projects="SimpleChallengeTopMM.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeTopMM:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeTopMM.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeTopMM:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeTopMM.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeScaleMM2">
+			<MSBuild Projects="SimpleChallengeScaleMM2.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeScaleMM2:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeScaleMM2.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeScaleMM2:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeScaleMM2.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeScaleMM3">
+			<MSBuild Projects="SimpleChallengeScaleMM3.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeScaleMM3:Clean">
+			<MSBuild Targets="Clean" Projects="SimpleChallengeScaleMM3.dproj"/>
+		</Target>
+		<Target Name="SimpleChallengeScaleMM3:Make">
+			<MSBuild Targets="Make" Projects="SimpleChallengeScaleMM3.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="SimpleChallengeD2010;SimpleChallengeHoardMM;SimpleChallengeJEmalloc;SimpleChallengeJEmallocFF;SimpleChallengeMSvcrt;SimpleChallengeTCmalloc;SimpleChallengeTopMM;SimpleChallengeScaleMM2;SimpleChallengeScaleMM3"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="SimpleChallengeD2010:Clean;SimpleChallengeHoardMM:Clean;SimpleChallengeJEmalloc:Clean;SimpleChallengeJEmallocFF:Clean;SimpleChallengeMSvcrt:Clean;SimpleChallengeTCmalloc:Clean;SimpleChallengeTopMM:Clean;SimpleChallengeScaleMM2:Clean;SimpleChallengeScaleMM3:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="SimpleChallengeD2010:Make;SimpleChallengeHoardMM:Make;SimpleChallengeJEmalloc:Make;SimpleChallengeJEmallocFF:Make;SimpleChallengeMSvcrt:Make;SimpleChallengeTCmalloc:Make;SimpleChallengeTopMM:Make;SimpleChallengeScaleMM2:Make;SimpleChallengeScaleMM3:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>
