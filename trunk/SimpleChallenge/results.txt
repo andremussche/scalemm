@@ -1,0 +1,48 @@
+Tested on Windows 7, Intel Quad core
+
+D2010, 1 thread  = 329,45
+D2010, 2 threads = 600,49
+D2010, 4 threads = 1204,13
+D2010, 8 threads = 2560,15
+
+TCmallocMM, 1 thread  = 315,53
+TCmallocMM, 2 threads = 325,49
+TCmallocMM, 4 threads = 411,12
+TCmallocMM, 8 threads = 774,84
+
+(not production ready yet)
+ScaleMM2, 1 thread  = 292,78
+ScaleMM2, 2 threads = 295,49
+ScaleMM2, 4 threads = 331,87
+ScaleMM2, 8 threads = 636,48
+
+(pre alpha)
+ScaleMM3, 1 thread  = 338,93
+ScaleMM3, 2 threads = 343,06
+ScaleMM3, 4 threads = 357,96
+ScaleMM3, 8 threads = 749,85
+
+msvcrtMM, 1 thread  = 420,36
+msvcrtMM, 2 threads = 482,87
+msvcrtMM, 4 threads = 856,88
+msvcrtMM, 8 threads = 1625,61
+
+TopMM, 1 thread  = 703,95
+TopMM, 2 threads = 767,23
+TopMM, 4 threads = 905,32
+TopMM, 8 threads = 1876,34
+
+HoardMM, 1 thread  = 414,34
+HoardMM, 2 threads = 790,50
+HoardMM, 4 threads = 1693,21
+HoardMM, 8 threads = 3536,42
+
+JemallocMM, 1 thread  = 1781,71
+JemallocMM, 2 threads = 2847,75
+JemallocMM, 4 threads = 5607,96
+JemallocMM, 8 threads = 11203,68
+
+JemallocFFMM, 1 thread  = 484,11
+JemallocFFMM, 2 threads = 1404,94
+JemallocFFMM, 4 threads = 3656,98
+JemallocFFMM, 8 threads = 7368,87
