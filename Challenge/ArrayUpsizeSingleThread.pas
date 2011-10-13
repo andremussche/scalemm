@@ -28,7 +28,8 @@ var
   i: Integer;
   x: array of Int64;
 begin
-  for i := 1 to 10 * 1024 * 1024 do begin
+  //for i := 1 to 10 * 1024 * 1024 do begin
+  for i := 1 to 100 * 1024 do begin   //0 - 800kb
     SetLength(x, i);
     x[i - 1] := i;
   end;

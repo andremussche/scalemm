@@ -1,960 +1,847 @@
 <mmchallenge>
+<validations>
+<validation version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result>PASS</result>
+<extraresult> </extraresult>
+</validation>
+</validations>
 <mmbench>
 <benchmarks>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101129 10:31:40.546" mticks="597" mem="79544" />
-<result name="ReallocMem benchmark" time="20101129 10:31:41.960" mticks="937" mem="113336" />
-<result name="Block downsize" time="20101129 10:31:43.294" mticks="773" mem="190840" />
-<result name="Small upsize benchmark" time="20101129 10:31:44.850" mticks="1055" mem="354616" />
-<result name="Small downsize benchmark" time="20101129 10:31:46.506" mticks="1534" mem="296632" />
-<result name="Block size spread benchmark" time="20101129 10:31:48.141" mticks="1480" mem="334200" />
-<result name="Raw Performance 1 thread" time="20101129 10:31:52.551" mticks="8086" mem="162604" />
-<result name="Address space creep benchmark" time="20101129 10:32:00.040" mticks="15414" mem="280620" />
-<result name="Large block spread benchmark" time="20101129 10:32:05.885" mticks="11493" mem="384876" />
-<result name="Array Upsize 1 thread" time="20101129 10:32:07.579" mticks="1626" mem="241452" />
-<result name="Address space creep (larger blocks)" time="20101129 10:32:10.927" mticks="5561" mem="476716" />
-<result name="Single-threaded reallocate and use" time="20101129 10:32:16.820" mticks="11613" mem="224620" />
-<result name="Single-threaded allocate, use and free" time="20101129 10:32:22.285" mticks="10591" mem="198828" />
-<result name="Single Variables Access 6 arrays at a time" time="20101129 10:32:41.804" mticks="22541" mem="171436" />
-<result name="Double Variables Access 3 arrays at a time" time="20101129 10:32:45.088" mticks="5414" mem="167276" />
-<result name="Double Variables Access 6 arrays at a time" time="20101129 10:32:48.360" mticks="5385" mem="167276" />
-<result name="Double Variables Access 18 arrays at a time" time="20101129 10:32:51.999" mticks="6254" mem="167276" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101129 10:32:53.907" mticks="2140" mem="185324" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101129 10:32:57.313" mticks="5701" mem="185324" />
-<result name="FillCharMultiThread" time="20101129 10:32:58.868" mticks="1299" mem="174188" />
-<result name="SortIntegerArrayBenchmark" time="20101129 10:33:01.257" mticks="3281" mem="167724" />
-<result name="SortExtendedArrayBenchmark" time="20101129 10:33:03.872" mticks="3819" mem="173868" />
-<result name="MemFree1" time="20101129 10:33:15.013" mticks="24097" mem="175724" />
-<result name="MemFree2" time="20101129 10:33:16.122" mticks="236" mem="169836" />
-<result name="Linked-list container benchmark" time="20101129 10:33:17.859" mticks="1732" mem="209260" />
-<result name="Multi-threaded allocate, use and free" time="20101129 10:33:22.852" mticks="9467" mem="232364" />
-<result name="Multi-threaded reallocate and use" time="20101129 10:33:26.013" mticks="5117" mem="234604" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101129 10:33:30.258" mticks="7697" mem="175212" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101129 10:33:31.437" mticks="399" mem="197036" />
-<result name="NexusDB with 1 thread(s)" time="20101129 10:33:39.157" mticks="15956" mem="197804" />
-<result name="NexusDB with 2 thread(s)" time="20101129 10:33:43.699" mticks="8383" mem="222124" />
-<result name="NexusDB with 4 thread(s)" time="20101129 10:33:46.641" mticks="4601" mem="270764" />
-<result name="NexusDB with 8 thread(s)" time="20101129 10:33:49.812" mticks="5142" mem="369068" />
-<result name="Transient threaded objects" time="20101129 10:33:51.133" mticks="739" mem="298924" />
-<result name="Raw Performance 8 threads" time="20101129 10:34:02.025" mticks="23503" mem="244140" />
-<result name="ManyShortLivedThreads" time="20101129 10:34:10.463" mticks="17667" mem="346028" />
-<result name="StringThreadTest" time="20101129 10:35:29.845" mticks="186377" mem="355948" />
-<result name="Single-threaded AllocMem" time="20101129 10:37:02.625" mticks="189621" mem="392748" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110705 15:03:31.993" mticks="54710" mem="69352" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101129 10:42:10.576" mticks="589" mem="74936" />
-<result name="ReallocMem benchmark" time="20101129 10:42:11.908" mticks="739" mem="100024" />
-<result name="Block downsize" time="20101129 10:42:13.224" mticks="708" mem="115640" />
-<result name="Small upsize benchmark" time="20101129 10:42:14.694" mticks="899" mem="243576" />
-<result name="Small downsize benchmark" time="20101129 10:42:16.155" mticks="1068" mem="219256" />
-<result name="Block size spread benchmark" time="20101129 10:42:17.625" mticks="1088" mem="155256" />
-<result name="Raw Performance 1 thread" time="20101129 10:42:21.730" mticks="7360" mem="105656" />
-<result name="Address space creep benchmark" time="20101129 10:42:29.051" mticks="15004" mem="174392" />
-<result name="Large block spread benchmark" time="20101129 10:42:34.922" mticks="11557" mem="304824" />
-<result name="Array Upsize 1 thread" time="20101129 10:42:36.425" mticks="1174" mem="130360" />
-<result name="Address space creep (larger blocks)" time="20101129 10:42:39.781" mticks="5582" mem="390584" />
-<result name="Single-threaded reallocate and use" time="20101129 10:42:45.486" mticks="11163" mem="169144" />
-<result name="Single-threaded allocate, use and free" time="20101129 10:42:50.797" mticks="10227" mem="114104" />
-<result name="Single Variables Access 6 arrays at a time" time="20101129 10:43:10.260" mticks="22421" mem="38584" />
-<result name="Double Variables Access 3 arrays at a time" time="20101129 10:43:13.533" mticks="5382" mem="38584" />
-<result name="Double Variables Access 6 arrays at a time" time="20101129 10:43:16.766" mticks="5291" mem="39864" />
-<result name="Double Variables Access 18 arrays at a time" time="20101129 10:43:20.240" mticks="5864" mem="38584" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101129 10:43:22.157" mticks="2154" mem="54200" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101129 10:43:25.583" mticks="5747" mem="54200" />
-<result name="FillCharMultiThread" time="20101129 10:43:27.085" mticks="1173" mem="44216" />
-<result name="SortIntegerArrayBenchmark" time="20101129 10:43:29.476" mticks="3285" mem="37304" />
-<result name="SortExtendedArrayBenchmark" time="20101129 10:43:32.059" mticks="3737" mem="41144" />
-<result name="MemFree1" time="20101129 10:43:43.260" mticks="24236" mem="37304" />
-<result name="MemFree2" time="20101129 10:43:44.370" mticks="237" mem="37304" />
-<result name="Linked-list container benchmark" time="20101129 10:43:46.004" mticks="1482" mem="106424" />
-<result name="Multi-threaded allocate, use and free" time="20101129 10:43:53.790" mticks="16113" mem="82104" />
-<result name="Multi-threaded reallocate and use" time="20101129 10:43:57.513" mticks="6453" mem="98424" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101129 10:44:01.845" mticks="7903" mem="37304" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101129 10:44:03.035" mticks="423" mem="41144" />
-<result name="NexusDB with 1 thread(s)" time="20101129 10:44:10.322" mticks="14927" mem="53944" />
-<result name="NexusDB with 2 thread(s)" time="20101129 10:44:16.996" mticks="13471" mem="73144" />
-<result name="NexusDB with 4 thread(s)" time="20101129 10:44:23.453" mticks="12956" mem="108984" />
-<result name="NexusDB with 8 thread(s)" time="20101129 10:44:29.481" mticks="11936" mem="183224" />
-<result name="Transient threaded objects" time="20101129 10:44:33.471" mticks="7084" mem="160184" />
-<result name="Raw Performance 8 threads" time="20101129 10:44:46.430" mticks="28419" mem="115640" />
-<result name="ManyShortLivedThreads" time="20101129 10:44:52.865" mticks="12899" mem="38328" />
-<result name="StringThreadTest" time="20101129 10:45:00.287" mticks="15248" mem="37048" />
-<result name="Single-threaded AllocMem" time="20101129 10:46:32.177" mticks="187507" mem="207928" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110705 15:08:40.362" mticks="54896" mem="68328" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101129 10:53:08.606" mticks="616" mem="74936" />
-<result name="Fragmentation Test" time="20101129 10:53:10.625" mticks="641" mem="74936" />
-<result name="ReallocMem benchmark" time="20101129 10:53:11.968" mticks="768" mem="100024" />
-<result name="Block downsize" time="20101129 10:53:13.286" mticks="715" mem="115640" />
-<result name="Small upsize benchmark" time="20101129 10:53:14.798" mticks="979" mem="243576" />
-<result name="Small downsize benchmark" time="20101129 10:53:16.272" mticks="1095" mem="219256" />
-<result name="Block size spread benchmark" time="20101129 10:53:17.738" mticks="1070" mem="156536" />
-<result name="Raw Performance 1 thread" time="20101129 10:53:22.144" mticks="8065" mem="98156" />
-<result name="Address space creep benchmark" time="20101129 10:53:29.883" mticks="15995" mem="166892" />
-<result name="Large block spread benchmark" time="20101129 10:53:35.864" mticks="11812" mem="297324" />
-<result name="Array Upsize 1 thread" time="20101129 10:53:37.372" mticks="1184" mem="117676" />
-<result name="Address space creep (larger blocks)" time="20101129 10:53:40.933" mticks="6054" mem="383084" />
-<result name="Single-threaded reallocate and use" time="20101129 10:53:46.734" mticks="11393" mem="160044" />
-<result name="Single-threaded allocate, use and free" time="20101129 10:53:52.313" mticks="10854" mem="106604" />
-<result name="Single Variables Access 6 arrays at a time" time="20101129 10:54:11.828" mticks="22535" mem="31084" />
-<result name="Double Variables Access 3 arrays at a time" time="20101129 10:54:15.103" mticks="5387" mem="31084" />
-<result name="Double Variables Access 6 arrays at a time" time="20101129 10:54:18.377" mticks="5386" mem="32364" />
-<result name="Double Variables Access 18 arrays at a time" time="20101129 10:54:21.890" mticks="5952" mem="31084" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101129 10:54:23.846" mticks="2248" mem="46444" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101129 10:54:27.330" mticks="5884" mem="46444" />
-<result name="FillCharMultiThread" time="20101129 10:54:28.840" mticks="1186" mem="36716" />
-<result name="SortIntegerArrayBenchmark" time="20101129 10:54:31.230" mticks="3278" mem="29804" />
-<result name="SortExtendedArrayBenchmark" time="20101129 10:54:33.856" mticks="3843" mem="33644" />
-<result name="MemFree1" time="20101129 10:54:45.061" mticks="24245" mem="29804" />
-<result name="MemFree2" time="20101129 10:54:46.180" mticks="238" mem="29804" />
-<result name="Linked-list container benchmark" time="20101129 10:54:47.804" mticks="1460" mem="98924" />
-<result name="Multi-threaded allocate, use and free" time="20101129 10:54:55.722" mticks="16423" mem="75884" />
-<result name="Multi-threaded reallocate and use" time="20101129 10:54:59.572" mticks="6756" mem="92524" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101129 10:55:03.905" mticks="7895" mem="31084" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101129 10:55:05.115" mticks="467" mem="34924" />
-<result name="NexusDB with 1 thread(s)" time="20101129 10:55:12.493" mticks="15141" mem="46444" />
-<result name="NexusDB with 2 thread(s)" time="20101129 10:55:19.567" mticks="14418" mem="65644" />
-<result name="NexusDB with 4 thread(s)" time="20101129 10:55:25.982" mticks="12849" mem="101484" />
-<result name="NexusDB with 8 thread(s)" time="20101129 10:55:32.333" mticks="12699" mem="175724" />
-<result name="Transient threaded objects" time="20101129 10:55:36.190" mticks="6765" mem="152428" />
-<result name="Raw Performance 8 threads" time="20101129 10:55:49.514" mticks="29279" mem="108140" />
-<result name="ManyShortLivedThreads" time="20101129 10:55:55.892" mticks="12755" mem="29548" />
-<result name="StringThreadTest" time="20101129 10:56:03.280" mticks="15158" mem="29548" />
-<result name="Single-threaded AllocMem" time="20101129 10:57:35.374" mticks="187983" mem="200428" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110705 16:14:03.464" mticks="55089" mem="68328" />
+<result name="Fragmentation Test" time="20110705 16:17:32.469" mticks="53886" mem="61852" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101130 08:41:01.256" mticks="588" mem="79544" />
-<result name="ReallocMem benchmark" time="20101130 08:41:02.582" mticks="726" mem="128696" />
-<result name="Block downsize" time="20101130 08:41:03.955" mticks="855" mem="192504" />
-<result name="Small upsize benchmark" time="20101130 08:41:05.574" mticks="1204" mem="356280" />
-<result name="Small downsize benchmark" time="20101130 08:41:07.174" mticks="1393" mem="340600" />
-<result name="Block size spread benchmark" time="20101130 08:41:08.807" mticks="1470" mem="351160" />
-<result name="Raw Performance 1 thread" time="20101130 08:41:13.233" mticks="8115" mem="183480" />
-<result name="Address space creep benchmark" time="20101130 08:41:20.611" mticks="15143" mem="295916" />
-<result name="Large block spread benchmark" time="20101130 08:41:26.435" mticks="11445" mem="383340" />
-<result name="Array Upsize 1 thread" time="20101130 08:41:28.135" mticks="1638" mem="240556" />
-<result name="Address space creep (larger blocks)" time="20101130 08:41:31.394" mticks="5347" mem="471660" />
-<result name="Single-threaded reallocate and use" time="20101130 08:41:37.050" mticks="11040" mem="230636" />
-<result name="Single-threaded allocate, use and free" time="20101130 08:41:42.511" mticks="10581" mem="196332" />
-<result name="Single Variables Access 6 arrays at a time" time="20101130 08:42:02.034" mticks="22571" mem="175340" />
-<result name="Double Variables Access 3 arrays at a time" time="20101130 08:42:05.339" mticks="5452" mem="171180" />
-<result name="Double Variables Access 6 arrays at a time" time="20101130 08:42:08.706" mticks="5601" mem="171180" />
-<result name="Double Variables Access 18 arrays at a time" time="20101130 08:42:12.793" mticks="7313" mem="171180" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101130 08:42:14.707" mticks="2142" mem="189228" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101130 08:42:18.090" mticks="5640" mem="189228" />
-<result name="FillCharMultiThread" time="20101130 08:42:19.613" mticks="1213" mem="178092" />
-<result name="SortIntegerArrayBenchmark" time="20101130 08:42:22.017" mticks="3307" mem="170348" />
-<result name="SortExtendedArrayBenchmark" time="20101130 08:42:24.830" mticks="4282" mem="174700" />
-<result name="MemFree1" time="20101130 08:42:35.992" mticks="24136" mem="177068" />
-<result name="MemFree2" time="20101130 08:42:37.118" mticks="266" mem="171180" />
-<result name="Linked-list container benchmark" time="20101130 08:42:38.829" mticks="1660" mem="205676" />
-<result name="Multi-threaded allocate, use and free" time="20101130 08:42:44.224" mticks="10425" mem="233900" />
-<result name="Multi-threaded reallocate and use" time="20101130 08:42:47.699" mticks="5862" mem="236140" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101130 08:42:52.060" mticks="7961" mem="176748" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101130 08:42:53.325" mticks="598" mem="197484" />
-<result name="NexusDB with 1 thread(s)" time="20101130 08:43:01.047" mticks="15952" mem="199340" />
-<result name="NexusDB with 2 thread(s)" time="20101130 08:43:05.566" mticks="8334" mem="224620" />
-<result name="NexusDB with 4 thread(s)" time="20101130 08:43:08.668" mticks="4963" mem="272300" />
-<result name="NexusDB with 8 thread(s)" time="20101130 08:43:11.881" mticks="5220" mem="369580" />
-<result name="Transient threaded objects" time="20101130 08:43:24.821" mticks="28366" mem="305004" />
-<result name="Raw Performance 8 threads" time="20101130 08:43:35.796" mticks="23694" mem="240556" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110705 20:59:48.108" mticks="59873" mem="60824" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101130 08:50:29.926" mticks="583" mem="79544" />
-<result name="ReallocMem benchmark" time="20101130 08:50:31.270" mticks="756" mem="128696" />
-<result name="Block downsize" time="20101130 08:50:32.627" mticks="810" mem="192504" />
-<result name="Small upsize benchmark" time="20101130 08:50:34.186" mticks="1055" mem="356280" />
-<result name="Small downsize benchmark" time="20101130 08:50:35.810" mticks="1444" mem="340600" />
-<result name="Block size spread benchmark" time="20101130 08:50:37.458" mticks="1494" mem="351160" />
-<result name="Raw Performance 1 thread" time="20101130 08:50:41.935" mticks="8240" mem="183480" />
-<result name="Address space creep benchmark" time="20101130 08:50:49.380" mticks="15299" mem="303416" />
-<result name="Large block spread benchmark" time="20101130 08:50:55.205" mticks="11445" mem="390840" />
-<result name="Array Upsize 1 thread" time="20101130 08:50:56.895" mticks="1613" mem="248056" />
-<result name="Address space creep (larger blocks)" time="20101130 08:51:00.156" mticks="5348" mem="479160" />
-<result name="Single-threaded reallocate and use" time="20101130 08:51:05.828" mticks="11079" mem="240696" />
-<result name="Single-threaded allocate, use and free" time="20101130 08:51:11.130" mticks="10202" mem="202872" />
-<result name="Single Variables Access 6 arrays at a time" time="20101130 08:51:30.632" mticks="22498" mem="182840" />
-<result name="Double Variables Access 3 arrays at a time" time="20101130 08:51:33.926" mticks="5427" mem="169900" />
-<result name="Double Variables Access 6 arrays at a time" time="20101130 08:51:37.198" mticks="5378" mem="169900" />
-<result name="Double Variables Access 18 arrays at a time" time="20101130 08:51:40.854" mticks="6293" mem="169900" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101130 08:51:42.866" mticks="2377" mem="187948" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101130 08:51:46.335" mticks="5847" mem="187948" />
-<result name="FillCharMultiThread" time="20101130 08:51:47.855" mticks="1209" mem="176812" />
-<result name="SortIntegerArrayBenchmark" time="20101130 08:51:50.250" mticks="3289" mem="169068" />
-<result name="SortExtendedArrayBenchmark" time="20101130 08:51:52.999" mticks="4130" mem="173420" />
-<result name="MemFree1" time="20101130 08:52:04.149" mticks="24114" mem="177068" />
-<result name="MemFree2" time="20101130 08:52:05.262" mticks="237" mem="171180" />
-<result name="Linked-list container benchmark" time="20101130 08:52:06.972" mticks="1659" mem="205676" />
-<result name="Multi-threaded allocate, use and free" time="20101130 08:52:11.938" mticks="9404" mem="232620" />
-<result name="Multi-threaded reallocate and use" time="20101130 08:52:15.035" mticks="4960" mem="234540" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101130 08:52:19.377" mticks="7920" mem="175468" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101130 08:52:20.583" mticks="461" mem="197292" />
-<result name="NexusDB with 1 thread(s)" time="20101130 08:52:28.324" mticks="16004" mem="198060" />
-<result name="NexusDB with 2 thread(s)" time="20101130 08:52:32.813" mticks="8273" mem="222380" />
-<result name="NexusDB with 4 thread(s)" time="20101130 08:52:35.746" mticks="4567" mem="271020" />
-<result name="NexusDB with 8 thread(s)" time="20101130 08:52:38.685" mticks="4583" mem="369260" />
-<result name="Transient threaded objects" time="20101130 08:52:40.008" mticks="737" mem="321452" />
-<result name="Raw Performance 8 threads" time="20101130 08:52:51.053" mticks="23862" mem="241580" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 07:49:27.057" mticks="53319" mem="60828" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101130 09:04:17.105" mticks="589" mem="79544" />
-<result name="ReallocMem benchmark" time="20101130 09:04:18.433" mticks="723" mem="128696" />
-<result name="Block downsize" time="20101130 09:04:19.780" mticks="792" mem="192504" />
-<result name="Small upsize benchmark" time="20101130 09:04:21.327" mticks="1036" mem="334136" />
-<result name="Small downsize benchmark" time="20101130 09:04:22.913" mticks="1356" mem="319288" />
-<result name="Block size spread benchmark" time="20101130 09:04:24.526" mticks="1423" mem="329208" />
-<result name="Raw Performance 1 thread" time="20101130 09:04:29.030" mticks="8305" mem="179256" />
-<result name="Address space creep benchmark" time="20101130 09:04:36.442" mticks="15220" mem="254008" />
-<result name="Large block spread benchmark" time="20101130 09:04:42.259" mticks="11425" mem="412664" />
-<result name="Array Upsize 1 thread" time="20101130 09:04:44.193" mticks="2192" mem="274104" />
-<result name="Address space creep (larger blocks)" time="20101130 09:04:47.450" mticks="5336" mem="470444" />
-<result name="Single-threaded reallocate and use" time="20101130 09:04:53.170" mticks="11195" mem="243244" />
-<result name="Single-threaded allocate, use and free" time="20101130 09:04:58.510" mticks="10295" mem="204396" />
-<result name="Single Variables Access 6 arrays at a time" time="20101130 09:05:18.024" mticks="22528" mem="198572" />
-<result name="Double Variables Access 3 arrays at a time" time="20101130 09:05:21.346" mticks="5493" mem="198572" />
-<result name="Double Variables Access 6 arrays at a time" time="20101130 09:05:24.617" mticks="5375" mem="198572" />
-<result name="Double Variables Access 18 arrays at a time" time="20101130 09:05:28.163" mticks="6028" mem="198572" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101130 09:05:30.035" mticks="2045" mem="214956" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101130 09:05:33.525" mticks="5895" mem="214956" />
-<result name="FillCharMultiThread" time="20101130 09:05:35.068" mticks="1262" mem="205484" />
-<result name="SortIntegerArrayBenchmark" time="20101130 09:05:37.465" mticks="3287" mem="198572" />
-<result name="SortExtendedArrayBenchmark" time="20101130 09:05:40.069" mticks="3782" mem="202412" />
-<result name="MemFree1" time="20101130 09:05:51.207" mticks="24059" mem="202028" />
-<result name="MemFree2" time="20101130 09:05:52.320" mticks="237" mem="200748" />
-<result name="Linked-list container benchmark" time="20101130 09:05:54.069" mticks="1751" mem="214828" />
-<result name="Multi-threaded allocate, use and free" time="20101130 09:05:59.183" mticks="9753" mem="239596" />
-<result name="Multi-threaded reallocate and use" time="20101130 09:06:02.295" mticks="4994" mem="221868" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101130 09:06:06.642" mticks="7932" mem="198444" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101130 09:06:07.838" mticks="432" mem="206316" />
-<result name="NexusDB with 1 thread(s)" time="20101130 09:06:15.536" mticks="15899" mem="200044" />
-<result name="NexusDB with 2 thread(s)" time="20101130 09:06:20.052" mticks="8335" mem="221484" />
-<result name="NexusDB with 4 thread(s)" time="20101130 09:06:23.019" mticks="4652" mem="273580" />
-<result name="NexusDB with 8 thread(s)" time="20101130 09:06:25.939" mticks="4535" mem="370284" />
-<result name="Transient threaded objects" time="20101130 09:06:27.271" mticks="750" mem="342956" />
-<result name="Raw Performance 8 threads" time="20101130 09:06:38.532" mticks="24370" mem="272556" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 07:51:56.807" mticks="52824" mem="68328" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101130 20:45:54.761" mticks="607" mem="69476" />
-<result name="ReallocMem benchmark" time="20101130 20:45:56.096" mticks="743" mem="118628" />
-<result name="Block downsize" time="20101130 20:45:57.439" mticks="785" mem="182436" />
-<result name="Small upsize benchmark" time="20101130 20:45:58.986" mticks="1040" mem="324068" />
-<result name="Small downsize benchmark" time="20101130 20:46:00.572" mticks="1347" mem="309220" />
-<result name="Block size spread benchmark" time="20101130 20:46:02.169" mticks="1389" mem="319140" />
-<result name="Raw Performance 1 thread" time="20101130 20:46:06.658" mticks="8280" mem="169188" />
-<result name="Address space creep benchmark" time="20101130 20:46:14.009" mticks="15081" mem="247780" />
-<result name="Large block spread benchmark" time="20101130 20:46:19.778" mticks="11324" mem="403876" />
-<result name="Array Upsize 1 thread" time="20101130 20:46:21.424" mticks="1513" mem="268644" />
-<result name="Address space creep (larger blocks)" time="20101130 20:46:24.590" mticks="5134" mem="466596" />
-<result name="Single-threaded reallocate and use" time="20101130 20:46:30.158" mticks="10844" mem="238116" />
-<result name="Single-threaded allocate, use and free" time="20101130 20:46:35.397" mticks="10062" mem="200548" />
-<result name="Single Variables Access 6 arrays at a time" time="20101130 20:46:54.889" mticks="22533" mem="194724" />
-<result name="Double Variables Access 3 arrays at a time" time="20101130 20:46:58.202" mticks="5476" mem="194724" />
-<result name="Double Variables Access 6 arrays at a time" time="20101130 20:47:01.475" mticks="5380" mem="194724" />
-<result name="Double Variables Access 18 arrays at a time" time="20101130 20:47:05.054" mticks="6109" mem="194724" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101130 20:47:06.959" mticks="2125" mem="211108" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101130 20:47:10.434" mticks="5858" mem="211108" />
-<result name="FillCharMultiThread" time="20101130 20:47:11.950" mticks="1199" mem="201636" />
-<result name="SortIntegerArrayBenchmark" time="20101130 20:47:14.358" mticks="3319" mem="194724" />
-<result name="SortExtendedArrayBenchmark" time="20101130 20:47:17.039" mticks="3969" mem="198564" />
-<result name="MemFree1" time="20101130 20:47:28.177" mticks="24085" mem="199460" />
-<result name="MemFree2" time="20101130 20:47:29.296" mticks="260" mem="198180" />
-<result name="Linked-list container benchmark" time="20101130 20:47:31.002" mticks="1652" mem="210980" />
-<result name="Multi-threaded allocate, use and free" time="20101130 20:47:36.241" mticks="10065" mem="237028" />
-<result name="Multi-threaded reallocate and use" time="20101130 20:47:39.625" mticks="5647" mem="217252" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101130 20:47:43.991" mticks="7984" mem="200292" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101130 20:47:45.261" mticks="605" mem="204708" />
-<result name="NexusDB with 1 thread(s)" time="20101130 20:47:52.866" mticks="15674" mem="200292" />
-<result name="NexusDB with 2 thread(s)" time="20101130 20:47:57.332" mticks="8209" mem="218788" />
-<result name="NexusDB with 4 thread(s)" time="20101130 20:48:00.459" mticks="5022" mem="272420" />
-<result name="NexusDB with 8 thread(s)" time="20101130 20:48:03.715" mticks="5329" mem="368740" />
-<result name="Transient threaded objects" time="20101130 20:48:14.953" mticks="24322" mem="338084" />
-<result name="Raw Performance 8 threads" time="20101130 20:48:26.112" mticks="24136" mem="272868" />
-<result name="ManyShortLivedThreads" time="20101130 21:07:21.420" mticks="2697478" mem="232164" />
-<result name="StringThreadTest" time="20101130 21:08:37.469" mticks="178457" mem="232164" />
-<result name="Single-threaded AllocMem" time="20101130 21:10:09.804" mticks="188629" mem="352804" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 07:54:27.824" mticks="56419" mem="68328" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Single-threaded AllocMem" time="20101201 11:35:57.782" mticks="272794" mem="453552" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 08:06:50.000" mticks="54317" mem="68328" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101201 11:44:38.340" mticks="29463" mem="279676" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:27:15.639" mticks="77736" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101201 12:01:19.793" mticks="594" mem="292668" />
-<result name="ReallocMem benchmark" time="20101201 12:01:21.119" mticks="712" mem="341820" />
-<result name="Block downsize" time="20101201 12:01:22.467" mticks="787" mem="405628" />
-<result name="Small upsize benchmark" time="20101201 12:01:24.028" mticks="1053" mem="547836" />
-<result name="Small downsize benchmark" time="20101201 12:01:25.623" mticks="1371" mem="532412" />
-<result name="Block size spread benchmark" time="20101201 12:01:27.228" mticks="1398" mem="542332" />
-<result name="Raw Performance 1 thread" time="20101201 12:01:31.664" mticks="8143" mem="392380" />
-<result name="Address space creep benchmark" time="20101201 12:01:39.178" mticks="15456" mem="472252" />
-<result name="Large block spread benchmark" time="20101201 12:01:44.975" mticks="11377" mem="625788" />
-<result name="Array Upsize 1 thread" time="20101201 12:01:46.676" mticks="1634" mem="501500" />
-<result name="Address space creep (larger blocks)" time="20101201 12:01:49.888" mticks="5233" mem="689788" />
-<result name="Single-threaded reallocate and use" time="20101201 12:01:55.592" mticks="11153" mem="460988" />
-<result name="Single-threaded allocate, use and free" time="20101201 12:02:00.973" mticks="10391" mem="425020" />
-<result name="Single Variables Access 6 arrays at a time" time="20101201 12:02:20.469" mticks="22490" mem="418940" />
-<result name="Double Variables Access 3 arrays at a time" time="20101201 12:02:23.793" mticks="5496" mem="418940" />
-<result name="Double Variables Access 6 arrays at a time" time="20101201 12:02:27.063" mticks="5370" mem="418940" />
-<result name="Double Variables Access 18 arrays at a time" time="20101201 12:02:30.748" mticks="6359" mem="418940" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101201 12:02:32.701" mticks="2237" mem="435324" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101201 12:02:36.356" mticks="6286" mem="435324" />
-<result name="FillCharMultiThread" time="20101201 12:02:37.852" mticks="1148" mem="425852" />
-<result name="SortIntegerArrayBenchmark" time="20101201 12:02:40.243" mticks="3277" mem="418940" />
-<result name="SortExtendedArrayBenchmark" time="20101201 12:02:42.359" mticks="2622" mem="422780" />
-<result name="MemFree1" time="20101201 12:02:53.493" mticks="24066" mem="423676" />
-<result name="MemFree2" time="20101201 12:02:54.607" mticks="237" mem="422396" />
-<result name="Linked-list container benchmark" time="20101201 12:02:56.344" mticks="1718" mem="435196" />
-<result name="Multi-threaded allocate, use and free" time="20101201 12:03:01.353" mticks="9506" mem="461244" />
-<result name="Multi-threaded reallocate and use" time="20101201 12:03:04.488" mticks="5042" mem="441660" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101201 12:03:08.774" mticks="7783" mem="422652" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101201 12:03:09.983" mticks="465" mem="427388" />
-<result name="NexusDB with 1 thread(s)" time="20101201 12:03:17.684" mticks="15903" mem="423548" />
-<result name="NexusDB with 2 thread(s)" time="20101201 12:03:22.177" mticks="8275" mem="437500" />
-<result name="NexusDB with 4 thread(s)" time="20101201 12:03:25.071" mticks="4473" mem="486140" />
-<result name="NexusDB with 8 thread(s)" time="20101201 12:03:28.129" mticks="4856" mem="590396" />
-<result name="Transient threaded objects" time="20101201 12:03:29.442" mticks="704" mem="561852" />
-<result name="Raw Performance 8 threads" time="20101201 12:03:40.589" mticks="24100" mem="491388" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:30:21.490" mticks="54690" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101201 12:20:45.688" mticks="589" mem="79544" />
-<result name="ReallocMem benchmark" time="20101201 12:20:47.007" mticks="705" mem="128696" />
-<result name="Block downsize" time="20101201 12:20:48.352" mticks="785" mem="192504" />
-<result name="Small upsize benchmark" time="20101201 12:20:49.901" mticks="1037" mem="327212" />
-<result name="Small downsize benchmark" time="20101201 12:20:51.491" mticks="1363" mem="311788" />
-<result name="Block size spread benchmark" time="20101201 12:20:53.091" mticks="1380" mem="321708" />
-<result name="Raw Performance 1 thread" time="20101201 12:20:57.523" mticks="8133" mem="171756" />
-<result name="Address space creep benchmark" time="20101201 12:21:04.913" mticks="15161" mem="246508" />
-<result name="Large block spread benchmark" time="20101201 12:21:10.722" mticks="11407" mem="405164" />
-<result name="Array Upsize 1 thread" time="20101201 12:21:12.398" mticks="1575" mem="276140" />
-<result name="Address space creep (larger blocks)" time="20101201 12:21:15.585" mticks="5168" mem="469164" />
-<result name="Single-threaded reallocate and use" time="20101201 12:21:21.197" mticks="10938" mem="242924" />
-<result name="Single-threaded allocate, use and free" time="20101201 12:21:26.441" mticks="10061" mem="203116" />
-<result name="Single Variables Access 6 arrays at a time" time="20101201 12:21:45.941" mticks="22497" mem="197292" />
-<result name="Double Variables Access 3 arrays at a time" time="20101201 12:21:49.233" mticks="5421" mem="197292" />
-<result name="Double Variables Access 6 arrays at a time" time="20101201 12:21:52.492" mticks="5345" mem="197292" />
-<result name="Double Variables Access 18 arrays at a time" time="20101201 12:21:56.004" mticks="5941" mem="197292" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101201 12:21:57.921" mticks="2150" mem="213676" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101201 12:22:01.306" mticks="5644" mem="213676" />
-<result name="FillCharMultiThread" time="20101201 12:22:02.787" mticks="1111" mem="204204" />
-<result name="SortIntegerArrayBenchmark" time="20101201 12:22:05.185" mticks="3290" mem="197292" />
-<result name="SortExtendedArrayBenchmark" time="20101201 12:22:07.597" mticks="3327" mem="201132" />
-<result name="MemFree1" time="20101201 12:22:18.727" mticks="24059" mem="202028" />
-<result name="MemFree2" time="20101201 12:22:19.842" mticks="238" mem="200748" />
-<result name="Linked-list container benchmark" time="20101201 12:22:21.559" mticks="1671" mem="217388" />
-<result name="Multi-threaded allocate, use and free" time="20101201 12:22:26.555" mticks="9470" mem="239596" />
-<result name="Multi-threaded reallocate and use" time="20101201 12:22:29.675" mticks="5011" mem="220652" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101201 12:22:33.947" mticks="7749" mem="202988" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101201 12:22:35.134" mticks="409" mem="210028" />
-<result name="NexusDB with 1 thread(s)" time="20101201 12:22:42.873" mticks="15997" mem="203820" />
-<result name="NexusDB with 2 thread(s)" time="20101201 12:22:47.306" mticks="8131" mem="224364" />
-<result name="NexusDB with 4 thread(s)" time="20101201 12:22:50.223" mticks="4528" mem="273004" />
-<result name="NexusDB with 8 thread(s)" time="20101201 12:22:53.235" mticks="4750" mem="374316" />
-<result name="Transient threaded objects" time="20101201 12:22:54.543" mticks="700" mem="345260" />
-<result name="Raw Performance 8 threads" time="20101201 12:23:05.505" mticks="23658" mem="274476" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:36:50.569" mticks="56733" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101201 12:25:03.636" mticks="593" mem="79544" />
-<result name="ReallocMem benchmark" time="20101201 12:25:04.963" mticks="719" mem="128696" />
-<result name="Block downsize" time="20101201 12:25:06.305" mticks="775" mem="192504" />
-<result name="Small upsize benchmark" time="20101201 12:25:07.855" mticks="1042" mem="334712" />
-<result name="Small downsize benchmark" time="20101201 12:25:09.452" mticks="1379" mem="310508" />
-<result name="Block size spread benchmark" time="20101201 12:25:11.067" mticks="1421" mem="321708" />
-<result name="Raw Performance 1 thread" time="20101201 12:25:15.548" mticks="8247" mem="171756" />
-<result name="Address space creep benchmark" time="20101201 12:25:23.087" mticks="15513" mem="245228" />
-<result name="Large block spread benchmark" time="20101201 12:25:28.896" mticks="11406" mem="405164" />
-<result name="Array Upsize 1 thread" time="20101201 12:25:30.572" mticks="1576" mem="267372" />
-<result name="Address space creep (larger blocks)" time="20101201 12:25:33.759" mticks="5165" mem="470444" />
-<result name="Single-threaded reallocate and use" time="20101201 12:25:39.393" mticks="10984" mem="241324" />
-<result name="Single-threaded allocate, use and free" time="20101201 12:25:44.640" mticks="10067" mem="204396" />
-<result name="Single Variables Access 6 arrays at a time" time="20101201 12:26:04.141" mticks="22513" mem="198572" />
-<result name="Double Variables Access 3 arrays at a time" time="20101201 12:26:07.414" mticks="5375" mem="198572" />
-<result name="Double Variables Access 6 arrays at a time" time="20101201 12:26:10.688" mticks="5377" mem="198572" />
-<result name="Double Variables Access 18 arrays at a time" time="20101201 12:26:14.414" mticks="6453" mem="198572" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101201 12:26:16.288" mticks="2045" mem="214956" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101201 12:26:19.813" mticks="5974" mem="214956" />
-<result name="FillCharMultiThread" time="20101201 12:26:21.334" mticks="1208" mem="205484" />
-<result name="SortIntegerArrayBenchmark" time="20101201 12:26:23.735" mticks="3297" mem="198572" />
-<result name="SortExtendedArrayBenchmark" time="20101201 12:26:26.223" mticks="3505" mem="202412" />
-<result name="MemFree1" time="20101201 12:26:37.351" mticks="24051" mem="203308" />
-<result name="MemFree2" time="20101201 12:26:38.466" mticks="237" mem="202028" />
-<result name="Linked-list container benchmark" time="20101201 12:26:40.206" mticks="1724" mem="217388" />
-<result name="Multi-threaded allocate, use and free" time="20101201 12:26:45.219" mticks="9507" mem="239596" />
-<result name="Multi-threaded reallocate and use" time="20101201 12:26:48.360" mticks="5058" mem="214508" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101201 12:26:52.714" mticks="7945" mem="200172" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101201 12:26:53.934" mticks="479" mem="206380" />
-<result name="NexusDB with 1 thread(s)" time="20101201 12:27:01.687" mticks="16027" mem="202284" />
-<result name="NexusDB with 2 thread(s)" time="20101201 12:27:06.163" mticks="8236" mem="227052" />
-<result name="NexusDB with 4 thread(s)" time="20101201 12:27:09.082" mticks="4533" mem="274732" />
-<result name="NexusDB with 8 thread(s)" time="20101201 12:27:12.088" mticks="4738" mem="378732" />
-<result name="Transient threaded objects" time="20101201 12:27:13.398" mticks="702" mem="344620" />
-<result name="Raw Performance 8 threads" time="20101201 12:27:24.401" mticks="23756" mem="268204" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:41:30.311" mticks="57747" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101201 12:28:26.825" mticks="581" mem="79544" />
-<result name="ReallocMem benchmark" time="20101201 12:28:28.145" mticks="703" mem="128696" />
-<result name="Block downsize" time="20101201 12:28:29.490" mticks="780" mem="192504" />
-<result name="Small upsize benchmark" time="20101201 12:28:31.039" mticks="1039" mem="334712" />
-<result name="Small downsize benchmark" time="20101201 12:28:32.631" mticks="1366" mem="319288" />
-<result name="Block size spread benchmark" time="20101201 12:28:34.218" mticks="1353" mem="329208" />
-<result name="Raw Performance 1 thread" time="20101201 12:28:38.591" mticks="7988" mem="180216" />
-<result name="Address space creep benchmark" time="20101201 12:28:45.981" mticks="15158" mem="257848" />
-<result name="Large block spread benchmark" time="20101201 12:28:51.785" mticks="11389" mem="412664" />
-<result name="Array Upsize 1 thread" time="20101201 12:28:53.515" mticks="1699" mem="288376" />
-<result name="Address space creep (larger blocks)" time="20101201 12:28:56.686" mticks="5130" mem="477944" />
-<result name="Single-threaded reallocate and use" time="20101201 12:29:02.291" mticks="10911" mem="249144" />
-<result name="Single-threaded allocate, use and free" time="20101201 12:29:07.530" mticks="10044" mem="211896" />
-<result name="Single Variables Access 6 arrays at a time" time="20101201 12:29:27.026" mticks="22501" mem="207352" />
-<result name="Double Variables Access 3 arrays at a time" time="20101201 12:29:30.338" mticks="5466" mem="207352" />
-<result name="Double Variables Access 6 arrays at a time" time="20101201 12:29:33.597" mticks="5338" mem="207352" />
-<result name="Double Variables Access 18 arrays at a time" time="20101201 12:29:37.243" mticks="6260" mem="207352" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101201 12:29:39.262" mticks="2385" mem="216236" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101201 12:29:43.504" mticks="7673" mem="216236" />
-<result name="FillCharMultiThread" time="20101201 12:29:45.159" mticks="1521" mem="206764" />
-<result name="SortIntegerArrayBenchmark" time="20101201 12:29:47.738" mticks="3716" mem="199852" />
-<result name="SortExtendedArrayBenchmark" time="20101201 12:29:50.494" mticks="4133" mem="203692" />
-<result name="MemFree1" time="20101201 12:30:01.652" mticks="24117" mem="203308" />
-<result name="MemFree2" time="20101201 12:30:02.771" mticks="237" mem="202028" />
-<result name="Linked-list container benchmark" time="20101201 12:30:04.501" mticks="1696" mem="214828" />
-<result name="Multi-threaded allocate, use and free" time="20101201 12:30:09.539" mticks="9568" mem="240876" />
-<result name="Multi-threaded reallocate and use" time="20101201 12:30:12.656" mticks="4996" mem="221228" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101201 12:30:16.928" mticks="7744" mem="204716" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101201 12:30:18.137" mticks="455" mem="209004" />
-<result name="NexusDB with 1 thread(s)" time="20101201 12:30:25.769" mticks="15735" mem="205612" />
-<result name="NexusDB with 2 thread(s)" time="20101201 12:30:30.220" mticks="8153" mem="223532" />
-<result name="NexusDB with 4 thread(s)" time="20101201 12:30:33.152" mticks="4560" mem="275628" />
-<result name="NexusDB with 8 thread(s)" time="20101201 12:30:36.079" mticks="4529" mem="394348" />
-<result name="Transient threaded objects" time="20101201 12:30:37.405" mticks="742" mem="240300" />
-<result name="Raw Performance 8 threads" time="20101201 12:30:48.283" mticks="23456" mem="277804" />
-<result name="StringThreadTest" time="20101201 12:31:05.160" mticks="37721" mem="231020" />
-<result name="Single-threaded AllocMem" time="20101201 12:32:38.083" mticks="189941" mem="346860" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:45:06.602" mticks="54525" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101201 19:41:10.511" mticks="591" mem="69476" />
-<result name="ReallocMem benchmark" time="20101201 19:41:11.834" mticks="708" mem="118628" />
-<result name="Block downsize" time="20101201 19:41:13.179" mticks="784" mem="182436" />
-<result name="Small upsize benchmark" time="20101201 19:41:14.726" mticks="1035" mem="324196" />
-<result name="Small downsize benchmark" time="20101201 19:41:16.314" mticks="1362" mem="308772" />
-<result name="Block size spread benchmark" time="20101201 19:41:17.900" mticks="1357" mem="318692" />
-<result name="Raw Performance 1 thread" time="20101201 19:41:22.279" mticks="8006" mem="168740" />
-<result name="Address space creep benchmark" time="20101201 19:41:29.589" mticks="14976" mem="242212" />
-<result name="Large block spread benchmark" time="20101201 19:41:35.369" mticks="11339" mem="402148" />
-<result name="Array Upsize 1 thread" time="20101201 19:41:37.192" mticks="1931" mem="271204" />
-<result name="Address space creep (larger blocks)" time="20101201 19:41:40.369" mticks="5152" mem="467428" />
-<result name="Single-threaded reallocate and use" time="20101201 19:41:45.896" mticks="10735" mem="238628" />
-<result name="Single-threaded allocate, use and free" time="20101201 19:41:51.112" mticks="10001" mem="202660" />
-<result name="Single Variables Access 6 arrays at a time" time="20101201 19:42:10.608" mticks="22521" mem="194276" />
-<result name="Double Variables Access 3 arrays at a time" time="20101201 19:42:13.905" mticks="5432" mem="194276" />
-<result name="Double Variables Access 6 arrays at a time" time="20101201 19:42:17.171" mticks="5364" mem="194276" />
-<result name="Double Variables Access 18 arrays at a time" time="20101201 19:42:20.663" mticks="5900" mem="194276" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101201 19:42:22.520" mticks="2010" mem="210660" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101201 19:42:25.833" mticks="5476" mem="210660" />
-<result name="FillCharMultiThread" time="20101201 19:42:27.319" mticks="1130" mem="201188" />
-<result name="SortIntegerArrayBenchmark" time="20101201 19:42:29.711" mticks="3284" mem="194276" />
-<result name="SortExtendedArrayBenchmark" time="20101201 19:42:32.070" mticks="3202" mem="198116" />
-<result name="MemFree1" time="20101201 19:42:43.200" mticks="24063" mem="197732" />
-<result name="MemFree2" time="20101201 19:42:44.313" mticks="236" mem="196452" />
-<result name="Linked-list container benchmark" time="20101201 19:42:46.019" mticks="1653" mem="211812" />
-<result name="Multi-threaded allocate, use and free" time="20101201 19:42:50.902" mticks="9205" mem="235300" />
-<result name="Multi-threaded reallocate and use" time="20101201 19:42:53.951" mticks="4844" mem="220196" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101201 19:42:58.226" mticks="7763" mem="201124" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101201 19:42:59.419" mticks="402" mem="205860" />
-<result name="NexusDB with 1 thread(s)" time="20101201 19:43:07.123" mticks="15890" mem="202020" />
-<result name="NexusDB with 2 thread(s)" time="20101201 19:43:11.636" mticks="8318" mem="217124" />
-<result name="NexusDB with 4 thread(s)" time="20101201 19:43:14.503" mticks="4408" mem="269796" />
-<result name="NexusDB with 8 thread(s)" time="20101201 19:43:17.420" mticks="4528" mem="370084" />
-<result name="Transient threaded objects" time="20101201 19:43:18.734" mticks="716" mem="225444" />
-<result name="Raw Performance 8 threads" time="20101201 19:43:29.767" mticks="23827" mem="274212" />
-<result name="StringThreadTest" time="20101201 19:43:47.296" mticks="39260" mem="225764" />
-<result name="Single-threaded AllocMem" time="20101201 19:45:20.224" mticks="189983" mem="341284" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:50:00.536" mticks="54662" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101203 12:59:46.212" mticks="612" mem="79544" />
-<result name="ReallocMem benchmark" time="20101203 12:59:47.565" mticks="772" mem="128696" />
-<result name="Block downsize" time="20101203 12:59:48.950" mticks="866" mem="192504" />
-<result name="Small upsize benchmark" time="20101203 12:59:50.587" mticks="1240" mem="334712" />
-<result name="Small downsize benchmark" time="20101203 12:59:52.190" mticks="1384" mem="318008" />
-<result name="Block size spread benchmark" time="20101203 12:59:53.790" mticks="1382" mem="329208" />
-<result name="Raw Performance 1 thread" time="20101203 12:59:58.346" mticks="8414" mem="179256" />
-<result name="Address space creep benchmark" time="20101203 13:00:05.906" mticks="15558" mem="255288" />
-<result name="Large block spread benchmark" time="20101203 13:00:11.789" mticks="11565" mem="412664" />
-<result name="Array Upsize 1 thread" time="20101203 13:00:13.450" mticks="1523" mem="267832" />
-<result name="Address space creep (larger blocks)" time="20101203 13:00:16.757" mticks="5449" mem="476664" />
-<result name="Single-threaded reallocate and use" time="20101203 13:00:22.491" mticks="11215" mem="249144" />
-<result name="Single-threaded allocate, use and free" time="20101203 13:00:27.840" mticks="10306" mem="211896" />
-<result name="Single Variables Access 6 arrays at a time" time="20101203 13:00:47.368" mticks="22552" mem="202232" />
-<result name="Double Variables Access 3 arrays at a time" time="20101203 13:00:50.680" mticks="5462" mem="202232" />
-<result name="Double Variables Access 6 arrays at a time" time="20101203 13:00:53.996" mticks="5463" mem="202232" />
-<result name="Double Variables Access 18 arrays at a time" time="20101203 13:00:57.582" mticks="6109" mem="194732" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101203 13:00:59.505" mticks="2156" mem="211116" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101203 13:01:03.041" mticks="5990" mem="211116" />
-<result name="FillCharMultiThread" time="20101203 13:01:04.551" mticks="1175" mem="201644" />
-<result name="SortIntegerArrayBenchmark" time="20101203 13:01:06.959" mticks="3302" mem="194732" />
-<result name="SortExtendedArrayBenchmark" time="20101203 13:01:09.504" mticks="3625" mem="198572" />
-<result name="MemFree1" time="20101203 13:01:20.647" mticks="24081" mem="198188" />
-<result name="MemFree2" time="20101203 13:01:21.766" mticks="237" mem="196908" />
-<result name="Linked-list container benchmark" time="20101203 13:01:23.489" mticks="1673" mem="214828" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:52:45.563" mticks="55222" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101203 13:11:32.202" mticks="603" mem="79544" />
-<result name="ReallocMem benchmark" time="20101203 13:11:33.541" mticks="743" mem="128696" />
-<result name="Block downsize" time="20101203 13:11:34.914" mticks="847" mem="192504" />
-<result name="Small upsize benchmark" time="20101203 13:11:36.467" mticks="1039" mem="334712" />
-<result name="Small downsize benchmark" time="20101203 13:11:38.071" mticks="1397" mem="319288" />
-<result name="Block size spread benchmark" time="20101203 13:11:39.665" mticks="1363" mem="329208" />
-<result name="Raw Performance 1 thread" time="20101203 13:11:44.209" mticks="8404" mem="179256" />
-<result name="Address space creep benchmark" time="20101203 13:11:51.856" mticks="15790" mem="255288" />
-<result name="Large block spread benchmark" time="20101203 13:11:57.719" mticks="11540" mem="412664" />
-<result name="Array Upsize 1 thread" time="20101203 13:11:59.372" mticks="1516" mem="260332" />
-<result name="Address space creep (larger blocks)" time="20101203 13:12:02.727" mticks="5571" mem="470444" />
-<result name="Single-threaded reallocate and use" time="20101203 13:12:08.553" mticks="11454" mem="240364" />
-<result name="Single-threaded allocate, use and free" time="20101203 13:12:14.078" mticks="10738" mem="203116" />
-<result name="Single Variables Access 6 arrays at a time" time="20101203 13:12:33.571" mticks="22519" mem="193452" />
-<result name="Double Variables Access 3 arrays at a time" time="20101203 13:12:36.912" mticks="5538" mem="193452" />
-<result name="Double Variables Access 6 arrays at a time" time="20101203 13:12:40.242" mticks="5517" mem="193452" />
-<result name="Double Variables Access 18 arrays at a time" time="20101203 13:12:43.904" mticks="6294" mem="193452" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101203 13:12:45.870" mticks="2256" mem="209836" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101203 13:12:49.607" mticks="6471" mem="209836" />
-<result name="FillCharMultiThread" time="20101203 13:12:51.178" mticks="1316" mem="200364" />
-<result name="SortIntegerArrayBenchmark" time="20101203 13:12:53.573" mticks="3276" mem="193452" />
-<result name="SortExtendedArrayBenchmark" time="20101203 13:12:56.512" mticks="4566" mem="197292" />
-<result name="MemFree1" time="20101203 13:13:07.649" mticks="24082" mem="196908" />
-<result name="MemFree2" time="20101203 13:13:08.768" mticks="237" mem="195628" />
-<result name="Linked-list container benchmark" time="20101203 13:13:10.522" mticks="1751" mem="213548" />
-<result name="Multi-threaded allocate, use and free" time="20101203 13:13:15.733" mticks="9979" mem="233196" />
-<result name="Multi-threaded reallocate and use" time="20101203 13:13:19.025" mticks="5412" mem="214124" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101203 13:13:23.312" mticks="7780" mem="197228" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101203 13:13:24.512" mticks="434" mem="202668" />
-<result name="NexusDB with 1 thread(s)" time="20101203 13:13:32.320" mticks="16147" mem="198124" />
-<result name="NexusDB with 2 thread(s)" time="20101203 13:13:36.846" mticks="8351" mem="212332" />
-<result name="NexusDB with 4 thread(s)" time="20101203 13:13:39.923" mticks="4906" mem="260972" />
-<result name="NexusDB with 8 thread(s)" time="20101203 13:13:43.046" mticks="4989" mem="359980" />
-<result name="Transient threaded objects" time="20101203 13:13:44.360" mticks="709" mem="337708" />
-<result name="Raw Performance 8 threads" time="20101203 13:13:56.019" mticks="25323" mem="271660" />
-<result name="StringThreadTest" time="20101203 13:14:13.906" mticks="40135" mem="220140" />
-<result name="Single-threaded AllocMem" time="20101203 13:15:46.998" mticks="190399" mem="340780" />
-<result name="StringThreadTest" time="20101203 14:56:47.931" mticks="41125" mem="225328" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 09:53:31.680" mticks="54641" mem="69356" />
+<result name="ReallocMem benchmark" time="20110706 09:53:42.401" mticks="23068" mem="465992" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101203 15:48:00.818" mticks="24179" mem="51436" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 14:43:03.957" mticks="54472" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101204 16:12:59.329" mticks="38654" mem="32292" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 14:45:31.603" mticks="54407" mem="69356" />
+<result name="ReallocMem benchmark" time="20110706 14:45:43.570" mticks="26024" mem="378260" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101204 16:21:00.763" mticks="36847" mem="172032" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 19:53:29.630" mticks="51666" mem="61852" />
+<result name="ReallocMem benchmark" time="20110706 19:54:14.728" mticks="104836" mem="446532" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101204 16:23:23.060" mticks="11111" mem="164848" />
-<result name="Fragmentation Test" time="20101204 16:24:01.619" mticks="10639" mem="191000" />
-<result name="ReallocMem benchmark" time="20101204 16:24:02.993" mticks="827" mem="197828" />
-<result name="Block downsize" time="20101204 16:26:16.415" mticks="314875" mem="274316" />
-<result name="Small upsize benchmark" time="20101204 16:32:26.622" mticks="1160" mem="365356" />
-<result name="Small downsize benchmark" time="20101204 16:32:28.403" mticks="1802" mem="495796" />
-<result name="Block size spread benchmark" time="20101204 16:32:29.803" mticks="905" mem="495796" />
-<result name="Raw Performance 1 thread" time="20101204 16:33:12.393" mticks="98870" mem="555704" />
-<result name="Address space creep benchmark" time="20101204 16:33:20.200" mticks="16152" mem="587536" />
-<result name="Large block spread benchmark" time="20101204 16:33:28.816" mticks="18077" mem="794124" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 19:58:15.955" mticks="51783" mem="61852" />
+<result name="ReallocMem benchmark" time="20110706 19:59:01.318" mticks="105463" mem="453700" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101204 16:47:29.058" mticks="601" mem="69476" />
-<result name="ReallocMem benchmark" time="20101204 16:47:30.392" mticks="723" mem="118628" />
-<result name="Block downsize" time="20101204 16:47:31.729" mticks="766" mem="203428" />
-<result name="Small upsize benchmark" time="20101204 16:47:33.277" mticks="1032" mem="336868" />
-<result name="Small downsize benchmark" time="20101204 16:47:34.843" mticks="1301" mem="388644" />
-<result name="Block size spread benchmark" time="20101204 16:47:36.413" mticks="1310" mem="631204" />
-<result name="Raw Performance 1 thread" time="20101204 16:47:40.985" mticks="8463" mem="541476" />
-<result name="Address space creep benchmark" time="20101204 16:47:48.394" mticks="15202" mem="616100" />
-<result name="Large block spread benchmark" time="20101204 16:47:54.308" mticks="11652" mem="864292" />
-<result name="Array Upsize 1 thread" time="20101204 16:47:55.893" mticks="1356" mem="701668" />
-<result name="Address space creep (larger blocks)" time="20101204 16:47:59.157" mticks="5350" mem="916772" />
-<result name="Single-threaded reallocate and use" time="20101204 16:48:04.798" mticks="11000" mem="686692" />
-<result name="Single-threaded allocate, use and free" time="20101204 16:48:10.055" mticks="10087" mem="654372" />
-<result name="Single Variables Access 6 arrays at a time" time="20101204 16:48:29.552" mticks="22499" mem="641124" />
-<result name="Double Variables Access 3 arrays at a time" time="20101204 16:48:32.854" mticks="5442" mem="641124" />
-<result name="Double Variables Access 6 arrays at a time" time="20101204 16:48:36.161" mticks="5451" mem="641124" />
-<result name="Double Variables Access 18 arrays at a time" time="20101204 16:48:39.786" mticks="6207" mem="641124" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101204 16:48:41.705" mticks="2153" mem="657508" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101204 16:48:45.075" mticks="5600" mem="657508" />
-<result name="FillCharMultiThread" time="20101204 16:48:46.589" mticks="1185" mem="648036" />
-<result name="SortIntegerArrayBenchmark" time="20101204 16:48:48.988" mticks="3292" mem="641572" />
-<result name="SortExtendedArrayBenchmark" time="20101204 16:48:51.199" mticks="2843" mem="645412" />
-<result name="MemFree1" time="20101204 16:49:02.332" mticks="24065" mem="718564" />
-<result name="MemFree2" time="20101204 16:49:03.447" mticks="237" mem="678884" />
-<result name="Linked-list container benchmark" time="20101204 16:49:05.166" mticks="1668" mem="690404" />
-<result name="Multi-threaded allocate, use and free" time="20101204 16:49:10.133" mticks="9399" mem="727012" />
-<result name="Multi-threaded reallocate and use" time="20101204 16:49:13.249" mticks="4996" mem="713764" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101204 16:49:17.490" mticks="7670" mem="699108" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101204 16:49:18.682" mticks="421" mem="703908" />
-<result name="NexusDB with 1 thread(s)" time="20101204 16:49:26.460" mticks="16081" mem="699108" />
-<result name="NexusDB with 2 thread(s)" time="20101204 16:49:30.902" mticks="8150" mem="718116" />
-<result name="NexusDB with 4 thread(s)" time="20101204 16:49:33.995" mticks="4942" mem="764772" />
-<result name="NexusDB with 8 thread(s)" time="20101204 16:49:36.968" mticks="4652" mem="866404" />
-<result name="Transient threaded objects" time="20101204 16:49:38.290" mticks="730" mem="722212" />
-<result name="Raw Performance 8 threads" time="20101204 16:49:50.015" mticks="25466" mem="762852" />
-<result name="StringThreadTest" time="20101204 16:50:07.021" mticks="38028" mem="745252" />
-<result name="Single-threaded AllocMem" time="20101204 16:51:41.583" mticks="193867" mem="836452" />
-<result name="StringThreadTest" time="20101204 16:56:45.884" mticks="36705" mem="710584" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 20:02:34.903" mticks="51729" mem="61852" />
+<result name="ReallocMem benchmark" time="20110706 20:03:19.970" mticks="104728" mem="447556" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101204 16:57:38.177" mticks="20479" mem="66020" />
-<result name="Fragmentation Test" time="20101204 16:57:50.541" mticks="614" mem="88036" />
-<result name="ReallocMem benchmark" time="20101204 16:57:51.866" mticks="708" mem="121188" />
-<result name="Block downsize" time="20101204 16:57:53.357" mticks="1127" mem="206436" />
-<result name="Small upsize benchmark" time="20101204 16:57:54.960" mticks="1009" mem="335204" />
-<result name="Small downsize benchmark" time="20101204 16:57:56.531" mticks="1315" mem="393508" />
-<result name="Block size spread benchmark" time="20101204 16:57:58.107" mticks="1326" mem="642916" />
-<result name="Raw Performance 1 thread" time="20101204 16:58:02.754" mticks="8641" mem="541668" />
-<result name="Address space creep benchmark" time="20101204 16:58:10.194" mticks="15278" mem="619172" />
-<result name="Large block spread benchmark" time="20101204 16:58:16.074" mticks="11573" mem="859684" />
-<result name="Array Upsize 1 thread" time="20101204 16:58:17.661" mticks="1365" mem="706532" />
-<result name="Address space creep (larger blocks)" time="20101204 16:58:21.275" mticks="6183" mem="913444" />
-<result name="Single-threaded reallocate and use" time="20101204 16:58:26.916" mticks="11004" mem="682404" />
-<result name="Single-threaded allocate, use and free" time="20101204 16:58:32.194" mticks="10142" mem="649764" />
-<result name="Single Variables Access 6 arrays at a time" time="20101204 16:58:51.697" mticks="22554" mem="642916" />
-<result name="Double Variables Access 3 arrays at a time" time="20101204 16:58:54.986" mticks="5408" mem="642916" />
-<result name="Double Variables Access 6 arrays at a time" time="20101204 16:58:58.303" mticks="5473" mem="642916" />
-<result name="Double Variables Access 18 arrays at a time" time="20101204 16:59:01.868" mticks="6067" mem="642916" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101204 16:59:03.747" mticks="2050" mem="659300" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101204 16:59:07.238" mticks="5884" mem="659300" />
-<result name="FillCharMultiThread" time="20101204 16:59:08.765" mticks="1219" mem="649828" />
-<result name="SortIntegerArrayBenchmark" time="20101204 16:59:11.163" mticks="3294" mem="642916" />
-<result name="SortExtendedArrayBenchmark" time="20101204 16:59:13.772" mticks="3794" mem="646756" />
-<result name="MemFree1" time="20101204 16:59:24.918" mticks="24086" mem="712676" />
-<result name="MemFree2" time="20101204 16:59:26.042" mticks="257" mem="679396" />
-<result name="Linked-list container benchmark" time="20101204 16:59:27.770" mticks="1699" mem="684516" />
-<result name="Multi-threaded allocate, use and free" time="20101204 16:59:33.000" mticks="10028" mem="724964" />
-<result name="Multi-threaded reallocate and use" time="20101204 16:59:36.323" mticks="5490" mem="713060" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101204 16:59:40.577" mticks="7705" mem="697508" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101204 16:59:41.825" mticks="553" mem="704804" />
-<result name="NexusDB with 1 thread(s)" time="20101204 16:59:49.602" mticks="16078" mem="698596" />
-<result name="NexusDB with 2 thread(s)" time="20101204 16:59:54.058" mticks="8185" mem="719524" />
-<result name="NexusDB with 4 thread(s)" time="20101204 16:59:57.213" mticks="5080" mem="770980" />
-<result name="NexusDB with 8 thread(s)" time="20101204 17:00:00.378" mticks="5110" mem="872932" />
-<result name="Transient threaded objects" time="20101204 17:00:08.275" mticks="16360" mem="840740" />
-<result name="Raw Performance 8 threads" time="20101204 17:00:20.185" mticks="25907" mem="767204" />
-<result name="StringThreadTest" time="20101204 17:00:37.822" mticks="39529" mem="714468" />
-<result name="Single-threaded AllocMem" time="20101204 17:02:12.616" mticks="194460" mem="839908" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110706 20:19:03.909" mticks="51815" mem="61852" />
+<result name="ReallocMem benchmark" time="20110706 20:19:49.665" mticks="106377" mem="471108" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="StringThreadTest" time="20101204 17:42:07.496" mticks="14506" mem="122404" />
-<result name="Fragmentation Test" time="20101204 17:42:29.418" mticks="459" mem="97380" />
-<result name="ReallocMem benchmark" time="20101204 17:42:30.739" mticks="698" mem="121892" />
-<result name="Block downsize" time="20101204 17:42:32.240" mticks="1156" mem="221988" />
-<result name="Small upsize benchmark" time="20101204 17:42:33.840" mticks="989" mem="343588" />
-<result name="Small downsize benchmark" time="20101204 17:42:35.433" mticks="1362" mem="449444" />
-<result name="Block size spread benchmark" time="20101204 17:42:37.003" mticks="1306" mem="732004" />
-<result name="Raw Performance 1 thread" time="20101204 17:42:41.764" mticks="8911" mem="678372" />
-<result name="Address space creep benchmark" time="20101204 17:42:49.216" mticks="15306" mem="736036" />
-<result name="Large block spread benchmark" time="20101204 17:42:55.106" mticks="11591" mem="988068" />
-<result name="Array Upsize 1 thread" time="20101204 17:42:56.683" mticks="1339" mem="818916" />
-<result name="Address space creep (larger blocks)" time="20101204 17:43:00.308" mticks="6210" mem="1041828" />
-<result name="Single-threaded reallocate and use" time="20101204 17:43:05.971" mticks="11054" mem="807268" />
-<result name="Single-threaded allocate, use and free" time="20101204 17:43:11.250" mticks="10143" mem="778148" />
-<result name="Single Variables Access 6 arrays at a time" time="20101204 17:43:30.660" mticks="22310" mem="772068" />
-<result name="Double Variables Access 3 arrays at a time" time="20101204 17:43:33.960" mticks="5438" mem="772068" />
-<result name="Double Variables Access 6 arrays at a time" time="20101204 17:43:37.214" mticks="5326" mem="772068" />
-<result name="Double Variables Access 18 arrays at a time" time="20101204 17:43:40.727" mticks="5945" mem="772068" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101204 17:43:42.653" mticks="2169" mem="788452" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101204 17:43:46.035" mticks="5630" mem="788452" />
-<result name="FillCharMultiThread" time="20101204 17:43:47.557" mticks="1206" mem="778980" />
-<result name="SortIntegerArrayBenchmark" time="20101204 17:43:49.952" mticks="3285" mem="772516" />
-<result name="SortExtendedArrayBenchmark" time="20101204 17:43:52.698" mticks="4118" mem="776356" />
-<result name="MemFree1" time="20101204 17:44:03.837" mticks="24074" mem="850148" />
-<result name="MemFree2" time="20101204 17:44:04.954" mticks="237" mem="811748" />
-<result name="Linked-list container benchmark" time="20101204 17:44:06.697" mticks="1726" mem="821988" />
-<result name="Multi-threaded allocate, use and free" time="20101204 17:44:11.693" mticks="9469" mem="856036" />
-<result name="Multi-threaded reallocate and use" time="20101204 17:44:14.809" mticks="4995" mem="863588" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101204 17:44:19.071" mticks="7721" mem="847588" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101204 17:44:20.288" mticks="481" mem="851428" />
-<result name="NexusDB with 1 thread(s)" time="20101204 17:44:28.067" mticks="16086" mem="847588" />
-<result name="NexusDB with 2 thread(s)" time="20101204 17:44:32.501" mticks="8134" mem="849316" />
-<result name="NexusDB with 4 thread(s)" time="20101204 17:44:35.381" mticks="4436" mem="881316" />
-<result name="NexusDB with 8 thread(s)" time="20101204 17:44:38.351" mticks="4648" mem="981732" />
-<result name="Transient threaded objects" time="20101204 17:44:39.657" mticks="693" mem="1009956" />
-<result name="Raw Performance 8 threads" time="20101204 17:44:51.830" mticks="26536" mem="926244" />
-<result name="StringThreadTest" time="20101204 17:45:09.727" mticks="40149" mem="906852" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110707 08:31:12.396" mticks="53375" mem="61856" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101204 21:25:07.080" mticks="607" mem="69476" />
-<result name="ReallocMem benchmark" time="20101204 21:25:18.579" mticks="24880" mem="118628" />
-<result name="Block downsize" time="20101204 21:25:19.979" mticks="909" mem="203428" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110707 08:33:58.820" mticks="54629" mem="69356" />
+<result name="ReallocMem benchmark" time="20110707 08:36:38.098" mticks="376345" mem="435272" />
+<result name="Block downsize" time="20110707 13:27:01.900" mticks="41430899" mem="446992" />
+<result name="Small upsize benchmark" time="20110707 15:02:57.245" mticks="13671793" mem="582352" />
+<result name="Small downsize benchmark" time="20110707 16:40:06.310" mticks="13860239" mem="929488" />
+<result name="Block size spread benchmark" time="20110707 16:40:20.418" mticks="31147" mem="929488" />
+<result name="Raw Performance 1 thread" time="20110707 17:01:17.516" mticks="2987123" mem="981064" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101204 21:26:17.226" mticks="589" mem="69476" />
-<result name="ReallocMem benchmark" time="20101204 21:26:39.265" mticks="49914" mem="118628" />
-<result name="Block downsize" time="20101204 21:26:41.911" mticks="923" mem="203428" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 11:51:49.948" mticks="278857" mem="69356" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101206 08:23:15.057" mticks="594" mem="79544" />
-<result name="ReallocMem benchmark" time="20101206 08:23:16.428" mticks="803" mem="128696" />
-<result name="Block downsize" time="20101206 08:23:17.940" mticks="1169" mem="213496" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 11:55:57.057" mticks="64659" mem="70380" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101206 10:37:20.616" mticks="605" mem="79544" />
-<result name="ReallocMem benchmark" time="20101206 10:37:21.991" mticks="821" mem="128696" />
-<result name="Block downsize" time="20101206 10:37:23.508" mticks="1173" mem="213496" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 11:57:50.420" mticks="53591" mem="69356" />
+<result name="ReallocMem benchmark" time="20110712 11:57:56.051" mticks="10959" mem="1287240" />
+<result name="Block downsize" time="20110712 11:58:30.288" mticks="79018" mem="1503760" />
+<result name="Small upsize benchmark" time="20110712 11:58:31.843" mticks="1051" mem="1831632" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101206 10:39:41.267" mticks="600" mem="79544" />
-<result name="ReallocMem benchmark" time="20101206 10:39:43.594" mticks="3085" mem="128696" />
-<result name="Block downsize" time="20101206 10:39:45.988" mticks="1126" mem="205996" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:01:29.105" mticks="3122" mem="68676" />
+<result name="Fragmentation Test" time="20110712 12:16:32.986" mticks="3180" mem="68676" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101206 10:41:26.847" mticks="616" mem="79544" />
-<result name="ReallocMem benchmark" time="20101206 10:41:28.343" mticks="1109" mem="128696" />
-<result name="Block downsize" time="20101206 10:41:29.831" mticks="1070" mem="213496" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:25:13.325" mticks="28952" mem="509780" />
+<result name="Fragmentation Test" time="20110712 12:25:17.993" mticks="5095" mem="903508" />
+<result name="Fragmentation Test" time="20110712 12:25:24.670" mticks="11557" mem="1215252" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20101206 10:50:39.346" mticks="609" mem="79544" />
-<result name="ReallocMem benchmark" time="20101206 10:50:40.825" mticks="1061" mem="128696" />
-<result name="Block downsize" time="20101206 10:50:42.288" mticks="1037" mem="213496" />
-<result name="Small upsize benchmark" time="20101206 10:50:44.845" mticks="3387" mem="336888" />
-<result name="Small downsize benchmark" time="20101206 10:50:47.668" mticks="4215" mem="325752" />
-<result name="Block size spread benchmark" time="20101206 10:50:49.597" mticks="2151" mem="362616" />
-<result name="Raw Performance 1 thread" time="20101206 10:50:54.536" mticks="9266" mem="220792" />
-<result name="Address space creep benchmark" time="20101206 10:51:05.110" mticks="22718" mem="281900" />
-<result name="Large block spread benchmark" time="20101206 10:51:10.519" mticks="10438" mem="461996" />
-<result name="Array Upsize 1 thread" time="20101206 10:51:12.220" mticks="1614" mem="306284" />
-<result name="Address space creep (larger blocks)" time="20101206 10:51:15.597" mticks="5594" mem="528556" />
-<result name="Single-threaded reallocate and use" time="20101206 10:51:22.136" mticks="13087" mem="296236" />
-<result name="Single-threaded allocate, use and free" time="20101206 10:51:28.340" mticks="12327" mem="261356" />
-<result name="Single Variables Access 6 arrays at a time" time="20101206 10:51:48.996" mticks="25238" mem="244460" />
-<result name="Double Variables Access 3 arrays at a time" time="20101206 10:51:52.470" mticks="5836" mem="244460" />
-<result name="Double Variables Access 6 arrays at a time" time="20101206 10:51:55.923" mticks="5783" mem="244460" />
-<result name="Double Variables Access 18 arrays at a time" time="20101206 10:51:59.718" mticks="6594" mem="244460" />
-<result name="Move Benchmark1 2 arrays at a time" time="20101206 10:52:01.653" mticks="2170" mem="260844" />
-<result name="Move Benchmark2 4 arrays at a time" time="20101206 10:52:05.169" mticks="5938" mem="260844" />
-<result name="FillCharMultiThread" time="20101206 10:52:06.699" mticks="1214" mem="251372" />
-<result name="SortIntegerArrayBenchmark" time="20101206 10:52:09.378" mticks="3949" mem="244460" />
-<result name="SortExtendedArrayBenchmark" time="20101206 10:52:11.869" mticks="3491" mem="248300" />
-<result name="MemFree1" time="20101206 10:52:23.061" mticks="24184" mem="249644" />
-<result name="MemFree2" time="20101206 10:52:24.200" mticks="279" mem="236972" />
-<result name="Linked-list container benchmark" time="20101206 10:52:25.949" mticks="1731" mem="265132" />
-<result name="Multi-threaded allocate, use and free" time="20101206 10:52:31.418" mticks="10583" mem="275756" />
-<result name="Multi-threaded reallocate and use" time="20101206 10:52:34.901" mticks="5856" mem="259052" />
-<result name="QuickSortIntegerArrayBenchmark" time="20101206 10:52:39.210" mticks="7809" mem="242860" />
-<result name="QuickSortExtendedArrayBenchmark" time="20101206 10:52:40.485" mticks="608" mem="246700" />
-<result name="NexusDB with 1 thread(s)" time="20101206 10:52:51.259" mticks="23192" mem="242156" />
-<result name="NexusDB with 2 thread(s)" time="20101206 10:52:57.274" mticks="11877" mem="254252" />
-<result name="NexusDB with 4 thread(s)" time="20101206 10:53:01.219" mticks="6951" mem="302188" />
-<result name="NexusDB with 8 thread(s)" time="20101206 10:53:05.202" mticks="7042" mem="401260" />
-<result name="Transient threaded objects" time="20101206 10:53:14.028" mticks="18559" mem="382700" />
-<result name="Raw Performance 8 threads" time="20101206 10:53:26.885" mticks="28149" mem="326508" />
-<result name="StringThreadTest" time="20101206 10:53:44.873" mticks="40354" mem="267884" />
-<result name="Single-threaded AllocMem" time="20101206 10:55:20.225" mticks="195719" mem="394924" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:41:25.910" mticks="1771" mem="509780" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110113 14:11:02.508" mticks="27905" mem="54796" />
-<result name="Fragmentation Test" time="20110113 14:11:31.015" mticks="65296" mem="54796" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:42:17.598" mticks="1716" mem="509780" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110113 21:11:49.420" mticks="21010" mem="54788" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:45:22.766" mticks="6879" mem="509780" />
+<result name="Fragmentation Test" time="20110712 12:45:26.819" mticks="5018" mem="903508" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Block downsize" time="20110113 21:12:56.621" mticks="2523" mem="177324" />
-<result name="Small upsize benchmark" time="20110113 21:13:03.095" mticks="3173" mem="377992" />
-<result name="Small downsize benchmark" time="20110113 21:13:09.233" mticks="3731" mem="399580" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:49:36.325" mticks="4856" mem="509780" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="ReallocMem benchmark" time="20110114 13:42:09.102" mticks="1585" mem="120684" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:52:20.996" mticks="6758" mem="503828" />
+<result name="Fragmentation Test" time="20110712 12:52:24.508" mticks="6875" mem="890708" />
+<result name="Fragmentation Test" time="20110712 12:52:32.513" mticks="13274" mem="1195668" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="ReallocMem benchmark" time="20110114 13:42:22.383" mticks="1649" mem="120684" />
-<result name="Block downsize" time="20110114 13:42:24.569" mticks="2418" mem="205392" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:52:40.186" mticks="2120" mem="501384" />
+<result name="Fragmentation Test" time="20110712 12:52:43.348" mticks="5590" mem="888264" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110114 13:57:44.571" mticks="83370" mem="54796" />
-<result name="Fragmentation Test" time="20110114 13:57:48.626" mticks="7030" mem="54796" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:52:59.853" mticks="4673" mem="515860" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110114 14:03:59.005" mticks="6278" mem="62296" />
-<result name="Fragmentation Test" time="20110114 14:04:00.899" mticks="1171" mem="62296" />
-<result name="ReallocMem benchmark" time="20110114 14:04:03.399" mticks="3467" mem="120684" />
-<result name="Block downsize" time="20110114 14:06:44.879" mticks="381319" mem="205392" />
-<result name="Small upsize benchmark" time="20110114 14:06:47.643" mticks="3347" mem="326904" />
-<result name="Small downsize benchmark" time="20110114 14:06:50.432" mticks="4198" mem="346436" />
-<result name="Block size spread benchmark" time="20110114 14:06:52.982" mticks="3627" mem="346436" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:56:10.594" mticks="1688" mem="515860" />
+<result name="Fragmentation Test" time="20110712 12:56:14.095" mticks="4736" mem="915476" />
+<result name="Fragmentation Test" time="20110712 12:56:19.879" mticks="10897" mem="1233044" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110114 14:11:15.497" mticks="1145" mem="62296" />
-<result name="ReallocMem benchmark" time="20110114 14:11:17.232" mticks="1652" mem="120684" />
-<result name="Block downsize" time="20110114 14:11:19.355" mticks="2604" mem="198920" />
-<result name="Small upsize benchmark" time="20110114 14:11:21.906" mticks="2962" mem="315292" />
-<result name="Small downsize benchmark" time="20110114 14:11:24.529" mticks="3801" mem="335852" />
-<result name="Block size spread benchmark" time="20110114 14:11:26.563" mticks="2391" mem="335852" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 12:56:31.582" mticks="1876" mem="504276" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110114 14:13:55.331" mticks="1113" mem="62296" />
-<result name="ReallocMem benchmark" time="20110114 14:13:57.047" mticks="1612" mem="120684" />
-<result name="Block downsize" time="20110114 14:13:59.146" mticks="2555" mem="206420" />
-<result name="Small upsize benchmark" time="20110114 14:14:01.679" mticks="2927" mem="323820" />
-<result name="Small downsize benchmark" time="20110114 14:14:04.283" mticks="3758" mem="344380" />
-<result name="Block size spread benchmark" time="20110114 14:14:06.328" mticks="2428" mem="344380" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110712 13:16:28.687" mticks="1260" mem="69396" />
+<result name="Fragmentation Test" time="20110712 13:16:37.725" mticks="1509" mem="62920" />
+<result name="Fragmentation Test" time="20110712 13:16:39.213" mticks="1489" mem="63944" />
+<result name="Fragmentation Test" time="20110712 13:16:40.589" mticks="1393" mem="64968" />
+<result name="Fragmentation Test" time="20110712 13:16:41.800" mticks="1364" mem="65992" />
+<result name="ReallocMem benchmark" time="20110712 13:17:08.636" mticks="10565" mem="1295432" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 14:57:22.968" mticks="10659" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 12:09:24.719" mticks="1548" mem="54824" />
+<result name="ReallocMem benchmark" time="20110713 12:09:32.509" mticks="11769" mem="1282216" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:02:07.840" mticks="10854" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 12:28:24.072" mticks="1491" mem="53800" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:16:26.483" mticks="10539" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="ReallocMem benchmark" time="20110713 12:34:48.630" mticks="9361" mem="323752" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:19:03.132" mticks="10591" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="ReallocMem benchmark" time="20110713 12:35:30.838" mticks="7048" mem="220068" />
+<result name="Block downsize" time="20110713 12:37:32.242" mticks="39437" mem="101284" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:22:35.344" mticks="10585" mem="70572" />
-<result name="Fragmentation Test" time="20110124 15:22:49.870" mticks="10619" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 12:40:29.572" mticks="1523" mem="53800" />
+<result name="ReallocMem benchmark" time="20110713 12:40:35.208" mticks="7398" mem="341160" />
+<result name="Block downsize" time="20110713 12:41:56.327" mticks="173554" mem="236200" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:24:06.874" mticks="10773" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 13:43:34.081" mticks="1519" mem="53800" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:24:45.113" mticks="10593" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 13:44:48.550" mticks="1492" mem="53800" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:26:44.651" mticks="10510" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="ReallocMem benchmark" time="20110713 13:59:12.339" mticks="529376" mem="331944" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:28:44.450" mticks="10546" mem="70572" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 14:07:22.400" mticks="1552" mem="53800" />
+<result name="ReallocMem benchmark" time="20110713 14:07:27.137" mticks="7943" mem="338088" />
+<result name="Block downsize" time="20110713 14:08:44.027" mticks="173038" mem="237224" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110124 15:33:44.844" mticks="15857" mem="63072" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110713 14:48:43.352" mticks="1647" mem="53800" />
+<result name="ReallocMem benchmark" time="20110713 14:48:48.582" mticks="7856" mem="335016" />
+<result name="Block downsize" time="20110713 14:50:02.892" mticks="168863" mem="236200" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110125 08:55:35.611" mticks="10443" mem="71660" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 19:21:09.782" mticks="32639" mem="242244" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110125 08:56:51.285" mticks="10463" mem="71660" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 19:23:26.543" mticks="27835" mem="242244" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110125 09:01:05.322" mticks="10485" mem="71660" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 19:30:07.238" mticks="28476" mem="242244" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110125 09:03:24.798" mticks="10498" mem="71660" />
-<result name="ReallocMem benchmark" time="20110125 09:03:32.731" mticks="16389" mem="116372" />
-<result name="Block downsize" time="20110125 09:05:57.075" mticks="340272" mem="174864" />
-<result name="Small upsize benchmark" time="20110125 09:07:57.853" mticks="3848" mem="240592" />
-<result name="Small downsize benchmark" time="20110125 09:08:00.932" mticks="4878" mem="251856" />
-<result name="Block size spread benchmark" time="20110125 09:08:07.465" mticks="13103" mem="251856" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 19:39:02.244" mticks="29377" mem="242244" />
 </benchmark>
 <benchmark version="1.00" compiler="undefined" MM="undefined">
 <cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
-<os> (NT.6.1.7600) </os>
-<result name="Fragmentation Test" time="20110125 09:15:17.432" mticks="11201" mem="71660" />
-<result name="ReallocMem benchmark" time="20110125 09:15:20.567" mticks="4996" mem="108872" />
-<result name="Block downsize" time="20110125 09:17:46.321" mticks="343625" mem="174864" />
-<result name="Small upsize benchmark" time="20110125 09:19:49.561" mticks="3920" mem="240592" />
-<result name="Small downsize benchmark" time="20110125 09:19:52.643" mticks="4892" mem="251856" />
-<result name="Block size spread benchmark" time="20110125 09:19:59.129" mticks="12986" mem="251856" />
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 19:41:30.277" mticks="28974" mem="242244" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 19:43:15.955" mticks="29503" mem="242244" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM)2 Quad CPU    Q8300  @ 2.50GHz - Intel Pentium III [Katmai], GenuineIntel, type 0, family 6, model 7, stepping A, 2493,7 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Block downsize" time="20110713 20:21:51.579" mticks="38870" mem="242244" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 19:27:59.697" mticks="809" mem="57692" />
+<result name="ReallocMem benchmark" time="20110714 19:28:03.716" mticks="4996" mem="335836" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="ReallocMem benchmark" time="20110714 19:28:20.629" mticks="4938" mem="336860" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 19:29:42.897" mticks="1770" mem="64472" />
+<result name="ReallocMem benchmark" time="20110714 19:29:45.950" mticks="3218" mem="225240" />
+<result name="Block downsize" time="20110714 19:30:10.460" mticks="6675" mem="105176" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 19:31:03.293" mticks="785" mem="57692" />
+<result name="ReallocMem benchmark" time="20110714 19:31:06.921" mticks="5233" mem="339932" />
+<result name="Block downsize" time="20110714 19:31:21.736" mticks="37168" mem="240092" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="ReallocMem benchmark" time="20110714 19:32:38.378" mticks="4993" mem="339932" />
+<result name="Block downsize" time="20110714 19:32:44.504" mticks="11734" mem="242140" />
+<result name="Fragmentation Test" time="20110714 19:33:09.535" mticks="1407" mem="265564" />
+<result name="Fragmentation Test" time="20110714 19:33:11.622" mticks="1388" mem="266588" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 19:33:20.255" mticks="1751" mem="64472" />
+<result name="ReallocMem benchmark" time="20110714 19:33:34.102" mticks="3215" mem="223960" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 19:33:46.146" mticks="803" mem="57692" />
+<result name="ReallocMem benchmark" time="20110714 19:33:49.593" mticks="4966" mem="335836" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 19:33:58.149" mticks="785" mem="57692" />
+<result name="ReallocMem benchmark" time="20110714 19:34:01.129" mticks="4962" mem="338908" />
+<result name="Block downsize" time="20110714 19:34:14.881" mticks="36617" mem="241116" />
+<result name="Block downsize" time="20110714 19:36:31.448" mticks="14584" mem="241116" />
+<result name="Block downsize" time="20110714 19:36:39.675" mticks="16820" mem="241116" />
+<result name="Block downsize" time="20110714 19:36:47.684" mticks="15747" mem="241116" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 20:23:15.901" mticks="812" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 20:26:46.377" mticks="851" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 20:36:45.457" mticks="852" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 20:41:29.273" mticks="796" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:00:11.602" mticks="828" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:01:50.376" mticks="807" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:03:20.448" mticks="838" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:04:40.825" mticks="812" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:09:13.597" mticks="840" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:11:45.954" mticks="798" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:14:53.442" mticks="813" mem="57692" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:16:46.881" mticks="765" mem="57692" />
+<result name="ReallocMem benchmark" time="20110714 21:16:49.965" mticks="4840" mem="387036" />
+<result name="Block downsize" time="20110714 21:16:55.869" mticks="11614" mem="240092" />
+<result name="Block downsize" time="20110714 21:17:04.302" mticks="18036" mem="240092" />
+<result name="Block downsize" time="20110714 21:17:12.032" mticks="17458" mem="240092" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110714 21:17:58.826" mticks="822" mem="57692" />
+<result name="ReallocMem benchmark" time="20110714 21:18:01.472" mticks="4802" mem="371676" />
+<result name="Block downsize" time="20110714 21:18:14.798" mticks="36273" mem="239068" />
+<result name="Small upsize benchmark" time="20110714 21:18:16.125" mticks="791" mem="575132" />
+<result name="Small downsize benchmark" time="20110714 21:18:17.525" mticks="1149" mem="855708" />
+<result name="Block size spread benchmark" time="20110714 21:18:18.896" mticks="1059" mem="1444508" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110718 07:54:43.063" mticks="848" mem="68896" />
+<result name="ReallocMem benchmark" time="20110718 07:56:15.606" mticks="269954" mem="390740" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110718 08:43:15.055" mticks="812" mem="68896" />
+<result name="ReallocMem benchmark" time="20110718 08:45:00.732" mticks="308699" mem="377428" />
+<result name="Block downsize" time="20110718 09:13:11.422" mticks="4983846" mem="242772" />
+<result name="Small upsize benchmark" time="20110718 12:29:33.516" mticks="34711254" mem="578836" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110718 14:53:17.191" mticks="857" mem="68896" />
+<result name="ReallocMem benchmark" time="20110718 14:53:25.761" mticks="22281" mem="377428" />
+<result name="Block downsize" time="20110718 15:01:21.295" mticks="1399332" mem="242772" />
+<result name="Small upsize benchmark" time="20110718 15:01:44.484" mticks="26079" mem="578836" />
+<result name="Small downsize benchmark" time="20110718 15:01:56.258" mticks="31715" mem="859412" />
+<result name="Block size spread benchmark" time="20110718 15:02:16.476" mticks="56594" mem="1447188" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110719 15:16:10.097" mticks="53533" mem="61396" />
+<result name="Fragmentation Test" time="20110719 15:16:12.713" mticks="1047" mem="61396" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110719 15:34:32.857" mticks="834" mem="68896" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110719 15:38:08.008" mticks="851" mem="68896" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110720 11:24:06.912" mticks="853" mem="61396" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110720 11:52:23.749" mticks="829" mem="61396" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110720 12:32:19.469" mticks="862" mem="61396" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110720 20:30:00.320" mticks="879" mem="61396" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110720 21:03:33.448" mticks="840" mem="61396" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110721 10:04:44.521" mticks="863" mem="68896" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110722 08:57:36.694" mticks="849" mem="68896" />
+<result name="ReallocMem benchmark" time="20110722 09:50:39.638" mticks="9385406" mem="678484" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110725 10:30:40.374" mticks="850" mem="68896" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110725 10:31:01.017" mticks="831" mem="68896" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110725 10:31:30.449" mticks="823" mem="68896" />
+<result name="ReallocMem benchmark" time="20110725 10:31:37.688" mticks="18351" mem="687008" />
+<result name="Block downsize" time="20110725 10:38:45.594" mticks="1249835" mem="234580" />
+<result name="Small upsize benchmark" time="20110725 10:39:08.878" mticks="26280" mem="570644" />
+<result name="Small downsize benchmark" time="20110725 10:39:26.057" mticks="47680" mem="593172" />
+<result name="Block size spread benchmark" time="20110725 10:39:46.154" mticks="56295" mem="849172" />
+<result name="Raw Performance 1 thread" time="20110725 10:45:51.900" mticks="1075775" mem="917076" />
+<result name="Address space creep benchmark" time="20110725 10:51:11.864" mticks="940746" mem="1177044" />
+<result name="Large block spread benchmark" time="20110725 11:02:50.812" mticks="2058543" mem="1125972" />
+<result name="Array Upsize 1 thread" time="20110725 11:02:51.855" mticks="93" mem="853588" />
+<result name="Address space creep (larger blocks)" time="20110725 11:07:10.426" mticks="758130" mem="1281620" />
+<result name="Single-threaded reallocate and use" time="20110725 11:17:24.580" mticks="1808444" mem="1787476" />
+<result name="Single-threaded allocate, use and free" time="20110725 11:18:35.972" mticks="207589" mem="946772" />
+<result name="Single Variables Access 6 arrays at a time" time="20110725 11:18:52.778" mticks="19570" mem="851800" />
+<result name="Double Variables Access 3 arrays at a time" time="20110725 15:36:05.215" mticks="4271" mem="857948" />
+<result name="Double Variables Access 6 arrays at a time" time="20110725 15:36:31.697" mticks="4291" mem="858976" />
+<result name="Double Variables Access 18 arrays at a time" time="20110725 15:36:34.738" mticks="5935" mem="860004" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110725 15:36:36.511" mticks="2184" mem="872296" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110725 15:37:57.396" mticks="2276" mem="874348" />
+<result name="FillCharMultiThread" time="20110725 15:39:34.113" mticks="609" mem="863348" />
+<result name="SortIntegerArrayBenchmark" time="20110725 15:39:47.130" mticks="3395" mem="862072" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Small upsize benchmark" time="20110725 15:40:31.372" mticks="25127" mem="373012" />
+<result name="Small downsize benchmark" time="20110725 15:40:43.524" mticks="32863" mem="396564" />
+<result name="Block size spread benchmark" time="20110725 15:41:02.332" mticks="52494" mem="652564" />
+<result name="Raw Performance 1 thread" time="20110725 15:42:34.553" mticks="269037" mem="722516" />
+<result name="Address space creep benchmark" time="20110725 15:46:15.917" mticks="649949" mem="980436" />
+<result name="Large block spread benchmark" time="20110725 15:51:39.617" mticks="951792" mem="931412" />
+<result name="Array Upsize 1 thread" time="20110725 15:51:40.909" mticks="833" mem="656980" />
+<result name="Address space creep (larger blocks)" time="20110725 15:53:55.325" mticks="393483" mem="1087060" />
+<result name="Single-threaded reallocate and use" time="20110725 15:58:47.329" mticks="857591" mem="1609300" />
+<result name="Single-threaded allocate, use and free" time="20110725 15:59:29.630" mticks="121782" mem="749140" />
+<result name="Single Variables Access 6 arrays at a time" time="20110725 15:59:46.014" mticks="18392" mem="656216" />
+<result name="Double Variables Access 3 arrays at a time" time="20110725 15:59:48.408" mticks="4079" mem="662364" />
+<result name="Double Variables Access 6 arrays at a time" time="20110725 15:59:51.040" mticks="4780" mem="663392" />
+<result name="Double Variables Access 18 arrays at a time" time="20110725 15:59:54.036" mticks="5852" mem="664420" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110725 15:59:55.807" mticks="2239" mem="676712" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110725 15:59:57.585" mticks="2262" mem="678764" />
+<result name="FillCharMultiThread" time="20110725 15:59:58.810" mticks="632" mem="672564" />
+<result name="SortIntegerArrayBenchmark" time="20110725 16:00:00.969" mticks="3382" mem="666488" />
+<result name="SortExtendedArrayBenchmark" time="20110725 16:00:02.568" mticks="1734" mem="674440" />
+<result name="MemFree1" time="20110725 16:00:23.150" mticks="57728" mem="683916" />
+<result name="MemFree2" time="20110725 16:00:24.264" mticks="309" mem="683920" />
+<result name="Linked-list container benchmark" time="20110725 16:00:27.312" mticks="6011" mem="693904" />
+<result name="Multi-threaded allocate, use and free" time="20110725 16:00:35.810" mticks="22088" mem="919736" />
+<result name="Multi-threaded reallocate and use" time="20110725 16:00:38.974" mticks="6347" mem="1311968" />
+<result name="QuickSortIntegerArrayBenchmark" time="20110725 16:00:42.526" mticks="7491" mem="767972" />
+<result name="QuickSortExtendedArrayBenchmark" time="20110725 16:00:43.778" mticks="691" mem="780020" />
+<result name="NexusDB with 1 thread(s)" time="20110725 16:01:43.193" mticks="172168" mem="803832" />
+<result name="NexusDB with 2 thread(s)" time="20110725 16:02:13.870" mticks="87496" mem="832768" />
+<result name="NexusDB with 4 thread(s)" time="20110725 16:02:32.054" mticks="50647" mem="889616" />
+<result name="NexusDB with 8 thread(s)" time="20110725 16:02:48.938" mticks="46811" mem="1001264" />
+<result name="Transient threaded objects" time="20110725 16:03:15.245" mticks="74613" mem="950048" />
+<result name="Raw Performance 8 threads" time="20110725 16:03:50.140" mticks="99939" mem="1130704" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110726 15:29:00.614" mticks="964" mem="61396" />
+<result name="ReallocMem benchmark" time="20110726 15:29:03.637" mticks="5913" mem="681556" />
+<result name="Block downsize" time="20110726 15:29:08.195" mticks="10285" mem="234580" />
+<result name="Small upsize benchmark" time="20110726 15:29:09.528" mticks="818" mem="570644" />
+<result name="Small downsize benchmark" time="20110726 15:29:10.892" mticks="1036" mem="593172" />
+<result name="Block size spread benchmark" time="20110726 15:29:12.203" mticks="879" mem="849172" />
+<result name="Raw Performance 1 thread" time="20110726 15:29:14.423" mticks="3569" mem="918100" />
+<result name="Address space creep benchmark" time="20110726 15:29:19.126" mticks="10890" mem="1177044" />
+<result name="Large block spread benchmark" time="20110726 15:29:24.399" mticks="12569" mem="1125972" />
+<result name="Array Upsize 1 thread" time="20110726 15:29:25.416" mticks="18" mem="853588" />
+<result name="Address space creep (larger blocks)" time="20110726 15:29:27.848" mticks="4182" mem="1281620" />
+<result name="Single-threaded reallocate and use" time="20110726 15:29:31.753" mticks="8528" mem="1786452" />
+<result name="Single-threaded allocate, use and free" time="20110726 15:29:35.064" mticks="6786" mem="944724" />
+<result name="Single Variables Access 6 arrays at a time" time="20110726 15:29:51.606" mticks="19178" mem="851800" />
+<result name="Double Variables Access 3 arrays at a time" time="20110726 15:29:54.012" mticks="4117" mem="857948" />
+<result name="Double Variables Access 6 arrays at a time" time="20110726 15:29:56.438" mticks="4172" mem="858976" />
+<result name="Double Variables Access 18 arrays at a time" time="20110726 15:29:59.447" mticks="5893" mem="860004" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110726 15:30:01.198" mticks="2184" mem="872296" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110726 15:30:02.977" mticks="2270" mem="874348" />
+<result name="FillCharMultiThread" time="20110726 15:30:04.187" mticks="589" mem="867124" />
+<result name="SortIntegerArrayBenchmark" time="20110726 15:30:06.368" mticks="3449" mem="862072" />
+<result name="SortExtendedArrayBenchmark" time="20110726 15:30:07.933" mticks="1630" mem="870024" />
+<result name="MemFree1" time="20110726 15:30:19.057" mticks="29822" mem="879500" />
+<result name="MemFree2" time="20110726 15:30:20.183" mticks="323" mem="879504" />
+<result name="Linked-list container benchmark" time="20110726 15:30:22.893" mticks="5000" mem="889488" />
+<result name="QuickSortIntegerArrayBenchmark" time="20110726 15:30:26.382" mticks="7307" mem="891796" />
+<result name="QuickSortExtendedArrayBenchmark" time="20110726 15:30:27.616" mticks="658" mem="904868" />
+<result name="Single-threaded AllocMem" time="20110726 15:31:13.579" mticks="132580" mem="1140388" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="FASTMM4">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110726 15:57:53.257" mticks="1801" mem="68176" />
+<result name="ReallocMem benchmark" time="20110726 15:57:55.414" mticks="3362" mem="227664" />
+<result name="Block downsize" time="20110726 15:57:58.812" mticks="7009" mem="108880" />
+<result name="Small upsize benchmark" time="20110726 15:58:00.091" mticks="689" mem="235536" />
+<result name="Small downsize benchmark" time="20110726 15:58:01.369" mticks="790" mem="211216" />
+<result name="Block size spread benchmark" time="20110726 15:58:02.610" mticks="679" mem="148496" />
+<result name="Raw Performance 1 thread" time="20110726 15:58:04.841" mticks="3609" mem="97616" />
+<result name="Address space creep benchmark" time="20110726 15:58:09.485" mticks="10721" mem="166352" />
+<result name="Large block spread benchmark" time="20110726 15:58:15.573" mticks="14983" mem="296784" />
+<result name="Array Upsize 1 thread" time="20110726 15:58:16.587" mticks="14" mem="29264" />
+<result name="Address space creep (larger blocks)" time="20110726 15:58:18.692" mticks="3229" mem="382544" />
+<result name="Single-threaded reallocate and use" time="20110726 15:58:22.216" mticks="7418" mem="163344" />
+<result name="Single-threaded allocate, use and free" time="20110726 15:58:25.617" mticks="7056" mem="104784" />
+<result name="Single Variables Access 6 arrays at a time" time="20110726 15:58:41.032" mticks="15862" mem="31824" />
+<result name="Double Variables Access 3 arrays at a time" time="20110726 15:58:43.417" mticks="4060" mem="31824" />
+<result name="Double Variables Access 6 arrays at a time" time="20110726 15:58:45.774" mticks="3976" mem="31824" />
+<result name="Double Variables Access 18 arrays at a time" time="20110726 15:58:48.211" mticks="4213" mem="31824" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110726 15:58:49.942" mticks="2127" mem="47184" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110726 15:58:51.708" mticks="2233" mem="47184" />
+<result name="FillCharMultiThread" time="20110726 15:58:52.901" mticks="542" mem="37456" />
+<result name="SortIntegerArrayBenchmark" time="20110726 15:58:55.060" mticks="3390" mem="30544" />
+<result name="SortExtendedArrayBenchmark" time="20110726 15:58:56.587" mticks="1527" mem="34384" />
+<result name="MemFree1" time="20110726 15:59:07.679" mticks="29742" mem="30544" />
+<result name="MemFree2" time="20110726 15:59:08.800" mticks="320" mem="30544" />
+<result name="Linked-list container benchmark" time="20110726 15:59:10.119" mticks="911" mem="99664" />
+<result name="QuickSortIntegerArrayBenchmark" time="20110726 15:59:13.660" mticks="7465" mem="30544" />
+<result name="QuickSortExtendedArrayBenchmark" time="20110726 15:59:14.852" mticks="540" mem="34384" />
+<result name="Single-threaded AllocMem" time="20110726 16:00:02.503" mticks="137566" mem="200144" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110729 07:53:09.933" mticks="938" mem="61396" />
+<result name="ReallocMem benchmark" time="20110729 07:53:12.910" mticks="5792" mem="655956" />
+<result name="Block downsize" time="20110729 07:53:17.128" mticks="9296" mem="236628" />
+<result name="Small upsize benchmark" time="20110729 07:53:18.621" mticks="1237" mem="411924" />
+<result name="Small downsize benchmark" time="20110729 07:53:20.199" mticks="1670" mem="691476" />
+<result name="Block size spread benchmark" time="20110729 07:53:21.893" mticks="2016" mem="307476" />
+<result name="Raw Performance 1 thread" time="20110729 07:53:23.780" mticks="2596" mem="138836" />
+<result name="Address space creep benchmark" time="20110729 07:53:28.763" mticks="11720" mem="329172" />
+<result name="Large block spread benchmark" time="20110729 07:53:34.082" mticks="12713" mem="314964" />
+<result name="Array Upsize 1 thread" time="20110729 07:53:35.098" mticks="19" mem="41556" />
+<result name="Address space creep (larger blocks)" time="20110729 07:53:37.476" mticks="4035" mem="470612" />
+<result name="Single-threaded reallocate and use" time="20110729 07:53:41.455" mticks="8760" mem="1061460" />
+<result name="Single-threaded allocate, use and free" time="20110729 07:53:45.166" mticks="7968" mem="179796" />
+<result name="Single Variables Access 6 arrays at a time" time="20110729 07:54:01.483" mticks="18430" mem="44888" />
+<result name="Double Variables Access 3 arrays at a time" time="20110729 07:54:03.864" mticks="4052" mem="51036" />
+<result name="Double Variables Access 6 arrays at a time" time="20110729 07:54:06.249" mticks="4060" mem="52064" />
+<result name="Double Variables Access 18 arrays at a time" time="20110729 07:54:09.251" mticks="5883" mem="53092" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110729 07:54:10.987" mticks="2145" mem="65384" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110729 07:54:12.750" mticks="2229" mem="67436" />
+<result name="FillCharMultiThread" time="20110729 07:54:13.942" mticks="543" mem="57908" />
+<result name="SortIntegerArrayBenchmark" time="20110729 07:54:16.110" mticks="3418" mem="55160" />
+<result name="SortExtendedArrayBenchmark" time="20110729 07:54:17.666" mticks="1613" mem="63112" />
+<result name="MemFree1" time="20110729 07:54:28.814" mticks="29905" mem="60300" />
+<result name="MemFree2" time="20110729 07:54:29.925" mticks="295" mem="60304" />
+<result name="Linked-list container benchmark" time="20110729 07:54:31.864" mticks="2740" mem="194192" />
+<result name="Multi-threaded allocate, use and free" time="20110729 07:54:34.526" mticks="4877" mem="270520" />
+<result name="Multi-threaded reallocate and use" time="20110729 07:54:36.625" mticks="3219" mem="594144" />
+<result name="QuickSortIntegerArrayBenchmark" time="20110729 07:54:40.107" mticks="7290" mem="102372" />
+<result name="QuickSortExtendedArrayBenchmark" time="20110729 07:54:41.271" mticks="460" mem="114420" />
+<result name="NexusDB with 1 thread(s)" time="20110729 07:54:47.359" mticks="14980" mem="136184" />
+<result name="NexusDB with 2 thread(s)" time="20110729 07:54:50.994" mticks="7747" mem="165120" />
+<result name="NexusDB with 4 thread(s)" time="20110729 07:54:53.383" mticks="4076" mem="220944" />
+<result name="NexusDB with 8 thread(s)" time="20110729 07:54:55.899" mticks="4448" mem="332592" />
+<result name="Transient threaded objects" time="20110729 07:54:57.190" mticks="831" mem="261948" />
+<result name="Raw Performance 8 threads" time="20110729 07:55:01.516" mticks="9788" mem="412880" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110729 07:56:16.519" mticks="908" mem="61396" />
+<result name="ReallocMem benchmark" time="20110729 07:56:19.414" mticks="5540" mem="655956" />
+<result name="Block downsize" time="20110729 07:56:23.630" mticks="9288" mem="236628" />
+<result name="Small upsize benchmark" time="20110729 07:56:25.121" mticks="1230" mem="411924" />
+<result name="Small downsize benchmark" time="20110729 07:56:26.692" mticks="1653" mem="691476" />
+<result name="Block size spread benchmark" time="20110729 07:56:28.385" mticks="2010" mem="308500" />
+<result name="Raw Performance 1 thread" time="20110729 07:56:30.295" mticks="2659" mem="140884" />
+<result name="Address space creep benchmark" time="20110729 07:56:35.298" mticks="11780" mem="329172" />
+<result name="Large block spread benchmark" time="20110729 07:56:40.589" mticks="12629" mem="315988" />
+<result name="Array Upsize 1 thread" time="20110729 07:56:41.605" mticks="18" mem="41556" />
+<result name="Address space creep (larger blocks)" time="20110729 07:56:43.998" mticks="4079" mem="471636" />
+<result name="Single-threaded reallocate and use" time="20110729 07:56:47.950" mticks="8679" mem="1078868" />
+<result name="Single-threaded allocate, use and free" time="20110729 07:56:51.656" mticks="7956" mem="179796" />
+<result name="Single Variables Access 6 arrays at a time" time="20110729 07:57:07.935" mticks="18424" mem="42840" />
+<result name="Double Variables Access 3 arrays at a time" time="20110729 07:57:10.320" mticks="4058" mem="48988" />
+<result name="Double Variables Access 6 arrays at a time" time="20110729 07:57:12.718" mticks="4099" mem="50016" />
+<result name="Double Variables Access 18 arrays at a time" time="20110729 07:57:15.738" mticks="5935" mem="51044" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110729 07:57:17.471" mticks="2137" mem="63336" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110729 07:57:19.251" mticks="2277" mem="65388" />
+<result name="FillCharMultiThread" time="20110729 07:57:20.443" mticks="540" mem="55860" />
+<result name="SortIntegerArrayBenchmark" time="20110729 07:57:22.612" mticks="3421" mem="53112" />
+<result name="SortExtendedArrayBenchmark" time="20110729 07:57:24.144" mticks="1543" mem="61064" />
+<result name="MemFree1" time="20110729 07:57:35.291" mticks="29903" mem="58252" />
+<result name="MemFree2" time="20110729 07:57:36.400" mticks="294" mem="58256" />
+<result name="Linked-list container benchmark" time="20110729 07:57:38.364" mticks="2810" mem="195216" />
+<result name="Multi-threaded allocate, use and free" time="20110729 07:57:41.041" mticks="4921" mem="270520" />
+<result name="Multi-threaded reallocate and use" time="20110729 07:57:43.140" mticks="3217" mem="622816" />
+<result name="QuickSortIntegerArrayBenchmark" time="20110729 07:57:46.631" mticks="7318" mem="100324" />
+<result name="QuickSortExtendedArrayBenchmark" time="20110729 07:57:47.788" mticks="434" mem="113396" />
+<result name="NexusDB with 1 thread(s)" time="20110729 07:57:53.857" mticks="14925" mem="135160" />
+<result name="NexusDB with 2 thread(s)" time="20110729 07:57:57.498" mticks="7762" mem="164096" />
+<result name="NexusDB with 4 thread(s)" time="20110729 07:57:59.939" mticks="4227" mem="221968" />
+<result name="NexusDB with 8 thread(s)" time="20110729 07:58:02.470" mticks="4494" mem="335664" />
+<result name="Transient threaded objects" time="20110729 07:58:03.743" mticks="784" mem="238000" />
+<result name="Raw Performance 8 threads" time="20110729 07:58:08.239" mticks="10283" mem="412880" />
+<result name="StringThreadTest" time="20110729 07:58:20.290" mticks="32564" mem="286032" />
+<result name="Single-threaded AllocMem" time="20110729 07:59:18.312" mticks="132658" mem="529744" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="FASTMM4">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110729 08:01:57.088" mticks="1799" mem="75676" />
+<result name="ReallocMem benchmark" time="20110729 08:01:59.269" mticks="3441" mem="236444" />
+<result name="Block downsize" time="20110729 08:02:02.654" mticks="6973" mem="116380" />
+<result name="Small upsize benchmark" time="20110729 08:02:03.932" mticks="683" mem="243036" />
+<result name="Small downsize benchmark" time="20110729 08:02:05.201" mticks="760" mem="218716" />
+<result name="Block size spread benchmark" time="20110729 08:02:06.449" mticks="699" mem="155996" />
+<result name="Raw Performance 1 thread" time="20110729 08:02:08.872" mticks="4178" mem="105116" />
+<result name="Address space creep benchmark" time="20110729 08:02:13.701" mticks="11269" mem="173852" />
+<result name="Large block spread benchmark" time="20110729 08:02:19.786" mticks="14981" mem="304284" />
+<result name="Array Upsize 1 thread" time="20110729 08:02:20.796" mticks="6" mem="36764" />
+<result name="Address space creep (larger blocks)" time="20110729 08:02:22.995" mticks="3517" mem="391324" />
+<result name="Single-threaded reallocate and use" time="20110729 08:02:26.585" mticks="7620" mem="169564" />
+<result name="Single-threaded allocate, use and free" time="20110729 08:02:30.020" mticks="7163" mem="113564" />
+<result name="Single Variables Access 6 arrays at a time" time="20110729 08:02:45.463" mticks="15992" mem="38044" />
+<result name="Double Variables Access 3 arrays at a time" time="20110729 08:02:47.857" mticks="4093" mem="39324" />
+<result name="Double Variables Access 6 arrays at a time" time="20110729 08:02:50.185" mticks="3900" mem="39324" />
+<result name="Double Variables Access 18 arrays at a time" time="20110729 08:02:52.614" mticks="4193" mem="39324" />
+<result name="Move Benchmark1 2 arrays at a time" time="20110729 08:02:54.361" mticks="2180" mem="53660" />
+<result name="Move Benchmark2 4 arrays at a time" time="20110729 08:02:56.144" mticks="2291" mem="54684" />
+<result name="FillCharMultiThread" time="20110729 08:02:57.347" mticks="575" mem="44956" />
+<result name="SortIntegerArrayBenchmark" time="20110729 08:02:59.493" mticks="3357" mem="38044" />
+<result name="SortExtendedArrayBenchmark" time="20110729 08:03:00.946" mticks="1314" mem="41884" />
+<result name="MemFree1" time="20110729 08:03:12.027" mticks="29717" mem="38044" />
+<result name="MemFree2" time="20110729 08:03:13.136" mticks="294" mem="38044" />
+<result name="Linked-list container benchmark" time="20110729 08:03:14.450" mticks="900" mem="107164" />
+<result name="Multi-threaded allocate, use and free" time="20110729 08:03:18.203" mticks="8103" mem="81564" />
+<result name="Multi-threaded reallocate and use" time="20110729 08:03:20.250" mticks="3069" mem="96604" />
+<result name="QuickSortIntegerArrayBenchmark" time="20110729 08:03:23.788" mticks="7465" mem="38044" />
+<result name="QuickSortExtendedArrayBenchmark" time="20110729 08:03:24.927" mticks="387" mem="41884" />
+<result name="NexusDB with 1 thread(s)" time="20110729 08:03:29.500" mticks="10522" mem="53404" />
+<result name="NexusDB with 2 thread(s)" time="20110729 08:03:33.780" mticks="9655" mem="72604" />
+<result name="NexusDB with 4 thread(s)" time="20110729 08:03:37.628" mticks="8378" mem="108444" />
+<result name="NexusDB with 8 thread(s)" time="20110729 08:03:41.290" mticks="7833" mem="181404" />
+<result name="Transient threaded objects" time="20110729 08:03:43.484" mticks="3493" mem="159644" />
+<result name="Raw Performance 8 threads" time="20110729 08:03:49.868" mticks="15854" mem="115100" />
+<result name="StringThreadTest" time="20110729 08:03:54.276" mticks="10032" mem="39068" />
+<result name="Single-threaded AllocMem" time="20110729 08:04:52.764" mticks="134089" mem="205468" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110729 16:19:29.388" mticks="797" mem="68896" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093.0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20110923 15:41:53.567" mticks="874" mem="65196" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093,0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20111007 15:58:44.062" mticks="28939" mem="57844" />
+<result name="ReallocMem benchmark" time="20111007 15:59:18.372" mticks="98218" mem="237468" />
+<result name="Block downsize" time="20111007 16:02:35.500" mticks="578549" mem="264420" />
+<result name="Small upsize benchmark" time="20111007 16:02:38.087" mticks="4059" mem="392100" />
+<result name="Small downsize benchmark" time="20111007 16:02:41.440" mticks="6896" mem="417956" />
+<result name="Block size spread benchmark" time="20111007 16:02:43.344" mticks="2636" mem="427236" />
+<result name="Raw Performance 1 thread" time="20111007 16:03:14.448" mticks="88783" mem="467944" />
+<result name="Address space creep benchmark" time="20111007 16:03:25.452" mticks="29474" mem="525984" />
+<result name="Large block spread benchmark" time="20111007 16:03:32.277" mticks="17151" mem="787356" />
+<result name="Array Upsize 1 thread" time="20111007 16:03:55.621" mticks="65885" mem="522880" />
+<result name="Address space creep (larger blocks)" time="20111007 16:10:25.928" mticks="1147811" mem="808704" />
+<result name="Single-threaded reallocate and use" time="20111007 16:10:34.839" mticks="23254" mem="582440" />
+<result name="Single-threaded allocate, use and free" time="20111007 16:10:42.634" mticks="19984" mem="582440" />
+<result name="Single Variables Access 6 arrays at a time" time="20111007 16:10:58.746" mticks="17882" mem="544060" />
+<result name="Double Variables Access 3 arrays at a time" time="20111007 16:11:02.655" mticks="8535" mem="546652" />
+<result name="Double Variables Access 6 arrays at a time" time="20111007 16:11:06.608" mticks="8671" mem="546652" />
+<result name="Double Variables Access 18 arrays at a time" time="20111007 16:11:11.238" mticks="10666" mem="546652" />
+<result name="Move Benchmark1 2 arrays at a time" time="20111007 16:11:12.994" mticks="2196" mem="559836" />
+<result name="Move Benchmark2 4 arrays at a time" time="20111007 16:11:14.796" mticks="2327" mem="559836" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093,0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20111007 16:13:07.097" mticks="27435" mem="56628" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093,1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20111011 10:20:49.517" mticks="1710" mem="99880" />
+<result name="ReallocMem benchmark" time="20111011 10:20:53.210" mticks="4751" mem="272936" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093,1 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20111011 19:35:15.951" mticks="1853" mem="64536" />
+<result name="ReallocMem benchmark" time="20111011 19:35:18.124" mticks="3411" mem="225304" />
+</benchmark>
+<benchmark version="1.00" compiler="undefined" MM="undefined">
+<cpu>Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz - Intel Pentium III Xeon, GenuineIntel, type 0, family 6, model A, stepping 7, 3093,0 MHz</cpu>
+<os> (NT.6.1.7601) Service Pack 1</os>
+<result name="Fragmentation Test" time="20111012 11:45:02.937" mticks="814" mem="65196" />
 </benchmark>
 </benchmarks>
 </mmbench>

@@ -153,7 +153,8 @@ uses
   DoubleFPBenchmark2Unit, DoubleFPBenchmark3Unit, SingleFPBenchmark1Unit,
   MoveBenchmark1Unit, MoveBenchmark2Unit,
   AddressSpaceCreepBenchmarkLarge, LinkedListBenchmark, RenameMMForm,
-  BenchmarkUtilities, GeneralFunctions, SystemInfoUnit, DateUtils;
+  BenchmarkUtilities, GeneralFunctions, SystemInfoUnit, DateUtils,
+  muMessageDialogHook;
 
 {$R *.dfm}
 
@@ -203,10 +204,10 @@ begin
 {$ENDIF}
 {$IFDEF MM_FASTMM4}
   {Pierre le Riche's FastMM v4.xx}
-  MemoryManager_Name = 'FastMM4';
-  PassValidations = True;
-  FastCodeQualityLabel = True;
-  DllExtension = 'FA4';
+  MemoryManager_Name := 'FastMM4';
+  PassValidations := True;
+  FastCodeQualityLabel := True;
+  DllExtension := 'FA4';
 {$ENDIF}
 {$IFDEF MM_FASTMM4_16}
   {Pierre le Riche's FastMM v4.xx}
@@ -275,10 +276,10 @@ begin
 {$ENDIF}
 {$IFDEF MM_TOPMM}
   {Ivo Top's TopMM}
-  MemoryManager_Name = 'TopMM';
-  PassValidations = True; // warning: in its current version TopMM fails the DLL Validation
-  FastCodeQualityLabel = False;
-  DllExtension = 'TOP';
+  MemoryManager_Name := 'TopMM';
+  PassValidations := True; // warning: in its current version TopMM fails the DLL Validation
+  FastCodeQualityLabel := False;
+  DllExtension := 'TOP';
 {$ENDIF}
 {$IFDEF MM_WINMEM}
   {Mike Lischke's WinMem (Uses the windows heap)}
@@ -293,6 +294,61 @@ begin
   PassValidations      := True;
   FastCodeQualityLabel := False;
   DllExtension         := 'SCALE';
+{$ENDIF}
+{$IFDEF MM_SCALEMM2}
+  MemoryManager_Name   := 'ScaleMem2';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'SCALE2';
+{$ENDIF}
+{$IFDEF MM_SCALEMM3}
+  MemoryManager_Name   := 'ScaleMem3';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'SCALE3';
+{$ENDIF}
+
+{$IFDEF MM_MSVCRTMM}
+  MemoryManager_Name   := 'MSVCRTMem';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'MSVCRT';
+{$ENDIF}
+{$IFDEF MM_D2010MM}
+  MemoryManager_Name   := 'D2010Mem';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'D2010';
+{$ENDIF}
+{$IFDEF MM_NedMallocMM}
+  MemoryManager_Name   := 'NedMallocMM';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'NedMalloc';
+{$ENDIF}
+{$IFDEF MM_TCMallocMM}
+  MemoryManager_Name   := 'TCMallocMM';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'TCMalloc';
+{$ENDIF}
+{$IFDEF MM_JEMALLOCMM}
+  MemoryManager_Name   := 'JeMallocMM';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'JeMalloc';
+{$ENDIF}
+{$IFDEF MM_JEMALLOCFFMM}
+  MemoryManager_Name   := 'JeMallocFFMM';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'JeMallocFF';
+{$ENDIF}
+{$IFDEF MM_HOARDMM}
+  MemoryManager_Name   := 'HoardMem';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'Hoard';
 {$ENDIF}
 end;
 
@@ -1211,5 +1267,7 @@ initialization
 
   {We want the main form repainted while it's busy running}
   DisableProcessWindowsGhosting;
+
+  muMessageDialogHook.LoadHook;
 
 end.

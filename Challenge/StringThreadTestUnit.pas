@@ -152,14 +152,16 @@ begin
    inherited;
    InitTest;
    // Launch a lot of threads
-   for I := 1 to 100 do
+//   for I := 1 to 100 do
+   for I := 1 to 50 do
    begin
      TStringThread.Create(1000, 10, 512, False);
      TStringThread.Create(10, 2, 4096, False);
      TStringThread.Create(10, 2, 1024*1024, False);
    end;
    // Launch a lot of threads keeping threadmax in account
-   for I := 1 to 500 do
+   //for I := 1 to 500 do
+   for I := 1 to 100 do
    begin
      TStringThread.Create(100, 1, 512, False);
      TStringThread.Create(100, 100, 512, False);

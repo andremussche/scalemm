@@ -35,7 +35,8 @@ var
   s: array [0..POINTERS - 1] of string;
 begin
   n := Low(s);
-  for i := 1 to 8 * 1024 * 1024 do begin
+  for i := 1 to 8 * 1024 * 1024 do
+  begin
     if i and $FF < $F0 then         // 240 times out of 256 ==> chunk < 1 kB
       Size := (4 * i) and (MAXCHUNK-1) + 1
     else if i and $FF <> $FF then   //  15 times out of 256 ==> chunk < 32 kB
@@ -43,7 +44,7 @@ begin
     else                            //   1 time  out of 256 ==> chunk < 256 kB
       Size := 16 * n + 1;
     s[n] := '';
-    SetLength(s[n], Size);
+    SetLength(s[n], Size);     
     //start and end of string are already assigned, access every 4K page in the middle
     LIndex := 1;
     while LIndex <= Size do
