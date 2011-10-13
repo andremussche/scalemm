@@ -34,12 +34,14 @@ type
 
 const
   THREADCOUNT = 8;
+//  THREADCOUNT = 2;
 
 procedure TRawPerformanceThread.Execute;
 const
   POINTERS = 2039;  // take prime just below 2048  (scaled down 8x from single-thread)
   MAXCHUNK = 1024;  // take power of 2
   REPEATCOUNT = 4;
+//  REPEATCOUNT = 2;
 var
   i, j, n, Size, LIndex: Cardinal;
   s: array [0..POINTERS - 1] of string;
@@ -47,6 +49,7 @@ begin
   for j := 1 to REPEATCOUNT do
   begin
     n := Low(s);
+    //for i := 1 to 1 * 1024 * 1024 do begin
     for i := 1 to 1 * 1024 * 1024 do begin
       if i and $FF < $F0 then         // 240 times out of 256 ==> chunk < 1 kB
         Size := (4 * i) and (MAXCHUNK-1) + 1

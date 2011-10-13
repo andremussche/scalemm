@@ -37,8 +37,6 @@ object fBenchmark: TfBenchmark
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'Run Selected Benchmark'
-      DoubleBuffered = True
-      ParentDoubleBuffered = False
       TabOrder = 0
       OnClick = bRunSelectedBenchmarkClick
     end
@@ -49,8 +47,6 @@ object fBenchmark: TfBenchmark
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'Run All Checked Benchmarks'
-      DoubleBuffered = True
-      ParentDoubleBuffered = False
       TabOrder = 1
       OnClick = bRunAllCheckedBenchmarksClick
     end
@@ -71,8 +67,6 @@ object fBenchmark: TfBenchmark
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'Validate'
-      DoubleBuffered = True
-      ParentDoubleBuffered = False
       TabOrder = 3
       OnClick = ValidateButtonClick
     end
@@ -92,8 +86,6 @@ object fBenchmark: TfBenchmark
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'Extra Validate'
-      DoubleBuffered = True
-      ParentDoubleBuffered = False
       TabOrder = 5
       OnClick = ValidateButtonClick
     end
@@ -149,9 +141,7 @@ object fBenchmark: TfBenchmark
     Width = 101
     Height = 25
     Anchors = [akRight, akBottom]
-    DoubleBuffered = True
     Kind = bkClose
-    ParentDoubleBuffered = False
     TabOrder = 1
   end
   object bGraph: TBitBtn
@@ -161,8 +151,6 @@ object fBenchmark: TfBenchmark
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'View Graphs'
-    DoubleBuffered = True
-    ParentDoubleBuffered = False
     TabOrder = 2
     OnClick = bGraphClick
   end
@@ -335,8 +323,6 @@ object fBenchmark: TfBenchmark
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Copy Summary to Clipboard'
-    DoubleBuffered = True
-    ParentDoubleBuffered = False
     TabOrder = 4
     OnClick = btnCopySummaryClick
   end
@@ -344,7 +330,7 @@ object fBenchmark: TfBenchmark
     Left = 4
     Top = 280
     Bitmap = {
-      494C0101070010001C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010107001000340010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

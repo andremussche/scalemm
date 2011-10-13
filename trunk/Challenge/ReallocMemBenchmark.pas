@@ -73,7 +73,7 @@ begin
   {Call the inherited handler}
   inherited;
   {Do the benchmark}
-  for i := 1 to 1000000 do
+  for i := 1 to 1000000 * 10 do
   begin
     {Get a random pointer number}
     LPointerNumber := Random(NumPointers);

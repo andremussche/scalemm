@@ -59,7 +59,8 @@ begin
   inherited;
 
   try
-  for n := 1 to 3 do     // loop added to have more than 1000 MTicks for this benchmark
+  //for n := 1 to 3 do     // loop added to have more than 1000 MTicks for this benchmark
+  for n := 1 to 15 do     // loop added to have more than 1000 MTicks for this benchmark
   begin
     SetLength(FStrings, 0);
     for i := 1 to 90 do
