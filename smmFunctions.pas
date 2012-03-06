@@ -2,6 +2,8 @@ unit smmFunctions;
 
 interface
 
+{$Include smmOptions.inc}
+
 uses
   smmTypes;
 
@@ -54,6 +56,8 @@ type
 const
   kernel32  = 'kernel32.dll';
   PAGE_EXECUTE_READWRITE = $40;
+  PAGE_NOACCESS  = 1;
+  PAGE_READONLY  = 2;
   PAGE_READWRITE = 4;
   MEM_COMMIT     = $1000;
   MEM_RESERVE    = $2000;
@@ -76,18 +80,21 @@ const
   function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
               var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
+
   function  VirtualAlloc(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
   function  VirtualFree(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';
-  function  VirtualQuery(lpAddress: Pointer; var lpBuffer: TMemoryBasicInformation; dwLength: DWORD): DWORD; stdcall; external kernel32 name 'VirtualQuery';
+  function  VirtualQuery(lpAddress: Pointer; var lpBuffer: TMemoryBasicInformation; dwLength: DWORD): DWORD; stdcall; external kernel32 name 'VirtualQuery';   function  VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD; var flOldProtect: DWORD): BOOL; stdcall; external kernel32 name 'VirtualProtect';
 
   procedure OutputDebugString(lpOutputString: PWideChar); stdcall; external kernel32 name 'OutputDebugStringW';
 //  function  IntToStr(Value: Integer): string;overload;
 //  function  IntToStr(Value: Pointer): string;overload;
+  procedure DebugBreak; external kernel32 name 'DebugBreak';
 
   function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 
   function  CAS32(aOldValue, aNewValue: Byte; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
+  function  CAS32(aOldValue, aNewValue: NativeInt; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: Pointer; aDestination: Pointer): boolean;overload;
 //  procedure InterlockedIncrement(var Value: Byte);overload;
 //  procedure InterlockedDecrement(var Value: Byte);overload;
@@ -164,6 +171,22 @@ asm
 end;
 
 function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
+asm
+  //                          Win32 Win64
+  // aOldValue     : byte    EAX   RCX
+  // aNewValue     : byte    EDX   RDX
+  // aDestination  : pointer ECX   R8
+{$IFDEF CPU386}
+  lock cmpxchg [aDestination], aNewValue
+  setz al
+{$ELSE} .NOFRAME
+  mov  rax, aOldValue
+  lock cmpxchg [aDestination], aNewValue
+  setz  al
+{$endif}
+end;
+
+function  CAS32(aOldValue, aNewValue: NativeInt; aDestination: Pointer): boolean;overload;
 asm
   //                          Win32 Win64
   // aOldValue     : byte    EAX   RCX
@@ -259,9 +282,13 @@ procedure Assert(aCondition: boolean);
 begin
   if not aCondition then
   begin
+    {$IFDEF CPU386}
     asm
       int 3;   // breakpoint
     end;
+    {$ELSE}
+    DebugBreak;
+    {$ENDIF}
     //Sleep(0);  // no exception, just dummy for breakpoint
     {$WARN SYMBOL_PLATFORM OFF}
     if DebugHook = 0 then

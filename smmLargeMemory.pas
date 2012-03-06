@@ -14,6 +14,17 @@ type
   //PLargeThreadManagerOffset = ^TLargeThreadManagerOffset;
 
   TLargeHeader = record
+    {$IFDEF SCALEMM_MAGICTEST}
+    Magic1     : NativeInt;
+    Magic2     : NativeInt;  //8byte aligned
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
+    {$ENDIF}
+
     Size       : NativeUInt;
     OwnerBlock : PBaseThreadManagerOffset;
   end;
