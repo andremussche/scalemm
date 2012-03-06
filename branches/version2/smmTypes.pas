@@ -2,6 +2,8 @@ unit smmTypes;
 
 interface
 
+{$Include smmOptions.inc}
+
 type
   {$if CompilerVersion <= 20}
   // from Delphi 6 up to Delphi 2007
@@ -18,13 +20,37 @@ type
   PBaseThreadManagerOffset = ^TBaseThreadManagerOffset;
 
   TBaseMemHeader = object
+    {$IFDEF SCALEMM_MAGICTEST}
+    Magic1     : NativeInt;
+    Magic2     : NativeInt;  //8byte aligned
+    {$ELSE}
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
+    {$ENDIF}
+
     //small, medium and large mem can add extra stuff IN FRONT
-    Size : NativeUInt;  
+    Size : NativeUInt;
     //must be last of "universal" header!
     OwnerBlock: PBaseBlockMemory;
   end;
 
   TBaseFreeMemHeader = object
+    {$IFDEF SCALEMM_MAGICTEST}
+    Magic1     : NativeInt;
+    Magic2     : NativeInt;  //8byte aligned
+    {$ELSE}
+      {$IFDEF Align16Bytes}
+        {$ifndef CPUX64}
+        Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+        Filer2: Pointer;
+        {$endif}
+      {$ENDIF}
+    {$ENDIF}
+
     //small, medium and large mem can add extra stuff IN FRONT
     Size  : NativeUInt;
     OwnerBlock : PBaseBlockMemory;
@@ -73,5 +99,13 @@ type
   TScanDirection = (sdNone, sdPrevious, sdNext, sdBoth);
 
 implementation
+
+initialization
+  {$IFDEF Align8Bytes}
+  Assert( SizeOf(TBaseMemHeader) AND 7 = 0);
+  {$ENDIF}
+  {$IFDEF Align16Bytes}
+  Assert( SizeOf(TBaseMemHeader) AND 15 = 0);
+  {$ENDIF}
 
 end.

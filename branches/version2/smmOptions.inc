@@ -22,8 +22,8 @@
     {$define HASINLINE}
   {$ifend}
   {$define INLINEGOWN}
-  {$D-}
-  {$L-}
+//  {$D-}
+//  {$L-}
 {$ENDIF}
 
 //use this to get line debug info in Intel vTune
@@ -47,3 +47,8 @@
 {$IFDEF DEBUG}
   {.$DEFINE SCALEMM_FILLFREEMEM}
 {$ENDIF}
+
+{$if CompilerVersion >= 17}
+  {$define USEMEMMANAGEREX}
+{$ifend}
+
