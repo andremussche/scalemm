@@ -95,6 +95,8 @@ Change log:
   - many additional checks added
   - interthread memory finally stable
   Note: can leak memory (or have increased mem usage) over time
+ Version 2.11 (08 March 2012):
+  - 64bit version (Delphi XE2) 
 }
 
 interface
