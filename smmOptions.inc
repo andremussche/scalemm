@@ -42,6 +42,7 @@
 {$IFDEF CPUX64}
   {$DEFINE PURE_PASCAL}    // no assembly, pure delphi code
   {$DEFINE Align16Bytes}   // 16 byte aligned header, so some more overhead
+  {$undef INLINEGOWN}
 {$ENDIF}
 
 {$IFDEF DEBUG}
@@ -51,4 +52,17 @@
 {$if CompilerVersion >= 17}
   {$define USEMEMMANAGEREX}
 {$ifend}
+
+{$IFnDEF CPUX64}
+  /// internal GetThreadMemManager function is 2% faster with an injected offset (only 32bit)
+  {$DEFINE SCALE_INJECT_OFFSET}
+{$ENDIF}
+
+// inlined TLS access
+// - injected offset + GetThreadMemManager call can be slower than offset loading
+{$ifdef INLINEGOWN}
+  {$ifndef HASINLINE} // inlined Getmem/Freemem will call GetThreadMemManager
+    {$UNDEF SCALE_INJECT_OFFSET}
+  {$endif}
+{$endif}
 

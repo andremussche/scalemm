@@ -520,7 +520,7 @@ var
   {$IFDEF SCALEMM_FILLFREEMEM}
   temppointer: Pointer;
   {$ENDIF}
-  iRemainder: NativeInt;
+  iRemainder: NativeUInt;
 begin
   {$ifdef SCALEMM_DEBUG}
   Assert(Self.OwnerThread.FThreadId > 1);

@@ -16,7 +16,8 @@ type
   TLargeHeader = record
     {$IFDEF SCALEMM_MAGICTEST}
     Magic1     : NativeInt;
-    Magic2     : NativeInt;  //8byte aligned
+    Magic2     : NativeInt;
+    {$ELSE}
       {$IFDEF Align16Bytes}
         {$ifndef CPUX64}
         Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
@@ -45,7 +46,7 @@ type
 
   TLargeMemThreadManager = object
   public
-    SizeType: TSizeType;
+    SizeType   : TSizeType;
     OwnerThread: PBaseThreadManager;
   public
     procedure Init;
@@ -195,5 +196,14 @@ begin
     Self.FreeMem(pblock);
   end;
 end;
+
+initialization
+  {$IFDEF Align8Bytes}
+  Assert( SizeOf(TLargeHeader) AND 7 = 0);
+  {$ENDIF}
+  {$IFDEF Align16Bytes}
+  Assert( SizeOf(TLargeHeader) AND 15 = 0);
+  {$ENDIF}
+  Assert( SizeOf(TLargeHeader) = SizeOf(TBaseMemHeader) );
 
 end.
