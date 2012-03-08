@@ -28,8 +28,8 @@ type
   /// Header appended to the beginning of every allocated memory block
   TSmallMemHeader = object
     {$IFDEF SCALEMM_MAGICTEST}
-    Magic1: Integer;
-    Magic2: Integer;
+    Magic1: NativeInt;
+    Magic2: NativeInt;
     {$ELSE}
       {$IFDEF Align16Bytes}
         {$ifndef CPUX64}
@@ -49,8 +49,8 @@ type
 
   TSmallMemHeaderFree = object
     {$IFDEF SCALEMM_MAGICTEST}
-    Magic1: Integer;
-    Magic2: Integer;
+    Magic1: NativeInt;
+    Magic2: NativeInt;
     {$ELSE}
       {$IFDEF Align16Bytes}
         {$ifndef CPUX64}
@@ -141,7 +141,7 @@ type
     //FItemSize : word;
     FItemSize : NativeUInt;
     /// recursive check when we alloc memory for this blocksize (new memory list)
-    FRecursive: boolean;
+    FRecursive: Boolean;
 
     {$ifdef CPUX64}
     // for faster "array[0..7] of TSmallMemBlockList" calc
@@ -158,7 +158,7 @@ type
   /// handles per-thread memory managment
   TSmallMemThreadManager = object
   public
-    SizeType: TSizeType;
+    SizeType   : TSizeType;
     OwnerThread: PBaseThreadManager;
   private
     FLock: Boolean;

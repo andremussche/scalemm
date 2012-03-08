@@ -118,7 +118,7 @@ type
     procedure Lock;
     procedure UnLock;
   public
-    FThreadId: LongWord;
+    FThreadId: NativeUint;
     FThreadTerminated: Boolean;  //is this thread memory available to new thread?
 
     // link to list of items to reuse after thread terminated
@@ -183,21 +183,6 @@ implementation
 uses
   smmFunctions, smmGlobal;
 
-/// internal GetThreadMemManager function is 2% faster with an injected offset
-{$DEFINE SCALE_INJECT_OFFSET}
-
-// inlined TLS access
-// - injected offset + GetThreadMemManager call can be slower than offset loading
-{$ifdef INLINEGOWN}
-  {$ifndef HASINLINE} // inlined Getmem/Freemem will call GetThreadMemManager
-    {$UNDEF SCALE_INJECT_OFFSET}
-  {$endif}
-{$endif}
-
-{$if CompilerVersion >= 17}
-  {$define USEMEMMANAGEREX}
-{$ifend}
-
 {$IFDEF PURE_PASCAL}
 function GetThreadMemManager: PThreadMemManager; {$ifdef HASINLINE}inline;{$ENDIF}
 begin
@@ -251,6 +236,7 @@ begin
   if Result = nil then
   begin
     Result := VirtualAlloc( nil,
+                            //64 * 1024,
                             SizeOf(TThreadMemManager),
                             MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
                             PAGE_READWRITE);
@@ -458,8 +444,8 @@ begin
   begin
     //other thread?
     tm := PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4);
-    //if tm <> @Self then
-    //  Exit;  //cannot check mem of other thread!
+    if tm <> @Self then
+      Exit;  //cannot check mem of other thread!
     Assert(tm <> nil);
 
     //large or medium?
@@ -872,7 +858,7 @@ begin
   begin
     NewJump := PJump(ASource);
     NewJump.OpCode := $E9;
-    NewJump.Distance := NativeInt(ADestination) - NativeInt(ASource) - Size;
+    NewJump.Distance := NativeUInt(ADestination) - NativeUInt(ASource) - Size;
 
     FlushInstructionCache(GetCurrentProcess, ASource, SizeOf(TJump));
     VirtualProtect(ASource, Size, OldProtect, OldProtect);

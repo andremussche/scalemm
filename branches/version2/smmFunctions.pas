@@ -8,21 +8,24 @@ uses
   smmTypes;
 
 type
-  DWORD = LongWord;
-  BOOL  = LongBool;
+  DWORD  = LongWord;
+  BOOL   = LongBool;
+  ULONG_PTR = NativeUInt;
+  SIZE_T    = ULONG_PTR;
 
   PMemoryBasicInformation = ^TMemoryBasicInformation;
   _MEMORY_BASIC_INFORMATION = record
     BaseAddress : Pointer;
     AllocationBase : Pointer;
     AllocationProtect : DWORD;
-    RegionSize : DWORD;
+    RegionSize : SIZE_T;
     State : DWORD;
     Protect : DWORD;
     Type_9 : DWORD;
   end;
   TMemoryBasicInformation = _MEMORY_BASIC_INFORMATION;
 
+  {
   PListEntry = ^TListEntry;
   _LIST_ENTRY = record
     Flink: PListEntry;
@@ -52,6 +55,7 @@ type
     Reserved: DWORD;
   end;
   TRTLCriticalSection = _RTL_CRITICAL_SECTION;
+  }
 
 const
   kernel32  = 'kernel32.dll';
@@ -67,30 +71,33 @@ const
   MEM_RESET      = $80000;
   MEM_TOP_DOWN   = $100000;
 
+  {$IFDEF SCALE_INJECT_OFFSET}
   function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
-  function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
+//  function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
   function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
-  function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
+//  function  TlsFree(dwTlsIndex: DWORD): BOOL; stdcall; external kernel32 name 'TlsFree';
+  function  SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
+//  function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
+//              var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
+  {$ENDIF}
+
   procedure Sleep(dwMilliseconds: DWORD); stdcall; external kernel32 name 'Sleep';
   function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
-  function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: DWORD): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
+  function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: SIZE_T): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
   function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
   function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
-  function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
-  function  Scale_VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD;
-              var OldProtect: DWORD): BOOL; stdcall; overload; external kernel32 name 'VirtualProtect';
+//  function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
 
-  function  VirtualAlloc(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
-  function  VirtualFree(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';
-  function  VirtualQuery(lpAddress: Pointer; var lpBuffer: TMemoryBasicInformation; dwLength: DWORD): DWORD; stdcall; external kernel32 name 'VirtualQuery';   function  VirtualProtect(lpAddress: Pointer; dwSize, flNewProtect: DWORD; var flOldProtect: DWORD): BOOL; stdcall; external kernel32 name 'VirtualProtect';
+  function  VirtualAlloc(lpvAddress: Pointer; dwSize: SIZE_T; flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
+  function  VirtualFree(lpAddress: Pointer; dwSize: SIZE_T; dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';
+  function  VirtualQuery(lpAddress: Pointer; var lpBuffer: TMemoryBasicInformation; dwLength: SIZE_T): SIZE_T; stdcall; external kernel32 name 'VirtualQuery';
+  function  VirtualProtect(lpAddress: Pointer; dwSize: SIZE_T; flNewProtect: DWORD; var flOldProtect: DWORD): BOOL; stdcall; external kernel32 name 'VirtualProtect';
 
-  procedure OutputDebugString(lpOutputString: PWideChar); stdcall; external kernel32 name 'OutputDebugStringW';
+//  procedure OutputDebugString(lpOutputString: PWideChar); stdcall; external kernel32 name 'OutputDebugStringW';
 //  function  IntToStr(Value: Integer): string;overload;
 //  function  IntToStr(Value: Pointer): string;overload;
   procedure DebugBreak; external kernel32 name 'DebugBreak';
-
-  function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 
   function  CAS32(aOldValue, aNewValue: Byte; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
@@ -101,18 +108,16 @@ const
 //  procedure InterlockedIncrement(var Value: Integer);overload;
 //  procedure InterlockedDecrement(var Value: Integer);overload;
 //  function  InterlockedAdd(var Addend: Integer): Integer;
-  function  BitScanLast(aValue: Word): NativeUInt;
+  function  BitScanLast (aValue: NativeInt): NativeUInt;
   function  BitScanFirst(aValue: NativeInt): NativeUInt;
 
-
-  procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'InitializeCriticalSection';
-  procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'EnterCriticalSection';
-  procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'LeaveCriticalSection';
-  function InitializeCriticalSectionAndSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): BOOL; stdcall; external kernel32 name 'InitializeCriticalSectionAndSpinCount';
-  function SetCriticalSectionSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): DWORD; stdcall; external kernel32 name 'SetCriticalSectionSpinCount';
-  function TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL; stdcall; external kernel32 name 'TryEnterCriticalSection';
-  procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'DeleteCriticalSection';
-
+//  procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'InitializeCriticalSection';
+//  procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'EnterCriticalSection';
+//  procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'LeaveCriticalSection';
+//  function InitializeCriticalSectionAndSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): BOOL; stdcall; external kernel32 name 'InitializeCriticalSectionAndSpinCount';
+//  function SetCriticalSectionSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): DWORD; stdcall; external kernel32 name 'SetCriticalSectionSpinCount';
+//  function TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL; stdcall; external kernel32 name 'TryEnterCriticalSection';
+//  procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'DeleteCriticalSection';
 
   {$ifdef SCALEMM_DEBUG}
   procedure Assert(aCondition: boolean);
@@ -128,16 +133,18 @@ const
 implementation
 
 //uses
-//  SysUtils;
+//  SysUtils, Windows;
 
+{$IFDEF SCALE_INJECT_OFFSET}
 function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 begin
   Assert(Assigned(Code) and (Size > 0));
   { Flush the instruction cache so changes to the code page are effective immediately }
   if Permission <> 0 then
     if FlushInstructionCache(GetCurrentProcess, Code, Size) then
-      Scale_VirtualProtect(Code, Size, Permission, Longword(Result));
+      VirtualProtect(Code, Size, Permission, Longword(Result));
 end;
+{$ENDIF}
 
 {
 function  IntToStr(Value: Integer): string;
@@ -261,12 +268,12 @@ asm
 {$ENDIF}
 end;
 
-function BitScanLast(aValue: Word): NativeUInt;
+function BitScanLast(aValue: NativeInt): NativeUInt;
 asm
 {$IFDEF CPU386}
   BSR	AX, aValue;
 {$ELSE} .NOFRAME
-  BSR	AX, aValue;
+  BSR	RAX, aValue;
 {$ENDIF}
 end;
 
