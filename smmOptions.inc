@@ -30,8 +30,10 @@
 {$IFDEF IntelVTune}
   {$undef HASINLINE}
   {$undef INLINEGOWN}
-  {$D+}
-  {$L+}
+  {$OPTIMIZATION   OFF}
+  {$STACKFRAMES    ON}
+  {$DEBUGINFO      ON}
+  {$LOCALSYMBOLS   ON}
 {$ENDIF}
 
 // other posible defines:

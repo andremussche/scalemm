@@ -69,12 +69,25 @@ type
     NextFreeItem : PSmallMemHeaderFree;
   end;
 
+  TSplitRecord = record
+    case Byte of
+      1: (CompleteRef: NativeInt);
+      2: (DummyRef: Int16;
+          Counter : Int16;)
+  end;
+
   /// memory block handler
   TSmallMemBlock = object
     /// Thread owner, must be first item of block (same offset as PBaseBlockMemory)
     OwnerManager: PSmallMemThreadManager;
     /// the memory block list which owns this memory block handler
     OwnerList: PSmallMemBlockList;
+
+    FFirstThreadFreed: PSmallMemHeaderFree;
+    //FThreadFreedCount: Integer;   //negative = lock
+    FLockReference: TSplitRecord;   //ABA threading lock
+
+    FNextThreadFreedBlock: PSmallMemBlock;
 
     /// how much mem is used, max is C_ARRAYSIZE
     FUsageCount: NativeUInt;
@@ -86,10 +99,6 @@ type
     FMemoryArray: Pointer;
     { TODO -oAM : bitmap/bitarray instead of full pointer array? }
     FFreedArray: array[0..C_ARRAYSIZE] of PSmallMemHeader;
-
-    FNextThreadFreedBlock: PSmallMemBlock;
-    FFirstThreadFreed: PSmallMemHeaderFree;
-    FThreadFreedCount: Integer;   //negative = lock
 
     /// link to the next list with free memory
     FNextMemBlock: PSmallMemBlock;
@@ -116,8 +125,8 @@ type
     function  GetUsedMemoryItem: PSmallMemHeader;    {$ifdef HASINLINE}inline;{$ENDIF}
     procedure FreeMem(aMemoryItem: PSmallMemHeader); {$ifdef HASINLINE}inline;{$ENDIF}
 
-    procedure Lock;   {$ifdef HASINLINE}inline;{$ENDIF}
-    procedure UnLock; {$ifdef HASINLINE}inline;{$ENDIF}
+    //procedure Lock;   {$ifdef HASINLINE}inline;{$ENDIF}
+    //procedure UnLock; {$ifdef HASINLINE}inline;{$ENDIF}
     procedure ThreadFreeMem(aMemoryItem: PSmallMemHeader);
 
     procedure FreeBlockMemory;
@@ -161,8 +170,9 @@ type
     SizeType   : TSizeType;
     OwnerThread: PBaseThreadManager;
   private
-    FLock: Boolean;
+    //FLock: Boolean;
     FFirstThreadFreeBlock: PSmallMemBlock;
+    FDummyCounter: NativeInt;
 
     /// array with memory per block size of 32 bytes (mini blocks)
     // - i.e. 32, 64, 96, 128, 160, 192, 224 bytes
@@ -171,12 +181,14 @@ type
     // - i.e. 256,512,768,1024,1280,1536,1792[,2048] bytes
     FSmallMemoryBlocks: array[0..MAX_SMALLMEMBLOCK] of TSmallMemBlockList;
 
-    procedure Lock;
-    procedure UnLock;
-    procedure FreeThreadFreedMem;
+//    procedure Lock;
+//    procedure UnLock;
   public
     procedure Init;
     procedure Reset;
+
+    procedure FreeThreadFreedMem;
+    procedure ReleaseAllFreeMem;
 
     procedure MoveAllMemToOtherManager(aOtherManager: PSmallMemThreadManager);
     function  GetBlockListOfSize(aItemSize: NativeUInt): PSmallMemBlockList;
@@ -184,7 +196,7 @@ type
     procedure CheckAllMem;
     procedure CheckMem(aMemory: Pointer);
 
-    function GetMem(aSize: NativeUInt) : Pointer;                      {$ifdef HASINLINE}inline;{$ENDIF}
+    function GetMem(aSize: NativeUInt): Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
     function FreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
     function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
   end;
@@ -446,6 +458,7 @@ begin
   {$ENDIF}
 end;
 
+(*
 procedure TSmallMemBlock.Lock;
 var
   iCount, iNewCount: Integer;
@@ -473,9 +486,26 @@ begin
     sleep(1);
   until False;
 end;
+*)
 
 procedure TSmallMemBlock.ThreadFreeMem(aMemoryItem: PSmallMemHeader);
+var
+  fb : PSmallMemBlock;
+  cnt, cnt2: NativeInt;
+  fh : PSmallMemHeaderFree;
+  ref1, ref2: TSplitRecord;
 begin
+  repeat
+    fh   := FFirstThreadFreed;
+    ref1 := FLockReference;
+    ref2.DummyRef := ref1.DummyRef+1;
+    ref2.Counter  := ref1.Counter+1;
+    PSmallMemHeaderFree(aMemoryItem).NextFreeItem := fh;
+  until CAS(fh, ref1.CompleteRef,
+            PSmallMemHeaderFree(aMemoryItem), ref2.CompleteRef,
+            Self.FFirstThreadFreed);
+
+  (*
   Lock;
 
   Dec(FThreadFreedCount);      //-1 is already used for normal locks
@@ -484,27 +514,44 @@ begin
   FFirstThreadFreed := PSmallMemHeaderFree(aMemoryItem);
 
   UnLock;
+  *)
 
   //8 pending? then notify master thread object
-  if FThreadFreedCount = -8 then
-  begin
-    if NativeUInt(Self.OwnerManager) > 2 then    //not global manager
-    begin
-      Self.OwnerManager.Lock;
-      Self.FNextThreadFreedBlock := Self.OwnerManager.FFirstThreadFreeBlock;
-      Self.OwnerManager.FFirstThreadFreeBlock := @Self;
-      Self.OwnerManager.UnLock;
-    end;
-  end;
+  //if FThreadFreedCount = -8 then
+  //if FThreadFreedCount = 8 then
+  if ref2.Counter = 8 then  
+//  begin
+//    begin
+      repeat
+        if NativeUInt(Self.OwnerManager) <= 2 then Exit;   //not global manager
+
+        fb  := Self.OwnerManager.FFirstThreadFreeBlock;
+        cnt := Self.OwnerManager.FDummyCounter;
+
+        Self.FNextThreadFreedBlock := fb;
+        cnt2 := cnt+1;
+      until CAS(fb, cnt, @Self, cnt2, Self.OwnerManager.FFirstThreadFreeBlock);
+
+
+//      Self.OwnerManager.Lock;
+//      Self.FNextThreadFreedBlock :=
+//      Self.OwnerManager.FFirstThreadFreeBlock := @Self;
+//      Self.OwnerManager.UnLock;
+//    end;
+//  end;
+
 end;
 
+(*
 procedure TSmallMemBlock.UnLock;
 begin
   Assert(FThreadFreedCount < 0);
   //unlock
-  if not CAS32(FThreadFreedCount, Abs(FThreadFreedCount+1), @FThreadFreedCount) then
-    Assert(False);
+  //if not CAS32(FThreadFreedCount, Abs(FThreadFreedCount+1), @FThreadFreedCount) then
+  //  Assert(False);
+  FThreadFreedCount := Abs(FThreadFreedCount+1);
 end;
+*)
 
 { TSmallMemBlockList }
 
@@ -721,23 +768,39 @@ var
   freeblock, nextblock, nextblock2: PSmallMemBlock;
   pfreemem, nextmem, nextmem2: PSmallMemHeaderFree;
   p:pointer;
+  cnt, cnt2: NativeInt;
+  ref1, ref2: TSplitRecord;
 begin
   if FFirstThreadFreeBlock = nil then Exit;
 
-  Lock;
+  //Lock;
+  repeat
   freeblock := FFirstThreadFreeBlock;
-  FFirstThreadFreeBlock := nil;
-  UnLock;
+    cnt       := FDummyCounter;
+    cnt2      := cnt+1;
+  until CAS(freeblock, cnt, nil, cnt2, FFirstThreadFreeBlock);
+  //FFirstThreadFreeBlock := nil;
+  //UnLock;
 
   nextblock := freeblock;
   while nextblock <> nil do
   begin
+    (*
     nextblock.Lock;
     pfreemem := nextblock.FFirstThreadFreed;
     nextblock.FFirstThreadFreed := nil;
     nextblock.FThreadFreedCount := -1;  //will be made 0 in unlock
     nextblock2 := nextblock.FNextThreadFreedBlock;
     nextblock.UnLock;
+    *)
+    repeat
+      pfreemem      := nextblock.FFirstThreadFreed;
+      ref1          := nextblock.FLockReference;
+      ref2.DummyRef := ref1.DummyRef+1;
+      ref2.Counter  := 0;
+      nextblock2    := nextblock.FNextThreadFreedBlock;
+    until CAS(pfreemem, ref1.CompleteRef, nil, ref2.CompleteRef,
+              nextblock.FFirstThreadFreed);
     nextblock := nextblock2;
 
     nextmem := pfreemem;
@@ -749,6 +812,7 @@ begin
 
       if nextmem2.OwnerBlock.OwnerManager = @Self then    //owner can be changed in the mean time!
       begin
+        //todo: lock?
         Self.FreeMem(p);
       end
       else
@@ -842,6 +906,7 @@ begin
   assert(j=2560);
 end;
 
+(*
 procedure TSmallMemThreadManager.Lock;
 begin
   //LOCK
@@ -857,6 +922,7 @@ begin
     sleep(1);
   end;
 end;
+*)
 
 procedure TSmallMemThreadManager.MoveAllMemToOtherManager(
   aOtherManager: PSmallMemThreadManager);
@@ -1007,6 +1073,71 @@ begin
   {$ENDIF}
 end;
 
+procedure TSmallMemThreadManager.ReleaseAllFreeMem;
+var
+  i: Integer;
+  first,
+  block, nextblock: PSmallMemBlock;
+begin
+  //check pending thread free mem
+  for i := 0 to High(FMiniMemoryBlocks) do
+  begin
+    block := FMiniMemoryBlocks[i].FFirstMemBlock;
+    while block <> nil do
+    begin
+      //pending thread free mem?
+      if block.FLockReference.Counter > 0 then
+      begin
+        //add to linked list
+        block.FNextThreadFreedBlock := FFirstThreadFreeBlock;
+        FFirstThreadFreeBlock       := block;
+      end;
+    end;
+  end;
+  for i := 0 to High(FSmallMemoryBlocks) do
+  begin
+    block := FSmallMemoryBlocks[i].FFirstMemBlock;
+    while block <> nil do
+    begin
+      //pending thread free mem?
+      if block.FLockReference.Counter > 0 then
+      begin
+        //add to linked list
+        block.FNextThreadFreedBlock := FFirstThreadFreeBlock;
+        FFirstThreadFreeBlock       := block;
+      end;
+    end;
+  end;
+
+  //free pending thread free mem
+  FreeThreadFreedMem;
+
+  //remove first cached block (if complete free)
+  for i := 0 to High(FMiniMemoryBlocks) do
+  begin
+    first := FMiniMemoryBlocks[i].FFirstMemBlock;
+    block := first;
+
+    FMiniMemoryBlocks[i].FFirstMemBlock := nil;  //reset so it will be really freed (see TSmallMemBlock.FreeBlockMemory)
+    if (first <> nil) then
+    begin
+      if first.FFreedIndex = C_ARRAYSIZE then  //complete free?
+      begin
+         block := first.FNextMemBlock;
+         first.FreeBlockMemory;
+      end;
+    end;
+  end;
+  for i := 0 to High(FSmallMemoryBlocks) do
+  begin
+    first := FSmallMemoryBlocks[i].FFirstMemBlock;
+    FSmallMemoryBlocks[i].FFirstMemBlock := nil;  //reset so it will be really freed (see TSmallMemBlock.FreeBlockMemory)
+    if (first <> nil) then
+      if first.FFreedIndex = C_ARRAYSIZE then  //complete free?
+        first.FreeBlockMemory;
+  end;
+end;
+
 procedure TSmallMemThreadManager.Reset;
 var
   i: NativeUInt;
@@ -1025,6 +1156,7 @@ begin
     __ResetBlocklist(@FSmallMemoryBlocks[i]);
 end;
 
+(*
 procedure TSmallMemThreadManager.UnLock;
 begin
   //UNLOCK
@@ -1032,6 +1164,7 @@ begin
     Assert(False);
   //FLock := False;
 end;
+*)
 
 initialization
   {$IFDEF Align8Bytes}

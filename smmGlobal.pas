@@ -122,8 +122,50 @@ procedure TGlobalMemManager.FreeAllMemory;
 
 var
   oldthreadmem, tempthreadmem: PThreadMemManager;
+  medblock, mednextblock: PMediumBlockMemory;
+  medfirstmem : PMediumHeader;
 //  i: NativeUInt;
 begin
+  oldthreadmem := Self.FFirstFreedThreadMemory;
+  while oldthreadmem <> nil do
+  begin
+    tempthreadmem := oldthreadmem;
+    oldthreadmem  := oldthreadmem.FNextThreadManager;
+
+    //get all pending memory and add it to our global manager
+    FreeSmallBlocksFromThreadMemory(@tempthreadmem.FSmallMemManager);
+    FreeMediumBlocksFromThreadMemory(@tempthreadmem.FMediumMemManager);
+    //process all interthread memory (because our global manager is the owner now, it is just forwarded to this global manager)
+    tempthreadmem.ProcessFreedMemFromOtherThreads;
+    tempthreadmem.FSmallMemManager.FreeThreadFreedMem;
+    //clear
+    tempthreadmem.Reset;
+  end;
+
+  //process pending + forwarded interthread memory
+  ProcessFreedMemoryFromOtherThreads;
+
+  //clear cached/internal memory of the (sub)managers
+  FGlobalThreadMemory.ReleaseAllFreeMem;
+
+  //free cached medium blocks
+  medblock := Self.FFirstBlock;
+  while medblock <> nil do
+  begin
+    mednextblock := medblock.NextBlock;
+
+    medfirstmem := PMediumHeader( NativeUInt(medblock) + SizeOf(TMediumBlockMemory));
+    //is free mem?
+    if medfirstmem.Size and 1 <> 0 then
+      //fully free mem? we can only release fully free mem (duh...)
+      if PMediumHeaderExt(medfirstmem).ArrayPosition = 16 then
+        //RELEASE TO WINDOWS
+        VirtualFree(medblock, 0 {all}, MEM_RELEASE);
+
+    medblock := mednextblock;
+  end;
+
+
   // free internal blocks
 //  for i := Low(Self.FFreedMiniMemoryBlocks) to High(Self.FFreedMiniMemoryBlocks) do
 //    __ProcessBlockMem(@Self.FFreedMiniMemoryBlocks[i]);

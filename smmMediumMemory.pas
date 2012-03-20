@@ -83,6 +83,8 @@ type
 
     procedure CheckMem;
     procedure ChangeOwnerThread(aOwnerThread: PMediumThreadManager);
+
+    function GetFirstMem: PMediumHeader;
   end;
 
   TMediumThreadManagerOffset = packed
@@ -114,6 +116,8 @@ type
   public
     procedure Init;
     procedure Reset;
+
+    procedure ReleaseAllFreeMem;
 
     procedure CheckMem(aMemory: Pointer = nil);
     procedure CheckMemArray;
@@ -1449,6 +1453,71 @@ begin
   {$ENDIF}
 end;
 
+procedure TMediumThreadManager.ReleaseAllFreeMem;
+var
+  pheaderremainder: PMediumHeaderExt;
+  block, nextblock: PMediumBlockMemory;
+  mem: PMediumHeader;
+  freedmem: PMediumHeaderExt;
+begin
+  block := Self.FFirstBlock;
+  while block <> nil do
+  begin
+    nextblock := block.NextBlock;
+
+    (*
+    mem := block.GetFirstMem;
+    //next block is free?
+    while (nextmem <> nil) and
+          (nextmem.Size and 1 <> 0) do
+    begin
+      {$IFDEF SCALEMM_MAGICTEST}
+      Assert(nextmem.Magic1 = 0); //must be free
+      {$ENDIF}
+
+      Assert( Cardinal(nextmem.NextMem) <> $80808080);
+      isize   := (nextmem.Size and -2);
+      //make one block
+      newsize := newsize + isize;
+      //get next item
+      nextmem := PMediumHeaderExt(NativeUInt(nextmem) + isize);
+      //note: nextmem.NextFreeBlock cannot be used, points to other thread mem
+    end;
+
+
+    //process all mem
+    while mem <> nil do
+    begin
+      //free?
+      if (mem.Size and 1 <> 0) then
+      begin
+        {$IFDEF SCALEMM_MAGICTEST}
+        Assert(mem.Magic1 = 0); //must be free
+        {$ENDIF}
+        freedmem := PMediumHeaderExt(mem);
+
+        //floating free mem? (probably "marked as free" in a thread)
+        if freedmem.BlockMask = 0 then
+        begin
+          PutMemToFree(mem, mem.Size and -2);
+        end;
+      end;
+
+      mem := mem.NextMem;
+    end;
+    *)
+
+    block := nextblock;
+  end;
+
+
+  pheaderremainder := FFreeMem[High(FFreeMem)];
+  if pheaderremainder <> nil then    //1 (biggest) block is cached
+  begin
+    FreeBlock( PMediumBlockMemory(nativeuint(pheaderremainder) - SizeOf(TMediumBlockMemory)) );
+  end;
+end;
+
 procedure TMediumThreadManager.Reset;
 var
   i: Integer;
@@ -1495,16 +1564,6 @@ begin
       nextmem := PMediumHeaderExt(NativeUInt(nextmem) + isize);
       //note: nextmem.NextFreeBlock cannot be used, points to other thread mem
     end;
-
-    //free?
-    {
-    if (prevmem.Size and 1 <> 0) then
-    begin
-      prevmem.NextFreeItem := nil;
-      prevmem.PrevFreeItem := nil;
-      prevmem.BlockMask    := 0;   //ignore in PutMemToFree
-    end;
-    }
 
     //put mem as free in our mem array
     if (prevmem <> nil) and (newsize > 0) and
@@ -1835,6 +1894,11 @@ begin
              SizeOf(TMediumHeader);        //end(!)
   pheader := PMediumHeader( NativeUInt(pheader) + iSize);
   pheader.CheckMem(sdPrevious);
+end;
+
+function TMediumBlockMemory.GetFirstMem: PMediumHeader;
+begin
+  Result := PMediumHeader(NativeUInt(@Self) + SizeOf(TMediumBlockMemory));
 end;
 
 initialization
