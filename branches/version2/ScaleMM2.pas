@@ -97,6 +97,10 @@ Change log:
   Note: can leak memory (or have increased mem usage) over time
  Version 2.11 (08 March 2012):
   - 64bit version (Delphi XE2) 
+ Version 2.12 (13 March 2012):
+  - Initial code for releasing (and checking) all mem at shutdown
+  - fixed big mem leak in small memory manager (interthread mem was never freed)
+  - optimization for interthread memory in small mem manager (lock-free with CAS)
 }
 
 interface
@@ -147,6 +151,7 @@ type
     procedure Init;
     procedure Reset;
 
+    procedure ReleaseAllFreeMem;
     procedure CheckMem(aMemory: Pointer);
 
     function  IsMemoryFromOtherThreadsPresent: Boolean;
@@ -355,6 +360,14 @@ begin
     Move(aMemory^, Result^, aSize);   // copy (use smaller new size)
 
   Self.FreeMemOfOtherThread(pm);
+end;
+
+procedure TThreadMemManager.ReleaseAllFreeMem;
+begin
+  ProcessFreedMemFromOtherThreads;
+
+  FSmallMemManager.ReleaseAllFreeMem;
+  FMediumMemManager.ReleaseAllFreeMem;
 end;
 
 procedure TThreadMemManager.Reset;

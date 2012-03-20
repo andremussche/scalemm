@@ -103,6 +103,12 @@ const
   function  CAS32(aOldValue, aNewValue: NativeUInt; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: NativeInt; aDestination: Pointer): boolean;overload;
   function  CAS32(aOldValue, aNewValue: Pointer; aDestination: Pointer): boolean;overload;
+
+  function CAS64(const oldData, newData: int64; var destination): boolean;
+  //either 8-byte or 16-byte CAS, depending on the platform; destination must be propely aligned (8- or 16-byte)
+  function CAS(const oldData: pointer; oldReference: NativeInt; newData: pointer;
+               newReference: NativeInt; var destination): boolean; overload;
+
 //  procedure InterlockedIncrement(var Value: Byte);overload;
 //  procedure InterlockedDecrement(var Value: Byte);overload;
 //  procedure InterlockedIncrement(var Value: Integer);overload;
@@ -224,6 +230,55 @@ asm
   setz  al
 {$endif}
 end;
+
+//http://code.google.com/p/omnithreadlibrary/source/browse/branches/x64/OtlSync.pas?r=1071
+function CAS64(const oldData, newData: int64; var destination): boolean;
+asm
+{$IFNDEF CPUX64}
+  push  edi
+  push  ebx
+  mov   edi, destination
+  mov   ebx, low newData
+  mov   ecx, high newData
+  mov   eax, low oldData
+  mov   edx, high oldData
+  lock cmpxchg8b [edi]
+  pop   ebx
+  pop   edi
+{$ELSE CPUX64}
+  mov   rax, oldData
+  lock cmpxchg [destination], newData
+{$ENDIF ~CPUX64}
+  setz  al
+end; { CAS64 }
+
+//either 8-byte or 16-byte CAS, depending on the platform; destination must be propely aligned (8- or 16-byte)
+function CAS(const oldData: pointer; oldReference: NativeInt; newData: pointer;
+  newReference: NativeInt; var destination): boolean; overload;
+asm
+{$IFNDEF CPUX64}
+  push  edi
+  push  ebx
+  mov   ebx, newData
+  mov   ecx, newReference
+  mov   edi, destination
+  lock cmpxchg8b qword ptr [edi]
+  pop   ebx
+  pop   edi
+{$ELSE CPUX64}
+  .noframe
+  push  rbx
+  mov   rax, oldData
+  mov   rbx, newData
+  mov   rcx, newReference
+  mov   r8, [destination]
+  mov   r8, [rsp + $30]
+  lock cmpxchg16b [r8]
+  pop   rbx
+{$ENDIF CPUX64}
+  setz  al
+end; { CAS }
+
 
 (*
 procedure InterlockedIncrement(var Value: Byte);
