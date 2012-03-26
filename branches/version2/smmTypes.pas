@@ -10,6 +10,7 @@ type
   // also for 2009: http://code.google.com/p/scalemm/issues/detail?id=1
   NativeUInt = Cardinal;
   NativeInt  = Integer;
+  Int16      = Smallint;
   {$ifend}
 
   PBaseMemHeader     = ^TBaseMemHeader;
