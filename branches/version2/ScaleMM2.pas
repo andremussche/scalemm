@@ -101,6 +101,9 @@ Change log:
   - Initial code for releasing (and checking) all mem at shutdown
   - fixed big mem leak in small memory manager (interthread mem was never freed)
   - optimization for interthread memory in small mem manager (lock-free with CAS)
+ Version 2.13 (28 March 2012):
+  - shared memory implementation (thanks to FastMM for the code, Maxx xxaM for testing)
+  - Realloc bug fix with "large mem" (thanks to Maxx xxaM)
 }
 
 interface
@@ -306,7 +309,7 @@ begin
 
   pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
   //check realloc of freed mem
-  if (pm.Size and 1 = 0) then
+  if (pm.Size and 1 = 0) then //not free?
   begin
     //medium+large mem has ownerthread instead of ownerblock (optimization)
     if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
@@ -840,8 +843,10 @@ end;
 
 type
   TEndThread = procedure(ExitCode: Integer);
-//var
+  PEndThread = ^TEndThread;
+var
 //  OldEndThread: TEndThread;
+  NewEndThreadProc: PEndThread;
 
 procedure NewEndThread(ExitCode: Integer); //register; // ensure that calling convension matches EndThread
 begin
@@ -858,9 +863,6 @@ type
     OpCode  : Byte;
     Distance: Integer;
   end;
-//var
-//  NewCode: TJump = (OpCode  : $E9;
-//                    Distance: 0);
 
 procedure FastcodeAddressPatch(const ASource, ADestination: Pointer);
 const
@@ -872,8 +874,8 @@ begin
   if VirtualProtect(ASource, Size, PAGE_EXECUTE_READWRITE, OldProtect) then
   begin
     NewJump := PJump(ASource);
-    NewJump.OpCode := $E9;
-    NewJump.Distance := NativeUInt(ADestination) - NativeUInt(ASource) - Size;
+    NewJump.OpCode   := $E9;  // jmp <Displacement>        jmp -$00001234
+    NewJump.Distance := NativeInt(ADestination) - NativeInt(ASource) - Size;
 
     FlushInstructionCache(GetCurrentProcess, ASource, SizeOf(TJump));
     VirtualProtect(ASource, Size, OldProtect, OldProtect);
@@ -883,77 +885,189 @@ end;
 // redirect calls to System.EndThread to NewEndThread
 procedure PatchThread;
 begin
-  FastcodeAddressPatch(@EndThread, @NewEndThread);
+  FastcodeAddressPatch(@EndThread, NewEndThreadProc);
 end;
-{
-procedure PatchThread;
-var
-  pEndThreadAddr: PJump;
-  iOldProtect: DWord;
-begin
-  pEndThreadAddr := PJump(@EndThread);
-  Scale_VirtualProtect(pEndThreadAddr, SizeOf(TJump), PAGE_EXECUTE_READWRITE, iOldProtect);
-  // calc jump to new function
-  NewCode.Distance := Cardinal(@NewEndThread) - (Cardinal(@EndThread) + SizeOf(TJump));
-  // store old
-  OldEndThread := TEndThread(pEndThreadAddr);
-  // overwrite with jump to new function
-  pEndThreadAddr^  := NewCode;
-  // flush CPU
-  FlushInstructionCache(GetCurrentProcess, pEndThreadAddr, 5);
-end;
-}
 
 const
 {$ifdef USEMEMMANAGEREX}
   ScaleMM_Ex: TMemoryManagerEx = (
-    GetMem: Scale_GetMem;
-    FreeMem: Scale_FreeMem;
+    GetMem    : Scale_GetMem;
+    FreeMem   : Scale_FreeMem;
     ReallocMem: Scale_ReallocMem;
-    AllocMem: Scale_AllocMem;
-    RegisterExpectedMemoryLeak: Scale_RegisterMemoryLeak;
+    AllocMem  : Scale_AllocMem;
+    RegisterExpectedMemoryLeak  : Scale_RegisterMemoryLeak;
     UnregisterExpectedMemoryLeak: Scale_UnregisterMemoryLeak );
 {$else}
   ScaleMM_Ex: TMemoryManager = (
-    GetMem: Scale_GetMem;
-    FreeMem: Scale_FreeMem;
+    GetMem    : Scale_GetMem;
+    FreeMem   : Scale_FreeMem;
     ReallocMem: Scale_ReallocMem );
 {$endif}
 
 var
 {$ifdef USEMEMMANAGEREX}
+  NewMM: TMemoryManagerEx;
   OldMM: TMemoryManagerEx;
 {$else}
+  NewMM: TMemoryManager;
   OldMM: TMemoryManager;
+{$endif}
+  ScaleMMIsInstalled  : Boolean = False;
+  {Is the MM in place a shared memory manager?}
+  IsMemoryManagerOwner: Boolean = True;
+
+{$ifdef MMSharingEnabled}
+//code below is copied from FastMM4
+const
+  {Hexadecimal characters}
+  C_HexTable: array[0..15] of AnsiChar = ('0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
+var
+  {A string uniquely identifying the current process (for sharing the memory
+   manager between DLLs and the main application)}
+  MappingObjectName: array[0..26] of AnsiChar = ('L', 'o', 'c', 'a', 'l', '\',
+    'S', 'c', 'a', 'l', 'e', 'M', 'M', '_', 'P', 'I', 'D', '_', '?', '?', '?', '?',
+    '?', '?', '?', '?', #0);
+  {The handle of the memory mapped file}
+  MappingObjectHandle: Cardinal;
+type
+  TSharedRecord = record
+    {$ifdef USEMEMMANAGEREX}
+    SharedMM: PMemoryManagerEx;
+    {$else}
+    SharedMM: PMemoryManager;
+    {$endif}
+    NewEndThread: PEndThread;
+  end;
+  PSharedRecord = ^TSharedRecord;
+var
+  SharedRecord: TSharedRecord;
+
+function TryUseExistingSharedManager: Boolean;
+var
+  i, LCurrentProcessID: Cardinal;
+  LPMapAddress: PPointer;
+  LChar: AnsiChar;
+begin
+  {Build a string identifying the current process}
+  LCurrentProcessID := GetCurrentProcessId;
+  for i := 0 to 7 do
+  begin
+    LChar := C_HexTable[((LCurrentProcessID shr (i * 4)) and $F)];
+    MappingObjectName[(High(MappingObjectName) - 1) - i] := LChar;
+  end;
+  MappingObjectHandle := OpenFileMappingA(FILE_MAP_READ, False, MappingObjectName);
+  {Is no MM being shared?}
+  if MappingObjectHandle = 0 then
+  begin
+    {Share the MM with other DLLs? - if this DLL is unloaded, then
+     dependent DLLs will cause a crash.}
+    if not IsLibrary then
+    begin
+      {Create the memory mapped file}
+      MappingObjectHandle := CreateFileMappingA(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, 4,
+                                                MappingObjectName);
+      {Map a view of the memory}
+      LPMapAddress  := MapViewOfFile(MappingObjectHandle, FILE_MAP_WRITE, 0, 0, 0);
+
+      SharedRecord.SharedMM     := @NewMM;
+      SharedRecord.NewEndThread := NewEndThreadProc;
+      {Set a pointer to the new memory manager}
+      LPMapAddress^ := @SharedRecord;
+      {Unmap the file}
+      UnmapViewOfFile(LPMapAddress);
+    end;
+
+    {Owns the memory manager}
+    IsMemoryManagerOwner := True;
+  end
+  else
+  begin
+    {Map a view of the memory}
+    LPMapAddress := MapViewOfFile(MappingObjectHandle, FILE_MAP_READ, 0, 0, 0);
+    {get shared data}
+    SharedRecord     := PSharedRecord(LPMapAddress^)^;
+    NewEndThreadProc := SharedRecord.NewEndThread;
+    {Set the new memory manager}
+    NewMM            := SharedRecord.SharedMM^;
+
+    {Unmap the file}
+    UnmapViewOfFile(LPMapAddress);
+
+    {Close the file mapping handle}
+    CloseHandle(MappingObjectHandle);
+    MappingObjectHandle  := 0;
+
+    {The memory manager is not owned by this module}
+    IsMemoryManagerOwner := False;
+  end;
+
+  Result := IsMemoryManagerOwner;
+end;
 {$endif}
 
 procedure ScaleMMInstall;
 begin
-  {$IFnDEF PURE_PASCAL}
-  // get TLS slot
-  GOwnTlsIndex  := TlsAlloc;
-  // write fixed offset to TLS slot (instead calc via GOwnTlsIndex)
-  _FixedOffset;
-  {$ENDIF}
+  if ScaleMMIsInstalled then Exit;
+
+  NewMM := ScaleMM_Ex;
+  NewEndThreadProc := @NewEndThread;
+  {$ifdef MMSharingEnabled}
+  TryUseExistingSharedManager;
+  {$endif}
 
   // Hook memory Manager
   GetMemoryManager(OldMM);
-  if @OldMM <> @ScaleMM_Ex then
-    SetMemoryManager(ScaleMM_Ex);
+  if @OldMM <> @NewMM then
+    SetMemoryManager(NewMM);
+  ScaleMMIsInstalled := True;
 
-  // init main thread manager
-  GlobalManager.Init;
+  if IsMemoryManagerOwner then
+  begin
+    {$IFnDEF PURE_PASCAL}
+    // get TLS slot
+    GOwnTlsIndex  := TlsAlloc;
+    // write fixed offset to TLS slot (instead calc via GOwnTlsIndex)
+    _FixedOffset;
+    {$ENDIF}
 
+    // init main thread manager
+    GlobalManager.Init;
+  end;
   // we need to patch System.EndThread to properly mark memory to be freed
+  // note: must also done in dll (again)?
   PatchThread;
+end;
+
+procedure ScaleMMUninstall;
+begin
+  if not ScaleMMIsInstalled then Exit;
+
+  {Is this the owner of the shared MM window?}
+  if IsMemoryManagerOwner then
+  begin
+    {$ifdef MMSharingEnabled}
+    {Destroy the memory mapped file handle}
+    if MappingObjectHandle <> 0 then
+    begin
+      CloseHandle(MappingObjectHandle);
+      MappingObjectHandle := 0;
+    end;
+    {$endif}
+
+    { TODO : check for memory leaks }
+    //GlobalManager.FreeAllMemory;
+  end;
+
+  SetMemoryManager(OldMM);
+  {Memory manager has been uninstalled}
+  ScaleMMIsInstalled := False;
 end;
 
 initialization
   ScaleMMInstall;
 
 finalization
-  SetMemoryManager(OldMM);
-  { TODO : check for memory leaks }
-  GlobalManager.FreeAllMemory;
+  ScaleMMUninstall;
 
 end.

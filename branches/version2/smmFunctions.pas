@@ -25,6 +25,8 @@ type
   end;
   TMemoryBasicInformation = _MEMORY_BASIC_INFORMATION;
 
+  PSecurityAttributes = Pointer;
+
   {
   PListEntry = ^TListEntry;
   _LIST_ENTRY = record
@@ -70,6 +72,9 @@ const
   MEM_FREE       = $10000;
   MEM_RESET      = $80000;
   MEM_TOP_DOWN   = $100000;
+  FILE_MAP_WRITE = 2;
+  FILE_MAP_READ  = 4;
+  INVALID_HANDLE_VALUE = DWORD(-1);
 
   {$IFDEF SCALE_INJECT_OFFSET}
   function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
@@ -85,9 +90,16 @@ const
   function  SwitchToThread: BOOL; stdcall; external kernel32 name 'SwitchToThread';
   function  FlushInstructionCache(hProcess: THandle; const lpBaseAddress: Pointer; dwSize: SIZE_T): BOOL; stdcall; external kernel32 name 'FlushInstructionCache';
   function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
+  function  GetCurrentProcessId: DWORD; stdcall; external kernel32 name 'GetCurrentProcessId';
   function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
 //  function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
+
+  function  OpenFileMappingA(dwDesiredAccess: DWORD; bInheritHandle: BOOL; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'OpenFileMappingA';
+  function  CreateFileMappingA(hFile: THandle; lpFileMappingAttributes: PSecurityAttributes; flProtect, dwMaximumSizeHigh, dwMaximumSizeLow: DWORD; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'CreateFileMappingA';
+  function  MapViewOfFile(hFileMappingObject: THandle; dwDesiredAccess: DWORD; dwFileOffsetHigh, dwFileOffsetLow, dwNumberOfBytesToMap: DWORD): Pointer; stdcall; external kernel32 name 'MapViewOfFile';
+  function  UnmapViewOfFile(lpBaseAddress: Pointer): BOOL; stdcall; external kernel32 name 'UnmapViewOfFile';
+  function  CloseHandle(hObject: THandle): BOOL; stdcall; external kernel32 name 'CloseHandle';
 
   function  VirtualAlloc(lpvAddress: Pointer; dwSize: SIZE_T; flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
   function  VirtualFree(lpAddress: Pointer; dwSize: SIZE_T; dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';

@@ -63,7 +63,7 @@ var
 implementation
 
 uses
-  smmFunctions, SysUtils;
+  smmFunctions;
 
 { TGlobalManager }
 
