@@ -32,7 +32,7 @@ type
 
   TLargeBlockMemory = object
     OwnerManager: PLargeMemThreadManager;
-    Size       : NativeUInt;
+    Size        : NativeUInt;
   end;
 
   TLargeThreadManagerOffset = packed
@@ -130,8 +130,7 @@ begin
   pthreadoffset      := PBaseThreadManagerOffset(NativeUInt(Self.OwnerThread) or 2);
   //pheader.OwnerBlock := pblock;
   pheader.OwnerBlock := pthreadoffset;
-  //pheader.Size       := aSize + SizeOf(TLargeHeader);
-  pheader.Size       := iAllocSize - SizeOf(TLargeBlockMemory);
+  pheader.Size       := iAllocSize - SizeOf(TLargeBlockMemory) - SizeOf(TLargeHeader);
 
   Result := Pointer(NativeUInt(pheader) + SizeOf(TLargeHeader));
 end;
@@ -157,7 +156,7 @@ begin
   if iAllocSize > pblock.Size then
   begin
     iAllocSize := iAllocSize + (iAllocSize shr 2);       //add 1/4 extra
-    iAllocSize := iAllocSize and -LargeBlockGranularity; //round to 64k
+    iAllocSize := (iAllocSize + LargeBlockGranularity) and -LargeBlockGranularity; //round to 64k
 
     //try to expand current mem (in place)
     pnextblock := PLargeBlockMemory( NativeUInt(pblock) + pblock.Size );
@@ -165,7 +164,7 @@ begin
     //next mem is free?
     if (meminfo.State = MEM_FREE) then
     begin
-      iExtraSize := iAllocSize - iOldSize;
+      iExtraSize := iAllocSize - pblock.Size;
       //Enough mem to grow in place?
       if (meminfo.RegionSize >= iExtraSize) then
       begin
@@ -181,7 +180,7 @@ begin
       end;
     end;
 
-    Result := GetMemWithHeader(iAllocSize);
+    Result  := GetMemWithHeader(iAllocSize);
     Move(aMemory^, Result^, iOldSize); // copy (use smaller old size)
     Self.FreeMem(pblock);
   end
