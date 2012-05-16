@@ -1068,6 +1068,8 @@ initialization
   ScaleMMInstall;
 
 finalization
+  {$if CompilerVersion < 23}  // Delphi XE2 has annoying bug when using SetLocaleOverride -> AV in finalization of System.pas due to freemem(PreferredLanguagesOverride)
   ScaleMMUninstall;
+  {$ifend}
 
 end.
