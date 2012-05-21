@@ -104,6 +104,8 @@ Change log:
  Version 2.13 (28 March 2012):
   - shared memory implementation (thanks to FastMM for the code, Maxx xxaM for testing)
   - Realloc bug fix with "large mem" (thanks to Maxx xxaM)
+ Version 2.14 (21 May 2012):
+ - fixed issue 6: AV when using SetLocaleOverride (bug in DXE2?) (thanks to Maxx xxaM)
 }
 
 interface
@@ -182,6 +184,7 @@ type
   function CreateMemoryManager: PThreadMemManager;
 
   procedure ScaleMMInstall;
+  procedure ScaleMMUnInstall;
 
 {$IFDEF PURE_PASCAL}
 threadvar
@@ -1006,6 +1009,21 @@ begin
 end;
 {$endif}
 
+{$if CompilerVersion >= 23}
+// issue 6: Delphi XE2 has annoying bug when using SetLocaleOverride -> AV in finalization
+// of System.pas due to freemem(PreferredLanguagesOverride)
+// So in case of Delphi XE2 (and higher, till it's fixed) we use a different approach (thanks to Maxx xxaM)
+var
+  _PrevExitProcessProc: procedure;
+procedure ScaleMMExitProcessProc;
+begin
+  //first call previous attached procedure
+  if Assigned(_PrevExitProcessProc) then
+    _PrevExitProcessProc();
+  ScaleMMUninstall;
+end;
+{$ifend}
+
 procedure ScaleMMInstall;
 begin
   if ScaleMMIsInstalled then Exit;
@@ -1037,6 +1055,13 @@ begin
   // we need to patch System.EndThread to properly mark memory to be freed
   // note: must also done in dll (again)?
   PatchThread;
+
+  {$if CompilerVersion >= 23}
+  // issue 6: Delphi XE2 has annoying bug when using SetLocaleOverride -> AV in finalization of System.pas due to freemem(PreferredLanguagesOverride)
+  // So in case of Delphi XE2 (and higher, till it's fixed) we use a different approach (thanks to Maxx xxaM)
+  _PrevExitProcessProc := ExitProcessProc;
+  ExitProcessProc      := ScaleMMExitProcessProc;
+  {$ifend}
 end;
 
 procedure ScaleMMUninstall;
@@ -1068,7 +1093,9 @@ initialization
   ScaleMMInstall;
 
 finalization
-  {$if CompilerVersion < 23}  // Delphi XE2 has annoying bug when using SetLocaleOverride -> AV in finalization of System.pas due to freemem(PreferredLanguagesOverride)
+  {$if CompilerVersion < 23}
+  // issue 6: Delphi XE2 has annoying bug when using SetLocaleOverride -> AV in finalization of System.pas due to freemem(PreferredLanguagesOverride)
+  // So in case of Delphi XE and lower, we use the normal method
   ScaleMMUninstall;
   {$ifend}
 
