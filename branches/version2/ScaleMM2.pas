@@ -869,7 +869,7 @@ type
 
 procedure FastcodeAddressPatch(const ASource, ADestination: Pointer);
 const
-  Size: Cardinal = SizeOf(TJump);
+  Size: NativeInt = SizeOf(TJump);
 var
   NewJump: PJump;
   OldProtect: Cardinal;
