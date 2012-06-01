@@ -198,7 +198,7 @@ type
 
     function GetMem(aSize: NativeUInt): Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
     function FreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
-    function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
+    function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; //{$ifdef HASINLINE}inline;{$ENDIF}
   end;
 
 implementation
@@ -1077,7 +1077,7 @@ procedure TSmallMemThreadManager.ReleaseAllFreeMem;
 var
   i: Integer;
   first,
-  block, nextblock: PSmallMemBlock;
+  block: PSmallMemBlock;
 begin
   //check pending thread free mem
   for i := 0 to High(FMiniMemoryBlocks) do
@@ -1116,14 +1116,14 @@ begin
   for i := 0 to High(FMiniMemoryBlocks) do
   begin
     first := FMiniMemoryBlocks[i].FFirstMemBlock;
-    block := first;
+    //block := first;
 
     FMiniMemoryBlocks[i].FFirstMemBlock := nil;  //reset so it will be really freed (see TSmallMemBlock.FreeBlockMemory)
     if (first <> nil) then
     begin
       if first.FFreedIndex = C_ARRAYSIZE then  //complete free?
       begin
-         block := first.FNextMemBlock;
+         //block := first.FNextMemBlock;
          first.FreeBlockMemory;
       end;
     end;
