@@ -142,7 +142,9 @@ const
 implementation
 
 uses
-  smmGlobal, ScaleMM2, smmFunctions, smmSmallMemory;
+  smmGlobal, ScaleMM2, smmFunctions,
+  smmSmallMemory,
+  smmLargeMemory{needed for inline};
 
 ////////////////////////////////////////////////////////////////////////////////
 

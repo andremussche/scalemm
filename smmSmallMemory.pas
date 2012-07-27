@@ -204,7 +204,9 @@ type
 implementation
 
 uses
-  smmGlobal, ScaleMM2, smmFunctions;
+  smmGlobal, ScaleMM2, smmFunctions,
+  smmMediumMemory{needed for inline},
+  smmLargeMemory{needed for inline};
 
 { TSmallMemHeader }
 
@@ -495,11 +497,17 @@ var
   fh : PSmallMemHeaderFree;
   ref1, ref2: TSplitRecord;
 begin
+  FLockReference.Counter := FLockReference.Counter + 1;
   repeat
     fh   := FFirstThreadFreed;
     ref1 := FLockReference;
+
+    {$IFOPT R+}  //range checking?
+    if ref1.DummyRef = Int16(UInt16(-1)) then
+      ref1.DummyRef := 0;
+    {$ENDIF}
     ref2.DummyRef := ref1.DummyRef+1;
-    ref2.Counter  := ref1.Counter+1;
+    //ref2.Counter  := ref1.Counter+1;
     PSmallMemHeaderFree(aMemoryItem).NextFreeItem := fh;
   until CAS(fh, ref1.CompleteRef,
             PSmallMemHeaderFree(aMemoryItem), ref2.CompleteRef,
