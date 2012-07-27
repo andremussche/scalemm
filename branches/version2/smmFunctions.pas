@@ -27,38 +27,6 @@ type
 
   PSecurityAttributes = Pointer;
 
-  {
-  PListEntry = ^TListEntry;
-  _LIST_ENTRY = record
-    Flink: PListEntry;
-    Blink: PListEntry;
-  end;
-  TListEntry = _LIST_ENTRY;
-
-  PRTLCriticalSection = ^TRTLCriticalSection;
-  PRTLCriticalSectionDebug = ^TRTLCriticalSectionDebug;
-  _RTL_CRITICAL_SECTION_DEBUG = record
-    Type_18: Word;
-    CreatorBackTraceIndex: Word;
-    CriticalSection: PRTLCriticalSection;
-    ProcessLocksList: TListEntry;
-    EntryCount: DWORD;
-    ContentionCount: DWORD;
-    Spare: array[0..1] of DWORD;
-  end;
-  TRTLCriticalSectionDebug = _RTL_CRITICAL_SECTION_DEBUG;
-
-  _RTL_CRITICAL_SECTION = record
-    DebugInfo: PRTLCriticalSectionDebug;
-    LockCount: Longint;
-    RecursionCount: Longint;
-    OwningThread: THandle;
-    LockSemaphore: THandle;
-    Reserved: DWORD;
-  end;
-  TRTLCriticalSection = _RTL_CRITICAL_SECTION;
-  }
-
 const
   kernel32  = 'kernel32.dll';
   PAGE_EXECUTE_READWRITE = $40;
@@ -74,7 +42,7 @@ const
   MEM_TOP_DOWN   = $100000;
   FILE_MAP_WRITE = 2;
   FILE_MAP_READ  = 4;
-  INVALID_HANDLE_VALUE = DWORD(-1);
+  INVALID_HANDLE_VALUE = THandle(-1);
 
   {$IFDEF SCALE_INJECT_OFFSET}
   function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
@@ -97,7 +65,7 @@ const
 
   function  OpenFileMappingA(dwDesiredAccess: DWORD; bInheritHandle: BOOL; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'OpenFileMappingA';
   function  CreateFileMappingA(hFile: THandle; lpFileMappingAttributes: PSecurityAttributes; flProtect, dwMaximumSizeHigh, dwMaximumSizeLow: DWORD; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'CreateFileMappingA';
-  function  MapViewOfFile(hFileMappingObject: THandle; dwDesiredAccess: DWORD; dwFileOffsetHigh, dwFileOffsetLow, dwNumberOfBytesToMap: DWORD): Pointer; stdcall; external kernel32 name 'MapViewOfFile';
+  function  MapViewOfFile(hFileMappingObject: THandle; dwDesiredAccess: DWORD; dwFileOffsetHigh, dwFileOffsetLow, dwNumberOfBytesToMap: SIZE_T): Pointer; stdcall; external kernel32 name 'MapViewOfFile';
   function  UnmapViewOfFile(lpBaseAddress: Pointer): BOOL; stdcall; external kernel32 name 'UnmapViewOfFile';
   function  CloseHandle(hObject: THandle): BOOL; stdcall; external kernel32 name 'CloseHandle';
 
@@ -121,23 +89,10 @@ const
   function CAS(const oldData: pointer; oldReference: NativeInt; newData: pointer;
                newReference: NativeInt; var destination): boolean; overload;
 
-//  procedure InterlockedIncrement(var Value: Byte);overload;
-//  procedure InterlockedDecrement(var Value: Byte);overload;
-//  procedure InterlockedIncrement(var Value: Integer);overload;
-//  procedure InterlockedDecrement(var Value: Integer);overload;
-//  function  InterlockedAdd(var Addend: Integer): Integer;
   function  BitScanLast (aValue: NativeInt): NativeUInt;
   function  BitScanFirst(aValue: NativeInt): NativeUInt;
 
-//  procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'InitializeCriticalSection';
-//  procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'EnterCriticalSection';
-//  procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'LeaveCriticalSection';
-//  function InitializeCriticalSectionAndSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): BOOL; stdcall; external kernel32 name 'InitializeCriticalSectionAndSpinCount';
-//  function SetCriticalSectionSpinCount(var lpCriticalSection: TRTLCriticalSection; dwSpinCount: DWORD): DWORD; stdcall; external kernel32 name 'SetCriticalSectionSpinCount';
-//  function TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL; stdcall; external kernel32 name 'TryEnterCriticalSection';
-//  procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall; external kernel32 name 'DeleteCriticalSection';
-
-  {$ifdef SCALEMM_DEBUG}
+  {$ifopt C+} //assertions?
   procedure Assert(aCondition: boolean);
   {$ENDIF}
 
@@ -151,7 +106,7 @@ const
 implementation
 
 //uses
-//  SysUtils, Windows;
+//  SysUtils, Windows;    do not use these files!
 
 {$IFDEF SCALE_INJECT_OFFSET}
 function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
@@ -163,18 +118,6 @@ begin
       VirtualProtect(Code, Size, Permission, Longword(Result));
 end;
 {$ENDIF}
-
-{
-function  IntToStr(Value: Integer): string;
-begin
-  Result := SysUtils.IntToHex(Value, 8);
-end;
-
-function  IntToStr(Value: Pointer): string;overload;
-begin
-  Result := SysUtils.IntToHex(Integer(Value), 8);
-end;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //Assembly functions
@@ -291,6 +234,20 @@ asm
   setz  al
 end; { CAS }
 
+(*
+function CAS(const oldData: pointer; oldReference: NativeInt; newData: pointer;
+  newReference: NativeInt; var destination): boolean; overload;
+var p: Pointer;
+begin
+  p := Pointer(destination);
+  {$IFNDEF CPUX64}
+  Assert( NativeUInt(p) AND 7 = 0);  //destination must be propely aligned (8- or 16-byte)
+  {$ELSE CPUX64}
+  Assert( NativeUInt(p) AND 15 = 0);  //destination must be propely aligned (8- or 16-byte)
+  {$ENDIF CPUX64}
+  Result := CAS_(oldData, oldReference, newData, newReference, destination);
+end;
+*)
 
 (*
 procedure InterlockedIncrement(var Value: Byte);
@@ -346,16 +303,17 @@ end;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-{$ifNdef SCALEMM_DEBUG}
+{$ifopt C-} //no assertions
 procedure DummyAssert(aBoolean: boolean);
 begin
   //
 end;
-{$ELSE}
+{$ELSE}  //assertions
 procedure Assert(aCondition: boolean);
 begin
   if not aCondition then
   begin
+    Sleep(0);  // no exception, just dummy for breakpoint
     {$IFDEF CPU386}
     asm
       int 3;   // breakpoint
@@ -363,7 +321,7 @@ begin
     {$ELSE}
     DebugBreak;
     {$ENDIF}
-    //Sleep(0);  // no exception, just dummy for breakpoint
+    Sleep(0);  // no exception, just dummy for breakpoint
     {$WARN SYMBOL_PLATFORM OFF}
     if DebugHook = 0 then
       Error(reInvalidPtr);

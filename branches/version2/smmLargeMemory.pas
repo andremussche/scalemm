@@ -66,6 +66,7 @@ implementation
 
 uses
   smmMediumMemory,
+  smmSmallMemory{needed for inline},
   smmFunctions, ScaleMM2;
 
 { TLargeMemThreadManager }
