@@ -77,12 +77,37 @@ begin
 end;
 
 function TLargeMemThreadManager.FreeMem(aMemory: Pointer): NativeInt;
+var
+  pblock: PLargeBlockMemory;
+  meminfo: TMemoryBasicInformation;
+  pendingSize: NativeUInt;
 begin
-  Result  := 0;
+  Result := 0;
+  pblock := aMemory;
 
-  if not VirtualFree(aMemory, 0, MEM_RELEASE) then
-    //Result := 1;
-    System.Error(reInvalidPtr);
+  VirtualQuery(pblock, meminfo, SizeOf(meminfo));
+  //1 big complete block?
+  if meminfo.RegionSize >= pblock.Size then
+  begin
+    if not VirtualFree(pblock, 0, MEM_RELEASE) then
+      //Result := 1;
+      System.Error(reInvalidPtr);
+  end
+  else
+  //consist of multiple blocks? (due to inplace resize) then free each virtual block
+  begin
+    pendingSize := pblock.Size;
+    repeat
+      if not VirtualFree(pblock, 0, MEM_RELEASE) then
+        System.Error(reInvalidPtr);
+      Dec(pendingSize, meminfo.RegionSize);
+      if pendingSize <= 0 then Break;
+
+      //next block
+      pblock := PLargeBlockMemory( NativeUInt(pblock) + meminfo.RegionSize );
+      VirtualQuery(pblock, meminfo, SizeOf(meminfo));
+    until False;
+  end
 end;
 
 function TLargeMemThreadManager.FreeMemWithHeader(aMemory: Pointer): NativeInt;
@@ -148,6 +173,7 @@ var
   pblock,
   pnextblock : PLargeBlockMemory;
   meminfo: TMemoryBasicInformation;
+  pheader: PLargeHeader;
 begin
   pblock     := PLargeBlockMemory(NativeUInt(aMemory) - SizeOf(TLargeBlockMemory) - SizeOf(TLargeHeader));
   iAllocSize := aSize + SizeOf(TLargeBlockMemory) + SizeOf(TLargeHeader);
@@ -175,6 +201,10 @@ begin
           and (VirtualAlloc(pnextblock, iExtraSize, MEM_COMMIT, PAGE_READWRITE) <> nil) then
         begin
           pblock.Size := iAllocSize;
+          //update first item size
+          pheader      := PLargeHeader( NativeUInt(pblock) + SizeOf(TLargeBlockMemory));
+          pheader.Size := iAllocSize - SizeOf(TLargeBlockMemory) - SizeOf(TLargeHeader);
+
           Result := aMemory;
           Exit;
         end;
