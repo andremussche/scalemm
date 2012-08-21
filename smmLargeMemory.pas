@@ -182,7 +182,7 @@ begin
   //upscale?
   if iAllocSize > pblock.Size then
   begin
-    iAllocSize := iAllocSize + (iAllocSize shr 2);       //add 1/4 extra
+    //iAllocSize := iAllocSize + (iAllocSize shr 2);       //add 1/4 extra  -> alread done!?
     iAllocSize := (iAllocSize + LargeBlockGranularity) and -LargeBlockGranularity; //round to 64k
 
     //try to expand current mem (in place)
