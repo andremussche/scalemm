@@ -714,7 +714,7 @@ begin
           end
           else
           begin
-            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 3));  //add extra size (12,5%)
+            Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 4));  //add extra size (1/16, 6,25%) for large mem
             Exit;
           end;
         end;
@@ -728,7 +728,10 @@ begin
     end;
 
     //normal realloc
-    Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2) );
+    if iSize <= C_MAX_MEDIUMMEM_SIZE then  //small or medium mem?
+      Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 2) )  //add extra size (1/4, 25%)
+    else
+      Result := GetThreadMemManager.ReallocMem(aMemory, aSize + (aSize shr 4) )  //add extra size (1/16, 6,25%) for large mem
   end
   else
   begin
