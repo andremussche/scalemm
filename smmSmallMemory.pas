@@ -497,17 +497,17 @@ var
   fh : PSmallMemHeaderFree;
   ref1, ref2: TSplitRecord;
 begin
-  FLockReference.Counter := FLockReference.Counter + 1;
   repeat
     fh   := FFirstThreadFreed;
     ref1 := FLockReference;
 
-    {$IFOPT R+}  //range checking?
-    if ref1.DummyRef = Int16(UInt16(-1)) then
-      ref1.DummyRef := 0;
-    {$ENDIF}
-    ref2.DummyRef := ref1.DummyRef+1;
-    //ref2.Counter  := ref1.Counter+1;
+    if ref1.DummyRef >= 1 shl 14 then //Int16(UInt16(-1)) then
+    //if ref1.DummyRef = Int16(UInt16(-1)) then
+      ref2.DummyRef := 0
+    else
+      ref2.DummyRef := ref1.DummyRef+1;  //change something for CAS
+    ref2.Counter  := ref1.Counter+1;     //increase number of free items
+
     PSmallMemHeaderFree(aMemoryItem).NextFreeItem := fh;
   until CAS(fh, ref1.CompleteRef,
             PSmallMemHeaderFree(aMemoryItem), ref2.CompleteRef,
@@ -527,7 +527,8 @@ begin
   //8 pending? then notify master thread object
   //if FThreadFreedCount = -8 then
   //if FThreadFreedCount = 8 then
-  if ref2.Counter = 8 then  
+  if ref2.Counter = 8 then
+//  if ref2.Counter > 0 then
 //  begin
 //    begin
       repeat
@@ -781,15 +782,20 @@ var
 begin
   if FFirstThreadFreeBlock = nil then Exit;
 
+  //get linked list of blocks with free memory
   //Lock;
   repeat
-  freeblock := FFirstThreadFreeBlock;
+    freeblock := FFirstThreadFreeBlock;
     cnt       := FDummyCounter;
-    cnt2      := cnt+1;
-  until CAS(freeblock, cnt, nil, cnt2, FFirstThreadFreeBlock);
+    if cnt >= 1 shl 30 then
+      cnt2 := 0
+    else
+      cnt2 := cnt+1;
+  until CAS(freeblock, cnt, nil, cnt2, FFirstThreadFreeBlock);  //threadsafe replace FFirstThreadFreeBlock with nil
   //FFirstThreadFreeBlock := nil;
   //UnLock;
 
+  //we have a linked list of small blocks...
   nextblock := freeblock;
   while nextblock <> nil do
   begin
@@ -801,15 +807,23 @@ begin
     nextblock2 := nextblock.FNextThreadFreedBlock;
     nextblock.UnLock;
     *)
+    //get linked list of small mem items of a block
     repeat
       pfreemem      := nextblock.FFirstThreadFreed;
       ref1          := nextblock.FLockReference;
-      ref2.DummyRef := ref1.DummyRef+1;
+
+      //change something for CAS
+      if ref1.DummyRef >= 1 shl 14 then //Int16(UInt16(-1)) then
+        ref2.DummyRef := 0
+      else
+        ref2.DummyRef := ref1.DummyRef+1;
+      //no more items are free
       ref2.Counter  := 0;
-      nextblock2    := nextblock.FNextThreadFreedBlock;
     until CAS(pfreemem, ref1.CompleteRef, nil, ref2.CompleteRef,
               nextblock.FFirstThreadFreed);
-    nextblock := nextblock2;
+    //get next block (for next loop iteration)
+    nextblock2 := nextblock.FNextThreadFreedBlock;
+    nextblock  := nextblock2;
 
     nextmem := pfreemem;
     while nextmem <> nil do
