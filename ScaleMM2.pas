@@ -428,7 +428,7 @@ begin
   begin
     //convert to "client" pointer again to be able to use the normal functions
     p  := Pointer(NativeUInt(aMemory) + SizeOf(TBaseMemHeader));
-    FLargeMemManager.FreeMem(p);
+    FLargeMemManager.FreeMemWithHeader(p);
     Exit;
   end;
 

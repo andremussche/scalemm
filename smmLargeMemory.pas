@@ -84,6 +84,7 @@ var
 begin
   Result := 0;
   pblock := aMemory;
+  Assert(pblock.Size > C_MAX_MEDIUMMEM_SIZE);
 
   VirtualQuery(pblock, meminfo, SizeOf(meminfo));
   //1 big complete block?
