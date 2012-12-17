@@ -106,6 +106,12 @@ Change log:
   - Realloc bug fix with "large mem" (thanks to Maxx xxaM)
  Version 2.14 (21 May 2012):
  - fixed issue 6: AV when using SetLocaleOverride (bug in DXE2?) (thanks to Maxx xxaM)
+ Version 2.15 (27 July till 27 Sept 2012), thanks to Maxx xxaM:
+ - 64bit issues fixed
+ - inplace expanded virtualmem (realloc) was not properly freed
+ - realloc of large memory, size was increased twice with 25% (=50%)
+ - memleak + CAS hang (due to integer overflow)
+ - large interthread memory was not correctly freed
 }
 
 interface
