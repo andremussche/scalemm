@@ -196,6 +196,7 @@ type
 threadvar
   GCurrentThreadManager: PThreadMemManager;
 {$ENDIF}
+
 implementation
 
 // Windows.pas unit dependency should be not used -> seperate file
@@ -251,7 +252,7 @@ end;
 
 function CreateMemoryManager: PThreadMemManager;
 begin
-  Result := GlobalManager.GetNewThreadManager;
+  Result := smmGlobal.GlobalManager.GetNewThreadManager;
   if Result = nil then
   begin
     Result := VirtualAlloc( nil,

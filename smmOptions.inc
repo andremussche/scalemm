@@ -69,3 +69,5 @@
   {$endif}
 {$endif}
 
+{$WARN UNSAFE_TYPE OFF} {Disable warning for unsafe types in Delphi 7}
+{$WARN UNSAFE_CODE OFF} {Disable warning for unsafe code in Delphi 7}

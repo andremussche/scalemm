@@ -44,7 +44,7 @@ const
   FILE_MAP_READ  = 4;
   INVALID_HANDLE_VALUE = THandle(-1);
 
-  {$IFDEF SCALE_INJECT_OFFSET}
+  {$IFnDEF PURE_PASCAL}
   function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
 //  function  TlsGetValue(dwTlsIndex: DWORD): Pointer; stdcall; external kernel32 name 'TlsGetValue';
   function  TlsSetValue(dwTlsIndex: DWORD; lpTlsValue: Pointer): BOOL; stdcall; external kernel32 name 'TlsSetValue';
@@ -108,7 +108,7 @@ implementation
 //uses
 //  SysUtils, Windows;    do not use these files!
 
-{$IFDEF SCALE_INJECT_OFFSET}
+{$IFnDEF PURE_PASCAL}
 function SetPermission(Code: Pointer; Size, Permission: Cardinal): Cardinal;
 begin
   Assert(Assigned(Code) and (Size > 0));
