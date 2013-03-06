@@ -143,6 +143,21 @@ type
 
     //procedure AddFreeMemToOwnerThread(aFirstMem, aLastMem: PBaseFreeMemHeader);
   public
+    {$IFDEF Align8Bytes}
+      {$ifndef CPUX64}
+      Filer1: Int32;
+      {$endif}
+    {$ENDIF}
+    {$IFDEF Align16Bytes}
+      {$ifndef CPUX64}
+      Filer1: Pointer;
+      Filer2: Pointer;
+      Filer3: Pointer;
+      {$else CPUX64}
+      Filer1: Pointer;
+      {$endif}
+    {$ENDIF}
+
     FSmallMemManager : TSmallMemThreadManager;
     FMediumMemManager: TMediumThreadManager;
     FLargeMemManager : TLargeMemThreadManager;
