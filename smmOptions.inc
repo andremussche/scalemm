@@ -48,6 +48,10 @@
   {$undef INLINEGOWN}
 {$ENDIF}
 
+{$IFDEF Align16Bytes}
+  {$UNDEF Align8Bytes}   // 16 byte aligned header, so some more overhead
+{$ENDIF}
+
 {$IFDEF DEBUG}
   {.$DEFINE SCALEMM_FILLFREEMEM}
 {$ENDIF}

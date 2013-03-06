@@ -11,7 +11,10 @@ type
   DWORD  = LongWord;
   BOOL   = LongBool;
   ULONG_PTR = NativeUInt;
+  UINT_PTR  = System.UIntPtr;  // NativeUInt;
   SIZE_T    = ULONG_PTR;
+  UINT   = LongWord;
+  HWND   = type UINT_PTR;
 
   PMemoryBasicInformation = ^TMemoryBasicInformation;
   _MEMORY_BASIC_INFORMATION = record
@@ -29,6 +32,7 @@ type
 
 const
   kernel32  = 'kernel32.dll';
+  user32    = 'user32.dll';
   PAGE_EXECUTE_READWRITE = $40;
   PAGE_NOACCESS  = 1;
   PAGE_READONLY  = 2;
@@ -95,6 +99,7 @@ const
   {$ifopt C+} //assertions?
   procedure Assert(aCondition: boolean);
   {$ENDIF}
+  function MessageBoxW(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall; external user32 name 'MessageBoxW';
 
   {$ifndef PURE_PASCAL}
   {$if CompilerVersion < 19}
@@ -324,10 +329,12 @@ begin
     Sleep(0);  // no exception, just dummy for breakpoint
     {$WARN SYMBOL_PLATFORM OFF}
     if DebugHook = 0 then
-      Error(reInvalidPtr);
+      //Error(reInvalidPtr);
+      MessageBoxW(0, 'Assertion','Assertion',0);
   end;
 end;
 {$ENDIF}
+
 
 {$ifndef PURE_PASCAL}
 {$if CompilerVersion < 19}

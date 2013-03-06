@@ -83,11 +83,19 @@ type
     /// the memory block list which owns this memory block handler
     OwnerList: PSmallMemBlockList;
 
+    FNextThreadFreedBlock: PSmallMemBlock;
+    {$IFDEF Align8Bytes}
+      {$ifndef CPUX64}
+      Filer1: Pointer;  // 8 bytes aligned   -> 12 + 4 = 16 (32bit)
+      {$endif}
+    {$ENDIF}
+    {$IFDEF Align16Bytes}
+      Filer1: Pointer;  // 16 bytes aligned  -> 12 + 4 = 16 (32bit)
+                                              //24 + 8 = 32 (64bit)
+    {$ENDIF}
     FFirstThreadFreed: PSmallMemHeaderFree;
     //FThreadFreedCount: Integer;   //negative = lock
     FLockReference: TSplitRecord;   //ABA threading lock
-
-    FNextThreadFreedBlock: PSmallMemBlock;
 
     /// how much mem is used, max is C_ARRAYSIZE
     FUsageCount: NativeUInt;
@@ -115,11 +123,13 @@ type
     {$ELSE}
     Filler1: NativeUInt; //8byte aligned
     {$ENDIF}
-    {$IFDEF Align16Bytes}
+    {$IFDEF Align8Bytes}
       {$ifndef CPUX64}
-      Filler2: Pointer;  // 16 bytes aligned for 32 bit compiler
-      Filler3: Pointer;
+      Filer2: Pointer;  // 8 bytes aligned   -> 188 + 4 = 192 (32bit)
       {$endif}
+    {$ENDIF}
+    {$IFDEF Align16Bytes}
+      Filler2: Pointer;  // 16 bytes aligned
     {$ENDIF}
 
     function  GetUsedMemoryItem: PSmallMemHeader;    {$ifdef HASINLINE}inline;{$ENDIF}
@@ -169,6 +179,12 @@ type
   public
     SizeType   : TSizeType;
     OwnerThread: PBaseThreadManager;
+    {$IFDEF Align16Bytes}
+      {$ifndef CPUX64}
+      Filer1: Int32;
+      Filer2: Int32;    // 16 bytes aligned   -> 40 + 8 = 48 (32bit)
+      {$endif}                                 //80 (64bit)
+    {$ENDIF}
   private
     //FLock: Boolean;
     FFirstThreadFreeBlock: PSmallMemBlock;
@@ -501,6 +517,13 @@ begin
     fh   := FFirstThreadFreed;
     ref1 := FLockReference;
 
+    {$IFDEF Align8Bytes}
+    Assert( NativeUInt(@Self.FFirstThreadFreed) AND 7 = 0);
+    {$ENDIF}
+    {$IFDEF Align16Bytes}         //$1387B38
+    Assert( NativeUInt(@Self.FFirstThreadFreed) AND 15 = 0);
+    {$ENDIF}
+
     if ref1.DummyRef >= 1 shl 14 then //Int16(UInt16(-1)) then
     //if ref1.DummyRef = Int16(UInt16(-1)) then
       ref2.DummyRef := 0
@@ -527,12 +550,19 @@ begin
   //8 pending? then notify master thread object
   //if FThreadFreedCount = -8 then
   //if FThreadFreedCount = 8 then
-  if ref2.Counter = 8 then
+//  if ref2.Counter = 8 then
 //  if ref2.Counter > 0 then
 //  begin
 //    begin
       repeat
         if NativeUInt(Self.OwnerManager) <= 2 then Exit;   //not global manager
+
+        {$IFDEF Align8Bytes}
+        Assert( NativeUInt(@Self.OwnerManager.FFirstThreadFreeBlock) AND 7 = 0);
+        {$ENDIF}
+        {$IFDEF Align16Bytes}
+        Assert( NativeUInt(@Self.OwnerManager.FFirstThreadFreeBlock) AND 15 = 0);
+        {$ENDIF}
 
         fb  := Self.OwnerManager.FFirstThreadFreeBlock;
         cnt := Self.OwnerManager.FDummyCounter;
@@ -590,9 +620,11 @@ begin
 
     pm.FMemoryArray := Pointer(NativeUInt(pm) + SizeOf(pm^));
     {$IFDEF Align8Bytes}
+    Assert( NativeUInt(pm) AND 7 = 0);
     Assert( NativeUInt(pm.FMemoryArray) AND 7 = 0);
     {$ENDIF}
     {$IFDEF Align16Bytes}
+    Assert( NativeUInt(pm) AND 15 = 0);
     Assert( NativeUInt(pm.FMemoryArray) AND 15 = 0);
     {$ENDIF}
     {$IFDEF SCALEMM_DEBUG}
@@ -791,6 +823,13 @@ begin
       cnt2 := 0
     else
       cnt2 := cnt+1;
+
+    {$IFDEF Align8Bytes}
+    Assert( NativeUInt(@FFirstThreadFreeBlock) AND 7 = 0);
+    {$ENDIF}
+    {$IFDEF Align16Bytes}
+    Assert( NativeUInt(@FFirstThreadFreeBlock) AND 15 = 0);
+    {$ENDIF}
   until CAS(freeblock, cnt, nil, cnt2, FFirstThreadFreeBlock);  //threadsafe replace FFirstThreadFreeBlock with nil
   //FFirstThreadFreeBlock := nil;
   //UnLock;
@@ -819,6 +858,13 @@ begin
         ref2.DummyRef := ref1.DummyRef+1;
       //no more items are free
       ref2.Counter  := 0;
+
+      {$IFDEF Align8Bytes}
+      Assert( NativeUInt(@nextblock.FFirstThreadFreed) AND 7 = 0);
+      {$ENDIF}
+      {$IFDEF Align16Bytes}
+      Assert( NativeUInt(@nextblock.FFirstThreadFreed) AND 15 = 0);
+      {$ENDIF}
     until CAS(pfreemem, ref1.CompleteRef, nil, ref2.CompleteRef,
               nextblock.FFirstThreadFreed);
     //get next block (for next loop iteration)
@@ -908,6 +954,13 @@ procedure TSmallMemThreadManager.Init;
 var i, j: NativeUInt;
 begin
   SizeType := stSmall;
+
+  {$IFDEF Align8Bytes}         //   $3D001C      $3D0014
+  Assert( NativeUInt(@Self) AND 7 = 0);
+  {$ENDIF}
+  {$IFDEF Align16Bytes}              //28
+  Assert( NativeUInt(@Self) AND 15 = 0);
+  {$ENDIF}
 
   Fillchar(Self, SizeOf(Self), 0);
   j := 32;
