@@ -550,7 +550,7 @@ begin
   //8 pending? then notify master thread object
   //if FThreadFreedCount = -8 then
   //if FThreadFreedCount = 8 then
-//  if ref2.Counter = 8 then
+  if ref2.Counter = 8 then
 //  if ref2.Counter > 0 then
 //  begin
 //    begin
