@@ -112,6 +112,8 @@ Change log:
  - realloc of large memory, size was increased twice with 25% (=50%)
  - memleak + CAS hang (due to integer overflow)
  - large interthread memory was not correctly freed
+ Version 2.16 (9-3-2013), thanks to Maxx xxaM and Thiago:
+ - 64bit wrong alignment can give AV's (issue 11)
 }
 
 interface
