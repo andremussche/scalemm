@@ -11,6 +11,7 @@ type
   NativeUInt = Cardinal;
   NativeInt  = Integer;
   Int16      = Smallint;
+  Int32      = Integer;
   {$ifend}
 
   PBaseMemHeader     = ^TBaseMemHeader;

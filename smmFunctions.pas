@@ -11,7 +11,11 @@ type
   DWORD  = LongWord;
   BOOL   = LongBool;
   ULONG_PTR = NativeUInt;
-  UINT_PTR  = System.UIntPtr;  // NativeUInt;
+  {$if CompilerVersion >= 23}  //Delphi XE2
+  UINT_PTR  = System.UIntPtr;
+  {$else}
+  UINT_PTR  = NativeUInt;
+  {$ifend}
   SIZE_T    = ULONG_PTR;
   UINT   = LongWord;
   HWND   = type UINT_PTR;
