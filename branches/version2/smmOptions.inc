@@ -1,6 +1,7 @@
-{.$DEFINE SCALEMM_DEBUG}    // slower but better debugging (no inline functions etc)
+{.$DEFINE SCALEMM_DEBUG}    //much(!) slower but better debugging (no inline functions etc)
 {.$DEFINE IntelVTune}       //debug info in release build
 {$DEFINE MMSharingEnabled}  //Share MM with dlls
+{.$DEFINE SCALEMM_MAGICTEST} //extra safety checks with low overhead
 
 {$IFDEF SCALEMM_DEBUG}
   {$OPTIMIZATION   OFF}
@@ -35,6 +36,10 @@
   {$STACKFRAMES    ON}
   {$DEBUGINFO      ON}
   {$LOCALSYMBOLS   ON}
+{$ENDIF}
+
+{$IFDEF SCALEMM_MAGICTEST}
+  {$ASSERTIONS     ON}
 {$ENDIF}
 
 // other posible defines:

@@ -1,4 +1,4 @@
-// fast scaling memory manager for Delphi
+﻿// fast scaling memory manager for Delphi
 // licensed under a MPL/GPL/LGPL tri-license; version 0.1
 unit ScaleMM2;
 
@@ -14,7 +14,7 @@ Description:
 
 Homepage:
   http://code.google.com/p/scalemm
-  by Andr� Mussche (andre.mussche@gmail.com)
+  by André Mussche (andre.mussche@gmail.com)
 
 Usage:
  - Delphi 6 up to Delphi 2005 with FastMM4:
@@ -48,7 +48,7 @@ License:
 
   The Original Code is ScaleMM - Fast scaling memory manager for Delphi.
 
-  The Initial Developer of the Original Code is Andr� Mussche.
+  The Initial Developer of the Original Code is André Mussche.
 
   Portions created by the Initial Developer are Copyright (C) 2010
   the Initial Developer. All Rights Reserved.
@@ -114,6 +114,9 @@ Change log:
  - large interthread memory was not correctly freed
  Version 2.16 (9-3-2013), thanks to Maxx xxaM and Thiago:
  - 64bit wrong alignment can give AV's (issue 11)
+ Version 2.2 (6-8-2013)
+ - make it possible to use more than 2gb in 32bit (thanks to Maxx xxaM)
+ - rare AV with interthread (small) memory and heavy load (Павел Пикулин)
 }
 
 interface
@@ -454,10 +457,9 @@ begin
     p  := Pointer(NativeUInt(aMemory) + SizeOf(TBaseMemHeader));
     FLargeMemManager.FreeMemWithHeader(p);
     Exit;
-  end;
-
+  end
   //medium mem
-  if NativeUInt(aMemory.OwnerBlock) and 3 <> 0 then
+  else if NativeUInt(aMemory.OwnerBlock) and 3 <> 0 then
   begin
     pm := PMediumHeader( NativeUInt(aMemory) + SizeOf(TBaseMemHeader) - SizeOf(TMediumHeader));
     pm.ThreadFree;
@@ -593,6 +595,7 @@ begin
   else
   begin
     ot := aMemory.OwnerBlock.OwnerManager;
+    //check owner (can be changed in the meantime!)
     if ot = @FSmallMemManager then
       Result := FSmallMemManager.FreeMem(p)
     else
