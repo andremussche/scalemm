@@ -425,8 +425,8 @@ begin
   {$IFDEF SCALEMM_MAGICTEST}
   Assert(header.Magic1 = 123456789); //must be in use!
   {$ENDIF}
+  Assert(header.Size and 1 = 0); //double free check
 
-  Assert(header.Size and 1 = 0);
   if (Self.OwnerThread.FThreadId > 1) and
      not Self.OwnerThread.FThreadTerminated then
   begin

@@ -128,8 +128,8 @@ begin
 
   if Result = nil then
     System.Error(reOutOfMemory);
-  if NativeUInt(Result) > NativeUInt(1 shl 31) then
-    System.Error(reInvalidPtr);
+  //if NativeUInt(Result) > NativeUInt(1 shl 31) then        more than 2gb possible!
+  //  System.Error(reInvalidPtr);
 end;
 
 const
