@@ -3,6 +3,7 @@ unit smmFunctions;
 interface
 
 {$Include smmOptions.inc}
+{$I smmOptions.inc}
 
 //uses
 //  smmTypes;
