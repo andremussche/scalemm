@@ -140,7 +140,7 @@ type
   function Scale_GetMem(ASize: NativeInt): Pointer;
   function Scale_FreeMem(APointer: Pointer): Integer;
   function Scale_ReallocMem(APointer: Pointer; ANewSize: NativeInt): Pointer;
-  function Scale_AllocMem(ASize: NativeUInt): Pointer;
+  function Scale_AllocMem(ASize: NativeInt): Pointer;
   {$IFEND}
   function Scale_CheckMem(APointer: Pointer): Boolean;
 
@@ -297,7 +297,9 @@ begin
           if FreeSlots = (Length(Slots) - C_Small_FirstSlots + Low(Slots)) then
           begin
             pfreesmall      := PSmallFreeMemHeader(APointer);
-            pfreesmall.Slot := nil;
+            pfreesmall.Slot := nil;  //reset, needed for free check
+            pfreesmall.PrevMem := nil;  //reset, needed for free check
+            pfreesmall.NextMem := nil;  //reset, needed for free check
             if FreeSmallMem(psmallslot) then
               Exit;
           end;
@@ -561,7 +563,7 @@ end;
 {$IF CompilerVersion <= 22}
 function Scale_AllocMem(ASize: Cardinal): Pointer;
 {$ELSE}
-function Scale_AllocMem(ASize: NativeUInt): Pointer;
+function Scale_AllocMem(ASize: NativeInt): Pointer;
 {$IFEND}
 begin
   Result := Scale_GetMem(aSize);
@@ -709,6 +711,8 @@ begin
   //remove from "all free list"
   RemoveSmallMem(aSmallMem);
 
+  if aSmallMem = nil then
+    Sleep(0);
   //remove from lists
   if aSmallMem.NextSmallSlot <> nil then
     aSmallMem.NextSmallSlot.PrevSmallSlot := aSmallMem.PrevSmallSlot;
@@ -729,6 +733,8 @@ var
   i, iSize: Integer;
   pheader: PSmallFreeMemHeader;
 begin
+  {$ifdef SCALEMM_DEBUG}try{$endif}
+
   i := C_Small_FirstSlots;
   with aSmallMem^ do
   while i <= High(Slots) do
@@ -761,6 +767,8 @@ begin
 
     Inc(i, iSize);
   end;
+
+  {$ifdef SCALEMM_DEBUG}except sleep(0); end;{$endif}
 end;
 
 
@@ -1436,7 +1444,8 @@ begin
 
     Inc(i, (Slots[i].Size));
   end;
-  Assert(iFree = Self.FreeSlots + Self.FreeSlotsFromOtherThreads);
+  {$MESSAGE WARN 'enable again?'}
+  //Assert(iFree = Self.FreeSlots + Self.FreeSlotsFromOtherThreads);
 
   if Self.NextBlock <> nil then
     Assert( @Self = Self.NextBlock.PrevBlock);

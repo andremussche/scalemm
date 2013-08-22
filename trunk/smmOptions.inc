@@ -1,5 +1,5 @@
-{$DEFINE SCALEMM_DEBUG}  // slower but better debugging (no inline functions etc)
-{$DEFINE IntelVTune}      //debug info in release build
+{.$DEFINE SCALEMM_DEBUG}  // slower but better debugging (no inline functions etc)
+{.$DEFINE IntelVTune}      //debug info in release build
 
 {$IFDEF SCALEMM_DEBUG}
   {$OPTIMIZATION   OFF}
