@@ -2,6 +2,10 @@
 // licensed under a MPL/GPL/LGPL tri-license; version 0.1
 unit ScaleMM3;
 
+{$MESSAGE WARN  'Warning: Experimental version! Only use if you really want to, but normally you should use ScaleMM2 (see website with .zip download or "\Version2" branch in SVN).' +
+				'I tried a different architecture for ScaleMM3, which turned out to be slower...' +
+				'Note: Only ScaleMM2 can be used in production.'}
+
 {$Include smmOptions.inc}
 {$A4}
 //{$CODEALIGN 4}
