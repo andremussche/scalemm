@@ -307,6 +307,12 @@ begin
   FastCodeQualityLabel := False;
   DllExtension         := 'SCALE3';
 {$ENDIF}
+{$IFDEF MM_QMM}
+  MemoryManager_Name   := 'QMM';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'QMM';
+{$ENDIF}
 
 {$IFDEF MM_MSVCRTMM}
   MemoryManager_Name   := 'MSVCRTMem';

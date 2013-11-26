@@ -1,9 +1,10 @@
-program FastcodeMMChallenge_ScaleMM2;
+program FastcodeMMChallenge_QMM;
 
 {$I FASTCODE_MM.INC}
+//define MM_QMM
 
 uses
-  ScaleMM2,
+  QMM in 'QMM\QMM.pas',
 
   BenchmarkUtilities in 'BenchmarkUtilities.pas',
   Forms,
