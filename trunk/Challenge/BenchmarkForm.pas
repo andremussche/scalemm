@@ -153,8 +153,8 @@ uses
   DoubleFPBenchmark2Unit, DoubleFPBenchmark3Unit, SingleFPBenchmark1Unit,
   MoveBenchmark1Unit, MoveBenchmark2Unit,
   AddressSpaceCreepBenchmarkLarge, LinkedListBenchmark, RenameMMForm,
-  BenchmarkUtilities, GeneralFunctions, SystemInfoUnit, DateUtils,
-  muMessageDialogHook;
+  BenchmarkUtilities, GeneralFunctions, SystemInfoUnit, DateUtils;
+  //muMessageDialogHook;
 
 {$R *.dfm}
 
@@ -312,6 +312,12 @@ begin
   PassValidations      := True;
   FastCodeQualityLabel := False;
   DllExtension         := 'QMM';
+{$ENDIF}
+{$IFDEF MM_SapMM}
+  MemoryManager_Name   := 'SapMM';
+  PassValidations      := True;
+  FastCodeQualityLabel := False;
+  DllExtension         := 'SapMM';
 {$ENDIF}
 
 {$IFDEF MM_MSVCRTMM}
@@ -1274,6 +1280,6 @@ initialization
   {We want the main form repainted while it's busy running}
   DisableProcessWindowsGhosting;
 
-  muMessageDialogHook.LoadHook;
+  //muMessageDialogHook.LoadHook;
 
 end.
