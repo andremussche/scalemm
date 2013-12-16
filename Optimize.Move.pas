@@ -22,11 +22,16 @@
 *)
 
 unit Optimize.Move;
+
 interface
 
 implementation
+
 uses
-  Windows, SysUtils;
+  smmFunctions;
+
+//uses
+//  Windows, SysUtils;
 
 { SIMD Detection code }
 type
@@ -34,7 +39,7 @@ type
   TSimdInstructionSupportSet = set of TSimdInstructionSupport;
 
   TCPUIDRegs = record
-    rEAX, rEBX, rECX, rEDX : Integer;
+    rEAX, rEBX, rECX, rEDX : Cardinal;
   end;
 
 var
@@ -42,7 +47,7 @@ var
   CacheLimit    : Integer;
   NbrOfCPUs     : Cardinal;
 
-function CPUID(const FuncId : Integer) : TCPUIDRegs;
+function CPUID(const FuncId : Cardinal) : TCPUIDRegs;
 var
   Regs : TCPUIDRegs;
 
@@ -80,7 +85,7 @@ begin
   Result := Regs;
 end;
 
-function CPUIIDSupports(const FuncId : Integer; const Extended : Boolean = false) : Boolean;
+function CPUIIDSupports(const FuncId : Cardinal; const Extended : Boolean = false) : Boolean;
 begin
   if Extended then
     Result := CPUID($80000000).rEAX >= FuncId
