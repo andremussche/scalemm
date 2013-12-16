@@ -224,7 +224,9 @@ implementation
 
 // Windows.pas unit dependency should be not used -> seperate file
 uses
+  {$IFDEF CPUX86}
   Optimize.Move,
+  {$ENDIF}
   smmFunctions, smmGlobal;
 
 {$IFDEF PURE_PASCAL}
