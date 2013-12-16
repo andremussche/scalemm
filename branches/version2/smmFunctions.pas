@@ -34,6 +34,26 @@ type
 
   PSecurityAttributes = Pointer;
 
+  PSystemInfo = ^TSystemInfo;
+  _SYSTEM_INFO = record
+    case Integer of
+      0: (
+        dwOemId: DWORD);
+      1: (
+        wProcessorArchitecture: Word;
+        wReserved: Word;
+        dwPageSize: DWORD;
+        lpMinimumApplicationAddress: Pointer;
+        lpMaximumApplicationAddress: Pointer;
+        dwActiveProcessorMask: DWORD;
+        dwNumberOfProcessors: DWORD;
+        dwProcessorType: DWORD;
+        dwAllocationGranularity: DWORD;
+        wProcessorLevel: Word;
+        wProcessorRevision: Word);
+  end;
+  TSystemInfo = _SYSTEM_INFO;
+
 const
   kernel32  = 'kernel32.dll';
   user32    = 'user32.dll';
@@ -111,6 +131,7 @@ const
   {$ifend}
   {$endif PURE_PASCAL}
 
+  procedure GetSystemInfo(var lpSystemInfo: TSystemInfo); stdcall; external kernel32 name 'GetSystemInfo';
 
 implementation
 

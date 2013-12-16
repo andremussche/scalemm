@@ -69,41 +69,41 @@ Change log:
  Version 1.1 (6 December 2010):
   - Some optimizations for better "Fast Code MM Challenge Benchmark" results
     (lower memory overhead, more memory reuse, less locking)
- Version 2.02a (25 Januari 2011):
+ Version 2.0.2a (25 Januari 2011):
   - added medium memory handling (<1Mb), large memory is direct done via VirtualAlloc etc
   - splitted in seperate units to make developing/testing easier
   - empty units for stats and logging (will be implemented later)
- Version 2.04b (23 Februari 2011):
+ Version 2.0.4b (23 Februari 2011):
   - realloc optimizations
   - lots of internal CheckMem's (for validation)
   - interthread memory is now handled (alloc in thread 1, free in thread 2)
   - small (difficult to find) bugs fixed and other optimalizations
   - check for 8byte alignment (needed for OmniThreadLibrary etc)
- Version 2.05 (19 March 2011):
+ Version 2.0.5 (19 March 2011):
   - small size realloc bug fixed, now passes FastCode validations (D2007 and D2010)
- Version 2.10 (06 March 2012):
+ Version 2.1 (06 March 2012):
   - small bugs fixed
   - many additional checks added
   - interthread memory finally stable
   Note: can leak memory (or have increased mem usage) over time
- Version 2.11 (08 March 2012):
-  - 64bit version (Delphi XE2) 
- Version 2.12 (13 March 2012):
+ Version 2.1.1 (08 March 2012):
+  - 64bit version (Delphi XE2)
+ Version 2.1.2 (13 March 2012):
   - Initial code for releasing (and checking) all mem at shutdown
   - fixed big mem leak in small memory manager (interthread mem was never freed)
   - optimization for interthread memory in small mem manager (lock-free with CAS)
- Version 2.13 (28 March 2012):
+ Version 2.1.3 (28 March 2012):
   - shared memory implementation (thanks to FastMM for the code, Maxx xxaM for testing)
   - Realloc bug fix with "large mem" (thanks to Maxx xxaM)
- Version 2.14 (21 May 2012):
+ Version 2.1.4 (21 May 2012):
  - fixed issue 6: AV when using SetLocaleOverride (bug in DXE2?) (thanks to Maxx xxaM)
- Version 2.15 (27 July till 27 Sept 2012), thanks to Maxx xxaM:
+ Version 2.1.5 (27 July till 27 Sept 2012), thanks to Maxx xxaM:
  - 64bit issues fixed
  - inplace expanded virtualmem (realloc) was not properly freed
  - realloc of large memory, size was increased twice with 25% (=50%)
  - memleak + CAS hang (due to integer overflow)
  - large interthread memory was not correctly freed
- Version 2.16 (9-3-2013), thanks to Maxx xxaM and Thiago:
+ Version 2.1.6 (9-3-2013), thanks to Maxx xxaM and Thiago:
  - 64bit wrong alignment can give AV's (issue 11)
  Version 2.2 (6-8-2013)
  - make it possible to use more than 2gb in 32bit (thanks to Maxx xxaM)
@@ -115,6 +115,8 @@ Change log:
  - fixed issue 16: alloc of large 2 dimensional array was getting slower and slower (thanks to tf.rangel)
  Version 2.4 (12-12-2013)
  - interthread memory fixes (stability)
+ Version 2.4.1 (16-12-2013)
+ - optimize.move included (much faster Move() function due to SSE3)
 }
 
 interface
@@ -222,7 +224,7 @@ implementation
 
 // Windows.pas unit dependency should be not used -> seperate file
 uses
-  //Optimize.Move,    should be installed by user
+  Optimize.Move,
   smmFunctions, smmGlobal;
 
 {$IFDEF PURE_PASCAL}
@@ -1123,6 +1125,16 @@ end;
 procedure ScaleMMInstall;
 begin
   if ScaleMMIsInstalled then Exit;
+
+  if IsMemoryManagerSet then
+    Error(reAssertionFailed);  //ScaleMM2 is NOT the FIRST unit in dpr!?
+  {$WARN SYMBOL_DEPRECATED OFF}
+  {$WARN SYMBOL_PLATFORM OFF}
+  //todo: GetMemoryManagerState(state);
+  if GetHeapStatus.TotalAllocated <> 0 then
+    Error(reAssertionFailed);  //Memory has been already been allocated with the RTL MM
+  {$WARN SYMBOL_PLATFORM ON}
+  {$WARN SYMBOL_DEPRECATED ON}
 
   NewMM := ScaleMM_Ex;
   NewEndThreadProc := @NewEndThread;
