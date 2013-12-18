@@ -155,16 +155,16 @@ type
       Filer1: Int32;
       {$endif}
     {$ENDIF}
+  *)
     {$IFDEF Align16Bytes}
       {$ifndef CPUX64}
       Filer1: Pointer;
       Filer2: Pointer;
-      Filer3: Pointer;
       {$else CPUX64}
       Filer1: Pointer;
+      Filer2: Pointer;
       {$endif}
     {$ENDIF}
-    *)
 
     FSmallMemManager : TSmallMemThreadManager;
     FMediumMemManager: TMediumThreadManager;
@@ -718,6 +718,7 @@ begin
     Result := FLargeMemManager.GetMemWithHeader(aSize);
   end;
 
+  Assert( NativeUInt(Result) AND 3 = 0);
   {$IFDEF Align8Bytes}
   Assert( NativeUInt(Result) AND 7 = 0);
   {$ENDIF}
