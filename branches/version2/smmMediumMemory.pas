@@ -196,8 +196,8 @@ begin
 
     //first item
     pheader             := PMediumHeaderExt( NativeUInt(pblock) +
-                                            SizeOf(TMediumBlockMemory)
-                                          );
+                                             SizeOf(TMediumBlockMemory)
+                                           );
     pthreadoffset       := PBaseThreadManagerOffset(NativeUInt(Self.OwnerThread) or 1);
     pheader.OwnerThread := pthreadoffset;
 
@@ -799,13 +799,13 @@ begin
   if allocsize > C_MAX_MEDIUMMEM_SIZE then
     allocsize := C_MAX_MEDIUMMEM_SIZE;
   Assert(allocsize <= C_MAX_MEDIUMMEM_SIZE);
-  iMSB      := BitScanLast(                   //get highest bit
-                           allocsize shr 4);  //div 16 so 1mb fits in 16bit
   {$IFDEF Align16Bytes}
   allocsize := allocsize and -16;
   {$ELSE}
   allocsize := allocsize and -8;              //8byte aligned: we've add 8 before and remove lowest bits now
   {$ENDIF}
+  iMSB      := BitScanLast(                   //get highest bit
+                           allocsize shr 4);  //div 16 so 1mb fits in 16bit
 
   Assert(allocsize >= aSize);
   iFreeMemIndex := 0;
