@@ -210,7 +210,7 @@ type
     procedure Init;
     procedure Reset;
 
-    function  IsMemoryFromOtherThreadsPresent: Boolean; inline;
+    function  IsMemoryFromOtherThreadsPresent: Boolean; {$ifdef HASINLINE}inline;{$ENDIF}
     procedure FreeThreadFreedMem;
     procedure ReleaseAllFreeMem;
 
@@ -1303,7 +1303,9 @@ var
       firstfreemem.FPreviousFreedMemBlock := nil;
     end;
 
+    {$IFDEF SCALEMM_DEBUG}
     aGlobalBlock.CheckMem;
+    {$ENDIF}
   end;
 
 begin
