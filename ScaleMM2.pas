@@ -1,4 +1,4 @@
-﻿// fast scaling memory manager for Delphi
+// fast scaling memory manager for Delphi
 // licensed under a MPL/GPL/LGPL tri-license; version 0.1
 unit ScaleMM2;
 

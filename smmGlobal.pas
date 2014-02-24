@@ -307,12 +307,15 @@ begin
 
   //LOCK: no threads may be proceseed now (e.g. FreeInterThreadMemory)
   ThreadLock;
+    // clear mem (partial: add to reuse list, free = free)
+    FreeSmallBlocksFromThreadMemory(@aThreadMem.FSmallMemManager);
+  //UNLOCK
+  ThreadUnLock;
 
-  // clear mem (partial: add to reuse list, free = free)
-  FreeSmallBlocksFromThreadMemory(@aThreadMem.FSmallMemManager);
   FreeMediumBlocksFromThreadMemory(@aThreadMem.FMediumMemManager);
   aThreadMem.Reset;
 
+  ThreadLock;
   { TODO : keep max nr of threads. Remember to lock "FreeInterThreadMemory" then }
   // add to available list
   aThreadMem.FNextThreadManager := FFirstFreedThreadMemory;
@@ -510,7 +513,7 @@ end;
 procedure TGlobalMemManager.ProcessFreedMemoryFromOtherThreads;
 var
   tm1: PThreadMemManager;
-  mm, nextmm: PMediumBlockMemory;
+//  mm, nextmm: PMediumBlockMemory;
 begin
   //Exit;
   if not FGlobalThreadMemory.IsMemoryFromOtherThreadsPresent and
@@ -535,6 +538,7 @@ begin
       end;
     end;
 
+    (*  too much overhead to do this everytime!
     FGlobalThreadMemory.FMediumMemManager.ReleaseAllFreeMem;
 
     mm := Self.FFirstBlock;
@@ -559,6 +563,7 @@ begin
       end;
       mm := nextmm;
     end;
+    *)
   finally
     //UNLOCK
     ThreadUnLock;
