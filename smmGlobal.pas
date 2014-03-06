@@ -26,6 +26,7 @@ type
     /// freed/used thread memory managers
     // - used to cache the per-thread managers in case of multiple threads creation
     FFirstFreedThreadMemory: PThreadMemManager;
+    FFirstThreadMemory: PThreadMemManager;
   private
     FSmallInterThreadMemCount: NativeUInt;
   private {small}
@@ -36,14 +37,15 @@ type
   protected
     procedure FreeSmallBlocksFromThreadMemory(aThreadMem: PSmallMemThreadManager);
     procedure FreeMediumBlocksFromThreadMemory(aThreadMem: PMediumThreadManager);
-
-    procedure ThreadLock;
-    procedure ThreadUnLock;
   public
     procedure Init;
 
+    procedure ThreadLock;
+    procedure ThreadUnLock;
+
     function  GetNewThreadManager: PThreadMemManager;
     //procedure AddNewThreadManagerToList(aThreadMem: PThreadMemManager);
+    function  GetFirstThreadMemory: PThreadMemManager;
     procedure FreeThreadManager(aThreadMem: PThreadMemManager);
     procedure FreeAllMemory;
 
@@ -132,7 +134,7 @@ begin
   while oldthreadmem <> nil do
   begin
     tempthreadmem := oldthreadmem;
-    oldthreadmem  := oldthreadmem.FNextThreadManager;
+    oldthreadmem  := oldthreadmem.FNextFreeThreadManager;
 
     tempthreadmem.FSmallMemManager.FreeThreadFreedMem;
     //get all pending memory and add it to our global manager
@@ -194,7 +196,7 @@ begin
   while oldthreadmem <> nil do
   begin
     tempthreadmem := oldthreadmem;
-    oldthreadmem  := oldthreadmem.FNextThreadManager;
+    oldthreadmem  := oldthreadmem.FNextFreeThreadManager;
     VirtualFree(tempthreadmem, 0, MEM_RELEASE);
   end;
 end;
@@ -318,7 +320,7 @@ begin
   ThreadLock;
   { TODO : keep max nr of threads. Remember to lock "FreeInterThreadMemory" then }
   // add to available list
-  aThreadMem.FNextThreadManager := FFirstFreedThreadMemory;
+  aThreadMem.FNextFreeThreadManager := FFirstFreedThreadMemory;
   FFirstFreedThreadMemory := aThreadMem;
 
   //process mem from other threads
@@ -422,6 +424,11 @@ begin
   end;
 end;
 
+function TGlobalMemManager.GetFirstThreadMemory: PThreadMemManager;
+begin
+  Result := FFirstThreadMemory;
+end;
+
 function TGlobalMemManager.GetMediumBlockMemory(aNewOwner: PMediumThreadManager): PMediumBlockMemory;
 begin
   Result := nil;
@@ -477,8 +484,9 @@ end;
 
 function TGlobalMemManager.GetNewThreadManager: PThreadMemManager;
 begin
-  Result := nil;
+  //Result := nil;
 
+  //reuse?
   if FFirstFreedThreadMemory <> nil then
   begin
     ThreadLock;
@@ -486,11 +494,31 @@ begin
     Result := FFirstFreedThreadMemory;
     if Result <> nil then
     begin
-      FFirstFreedThreadMemory   := Result.FNextThreadManager;
-      Result.FNextThreadManager := nil;
+      FFirstFreedThreadMemory       := Result.FNextFreeThreadManager;
+      Result.FNextFreeThreadManager := nil;
       Result.Reset;
     end;
 
+    ThreadUnLock;
+  end
+  else
+  //create new one
+  begin
+    Result := VirtualAlloc( nil,
+                            //64 * 1024,
+                            SizeOf(TThreadMemManager),
+                            MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+                            PAGE_READWRITE);
+    Result.Init;
+
+    ThreadLock;
+    if FFirstThreadMemory = nil then
+      FFirstThreadMemory := Result
+    else
+    begin
+      Result.FNextThreadManager := FFirstThreadMemory;
+      FFirstThreadMemory := Result;
+    end;
     ThreadUnLock;
   end;
 end;
@@ -534,7 +562,7 @@ begin
       begin
         if tm1.IsMemoryFromOtherThreadsPresent then
           tm1.ProcessFreedMemFromOtherThreads(False);
-        tm1 := tm1.FNextThreadManager;
+        tm1 := tm1.FNextFreeThreadManager;
       end;
     end;
 

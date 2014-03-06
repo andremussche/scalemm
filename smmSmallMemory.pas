@@ -5,16 +5,7 @@ interface
 {$Include smmOptions.inc}
 
 uses
-  smmTypes;
-
-const
-  /// alloc memory blocks with 64 memory items each time
-  //  64 = 1 shl 6, therefore any multiplication compiles into nice shl opcode
-  C_ARRAYSIZE         = 32;  //32 instead of 64 -> smaller overhead
-  /// Maximum index of 256 bytes granularity Small blocks
-  MAX_SMALLMEMBLOCK   = 8;
-  /// 0 - 2048 bytes
-  C_MAX_SMALLMEM_SIZE = MAX_SMALLMEMBLOCK * 256; //=2048;
+  smmTypes, smmStatistics;
 
 type
   PSmallMemHeader        = ^TSmallMemHeader;
@@ -148,6 +139,7 @@ type
     procedure FreeBlockMemory;
 
     procedure CheckMem(aDirection: TScanDirection = sdBoth);
+    procedure DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PSmallMemBlockListStats);
   end;
 
   /// memory block list
@@ -179,6 +171,7 @@ type
     function  GetBlockSize: Integer;
 
     procedure CheckMem;
+    procedure DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PSmallMemBlockListStats);
   end;
 
   /// handles per-thread memory managment
@@ -219,6 +212,7 @@ type
 
     procedure CheckAllMem;
     procedure CheckMem(aMemory: Pointer);
+    procedure DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PThreadMemManagerStats);
 
     function GetMem(aSize: NativeUInt): Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
     function FreeMem(aMemory: Pointer; aRecursive: Boolean = false): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
@@ -348,6 +342,30 @@ begin
     if FNextFreedMemBlock <> nil then
         FNextFreedMemBlock.CheckMem(sdNone);
   end;
+end;
+
+procedure TSmallMemBlock.DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PSmallMemBlockListStats);
+begin
+  WriteToFile(aFile, '  - SmallBlock   @ ');
+  WriteNativeUIntToHexBuf(aFile, NativeUInt(@Self));
+  WriteToFile(aFile, ', used count: ');
+  WriteNativeUIntToStrBuf(aFile, FUsageCount);
+  WriteToFile(aFile, ', used size: ');
+  WriteNativeUIntToStrBuf(aFile, FUsageCount * OwnerList.FItemSize);
+  WriteToFile(aFile, ' - free count: ');
+  WriteNativeUIntToStrBuf(aFile, C_ARRAYSIZE - FUsageCount);
+  WriteToFile(aFile, ', free size: ');
+  WriteNativeUIntToStrBuf(aFile, (C_ARRAYSIZE - FUsageCount) * OwnerList.FItemSize);
+  WriteToFile(aFile, ' - total count: ');
+  WriteNativeUIntToStrBuf(aFile, C_ARRAYSIZE);
+  WriteToFile(aFile, ', total size: ');
+  WriteNativeUIntToStrBuf(aFile, C_ARRAYSIZE * OwnerList.FItemSize);
+  WriteToFile(aFile, #13#10);
+
+  Inc(aTotalStats.ArrayBlockCount);
+  Inc(aSingleStats.ArrayBlockCount);
+  Inc(aTotalStats.TotalUsageCount, FUsageCount);
+  Inc(aSingleStats.TotalUsageCount, FUsageCount);
 end;
 
 procedure TSmallMemBlock.FreeBlockMemory;
@@ -801,6 +819,30 @@ begin
     Assert(OwnerManager.OwnerThread.FThreadId = GetCurrentThreadId);
 end;
 
+procedure TSmallMemBlockList.DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PSmallMemBlockListStats);
+var next: PSmallMemBlock;
+begin
+  WriteToFile(aFile, '- SmallBlockList @ ');
+  WriteNativeUIntToHexBuf(aFile, NativeUInt(@Self));
+  WriteToFile(aFile, ', itemsize = ');
+  WriteNativeUIntToStrBuf(aFile, Self.FItemSize);
+  WriteToFile(aFile, ', memsize = ');
+  WriteNativeUIntToStrBuf(aFile, Self.GetBlockSize);
+  WriteToFile(aFile, #13#10);
+
+  aTotalStats.ItemSize  := FItemSize;
+  aSingleStats.ItemSize := FItemSize;
+  aSingleStats.ArrayBlockSize := GetBlockSize;
+  aSingleStats.ArrayBlockSize := GetBlockSize;
+
+  next := FFirstMemBlock;
+  while next <> nil do
+  begin
+    next.DumpToFile(aFile, aTotalStats, aSingleStats);
+    next := next.FNextMemBlock;
+  end;
+end;
+
 function TSmallMemBlockList.GetBlockSize: Integer;
 begin
   Result := SizeOf(TSmallMemBlock) +
@@ -878,6 +920,22 @@ begin
   ph.CheckMem;
   Assert(ph.OwnerBlock <> nil);
   ph.OwnerBlock.CheckMem(sdBoth);
+end;
+
+procedure TSmallMemThreadManager.DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PThreadMemManagerStats);
+var
+  i: Integer;
+begin
+  WriteToFile(aFile, 'TSmallMemThreadManager'#13#10);
+
+  for i := Low(Self.FMiniMemoryBlocks) to High(Self.FMiniMemoryBlocks) do
+    FMiniMemoryBlocks[i].DumpToFile(aFile,
+      @aTotalStats.SmallMemoryStats.FMiniMemoryBlocks[i],
+      @aSingleStats.SmallMemoryStats.FMiniMemoryBlocks[i]);
+  for i := Low(Self.FSmallMemoryBlocks) to High(Self.FSmallMemoryBlocks) do
+    FSmallMemoryBlocks[i].DumpToFile(aFile,
+      @aTotalStats.SmallMemoryStats.FSmallMemoryBlocks[i],
+      @aSingleStats.SmallMemoryStats.FSmallMemoryBlocks[i]);
 end;
 
 function TSmallMemThreadManager.FreeMem(aMemory: Pointer; aRecursive: Boolean): NativeInt;
