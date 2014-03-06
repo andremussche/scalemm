@@ -5,7 +5,7 @@ interface
 {$Include smmOptions.inc}
 
 uses
-  smmTypes;
+  smmTypes, smmStatistics;
 
 type
   PMediumHeader        = ^TMediumHeader;
@@ -120,6 +120,7 @@ type
     procedure Reset;
 
     procedure ReleaseAllFreeMem;
+    procedure DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PThreadMemManagerStats);
 
     procedure CheckMem(aMemory: Pointer = nil);
     procedure CheckMemArray;
@@ -395,6 +396,104 @@ begin
       Assert(pnext.OwnerThread.FThreadId = GetCurrentThreadID);
 
     pnext := pnext.NextFreeItem;
+  end;
+end;
+
+procedure TMediumThreadManager.DumpToFile(aFile: THandle; aTotalStats,
+  aSingleStats: PThreadMemManagerStats);
+var
+  block: PMediumBlockMemory;
+  mem: PMediumHeader;
+  iArrayPos, iCountFree, iCountAlloc, iSizeFree, iSizeAlloc: Integer;
+begin
+  WriteToFile(aFile, 'TMediumThreadManager'#13#10);
+
+  block := Self.FFirstBlock;
+  while block <> nil do
+  begin
+    aTotalStats.MediumMemoryStats.BlockSize  := block.Size;
+    aSingleStats.MediumMemoryStats.BlockSize := block.Size;
+    Inc(aTotalStats.MediumMemoryStats.BlockCount);
+    Inc(aSingleStats.MediumMemoryStats.BlockCount);
+
+    WriteToFile(aFile, '- MediumBlock    @ ');
+    WriteNativeUIntToHexBuf(aFile, NativeUInt(block));
+    WriteToFile(aFile, ', size: ');
+    WriteNativeUIntToStrBuf(aFile, block.Size);
+    WriteToFile(aFile, #13#10);
+
+    iCountFree := 0;
+    iCountAlloc := 0;
+    iSizeFree := 0;
+    iSizeAlloc := 0;
+
+    mem := block.GetFirstMem;
+    //process all mem
+    while mem <> nil do
+    begin
+      if mem.Size <= 0 then
+      begin
+        mem := mem.NextMem;
+        Continue;
+      end;
+
+      if mem.Size < C_MAX_MEDIUMMEM_SIZE then  //smaller than 1mb?
+        iArrayPos := BitScanLast(                    //get highest bit
+                                  mem.Size shr 4)    //div 16 so 1mb fits in 16bit
+      else
+        iArrayPos := 16;
+
+      if aTotalStats.MediumMemoryStats.MemBySize[iArrayPos].Size = 0 then
+        aTotalStats.MediumMemoryStats.MemBySize[iArrayPos].Size := (1 shl iArrayPos) shl 4;
+      if aSingleStats.MediumMemoryStats.MemBySize[iArrayPos].Size = 0 then
+        aSingleStats.MediumMemoryStats.MemBySize[iArrayPos].Size := (1 shl iArrayPos) shl 4;
+
+      WriteToFile(aFile, '  - Medium item  @ ');
+      WriteNativeUIntToHexBuf(aFile, NativeUInt(mem));
+
+      //free?
+      if (mem.Size and 1 <> 0) then
+      begin
+        Inc(aTotalStats.MediumMemoryStats.TotalFree, mem.Size);
+        Inc(aSingleStats.MediumMemoryStats.TotalFree, mem.Size);
+        Inc(aTotalStats.MediumMemoryStats.MemBySize[iArrayPos].Free);
+        Inc(aSingleStats.MediumMemoryStats.MemBySize[iArrayPos].Free);
+        WriteToFile(aFile, ', FREE ');
+        Inc(iCountFree);
+        Inc(iSizeFree, mem.Size);
+      end
+      else
+      begin
+        Inc(aTotalStats.MediumMemoryStats.TotalUsed, mem.Size);
+        Inc(aSingleStats.MediumMemoryStats.TotalUsed, mem.Size);
+        Inc(aTotalStats.MediumMemoryStats.MemBySize[iArrayPos].Used);
+        Inc(aSingleStats.MediumMemoryStats.MemBySize[iArrayPos].Used);
+        WriteToFile(aFile, ', Used ');
+        Inc(iCountAlloc);
+        Inc(iSizeAlloc, mem.Size);
+      end;
+      WriteToFile(aFile, ', size: ');
+      WriteNativeUIntToStrBuf(aFile, mem.Size);
+      WriteToFile(aFile, #13#10);
+
+      mem := mem.NextMem;
+    end;
+
+    WriteToFile(aFile, '- Used count: ');
+    WriteNativeUIntToStrBuf(aFile, iCountAlloc);
+    WriteToFile(aFile, ', used size: ');
+    WriteNativeUIntToStrBuf(aFile, iSizeAlloc);
+    WriteToFile(aFile, ' - free count: ');
+    WriteNativeUIntToStrBuf(aFile, iCountFree);
+    WriteToFile(aFile, ', free size: ');
+    WriteNativeUIntToStrBuf(aFile, iSizeFree);
+    WriteToFile(aFile, ' - total count: ');
+    WriteNativeUIntToStrBuf(aFile, iCountFree+iCountAlloc);
+    WriteToFile(aFile, ', total size: ');
+    WriteNativeUIntToStrBuf(aFile, iSizeFree+iSizeAlloc);
+    WriteToFile(aFile, #13#10);
+
+    block := block.NextBlock;
   end;
 end;
 

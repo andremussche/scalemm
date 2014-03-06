@@ -133,6 +133,15 @@ const
 
   procedure GetSystemInfo(var lpSystemInfo: TSystemInfo); stdcall; external kernel32 name 'GetSystemInfo';
 
+  function  WriteFile(hFile: THandle; const Buffer; nNumberOfBytesToWrite: DWORD;
+                      var lpNumberOfBytesWritten: DWORD; lpOverlapped: pointer): BOOL; stdcall; external kernel32 name 'WriteFile';
+  procedure WriteToFile(hFile: THandle; const aString: AnsiString);
+
+  //from FastMM4.pas
+  procedure WriteNativeUIntToStrBuf(hFile: THandle; ANum: NativeUInt);
+  procedure WriteNativeUIntToHexBuf(hFile: THandle; ANum: NativeUInt; aDigits: Integer = 8);
+
+
 implementation
 
 //uses
@@ -478,5 +487,79 @@ asm // eax=source edx=dest ecx=count
 end;
 {$ifend}
 {$endif PURE_PASCAL}
+
+procedure WriteToFile(hFile: THandle; const aString: AnsiString);
+var icount: DWORD;
+begin
+  icount := Length(aString);
+  WriteFile(hFile, aString[1], icount, icount, nil);
+end;
+
+{Converts an unsigned integer to string at the buffer location, returning the
+ new buffer position. Note: The 32-bit asm version only supports numbers up to
+ 2^31 - 1.}
+procedure WriteNativeUIntToStrBuf(hFile: THandle; ANum: NativeUInt);
+const
+  MaxDigits = 20 + (20 div 3);
+var
+  LDigitBuffer: array[0..MaxDigits - 1] of AnsiChar;
+  LCount: Cardinal;
+  LDigit: NativeUInt;
+begin
+  {Generate the digits in the local buffer}
+  LCount := 0;
+  repeat
+    if (LCount = 3) or (LCount = 7) or (LCount = 11)  then
+    begin
+      Inc(LCount);
+      LDigitBuffer[MaxDigits - LCount] := '.';
+    end;
+    LDigit := ANum;
+    ANum   := ANum div 10;
+    LDigit := LDigit - ANum * 10;
+    Inc(LCount);
+    LDigitBuffer[MaxDigits - LCount] := AnsiChar(Ord('0') + LDigit);
+  until ANum = 0;
+
+  WriteFile(hFile, LDigitBuffer[MaxDigits - LCount], LCount, LCount, nil);
+  //{Copy the digits to the output buffer and advance it}
+  //System.Move(LDigitBuffer[MaxDigits - LCount], APBuffer^, LCount);
+  //Result := APBuffer + LCount;
+end;
+
+{Converts an unsigned integer to a hexadecimal string at the buffer location,
+ returning the new buffer position.}
+procedure WriteNativeUIntToHexBuf(hFile: THandle; ANum: NativeUInt; aDigits: Integer = 8);
+const
+  MaxDigits = 16;
+  {Hexadecimal characters}
+  HexTable: array[0..15] of AnsiChar = ('0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
+var
+  LDigitBuffer: array[0..MaxDigits - 1] of AnsiChar;
+  LCount: Cardinal;
+  LDigit: NativeUInt;
+begin
+  {Generate the digits in the local buffer}
+  LCount := 0;
+  repeat
+    LDigit := ANum;
+    ANum := ANum div 16;
+    LDigit := LDigit - ANum * 16;
+    Inc(LCount);
+    LDigitBuffer[MaxDigits - LCount] := HexTable[LDigit];
+  until ANum = 0;
+
+  while LCount < aDigits do
+  begin
+    Inc(LCount);
+    LDigitBuffer[MaxDigits - LCount] := ' ';
+  end;
+
+  WriteFile(hFile, LDigitBuffer[MaxDigits - LCount], LCount, LCount, nil);
+//  {Copy the digits to the output buffer and advance it}
+//  System.Move(LDigitBuffer[MaxDigits - LCount], APBuffer^, LCount);
+//  Result := APBuffer + LCount;
+end;
 
 end.

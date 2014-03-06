@@ -1,4 +1,4 @@
-// fast scaling memory manager for Delphi
+﻿// fast scaling memory manager for Delphi
 // licensed under a MPL/GPL/LGPL tri-license; version 0.1
 unit ScaleMM2;
 
@@ -146,6 +146,7 @@ type
 
     // link to list of items to reuse after thread terminated
     FNextThreadManager: PThreadMemManager;
+    FNextFreeThreadManager: PThreadMemManager;
 
     //procedure AddFreeMemToOwnerThread(aFirstMem, aLastMem: PBaseFreeMemHeader);
   public
@@ -187,6 +188,7 @@ type
 
     procedure ReleaseAllFreeMem;
     procedure CheckMem(aMemory: Pointer);
+    procedure DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PThreadMemManagerStats);
 
     function  IsMemoryFromOtherThreadsPresent: Boolean;
     procedure ProcessFreedMemFromOtherThreads(aSkipSmall: boolean);
@@ -284,16 +286,16 @@ end;
 function CreateMemoryManager: PThreadMemManager;
 begin
   Result := smmGlobal.GlobalManager.GetNewThreadManager;
-  if Result = nil then
-  begin
-    Result := VirtualAlloc( nil,
-                            //64 * 1024,
-                            SizeOf(TThreadMemManager),
-                            MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
-                            PAGE_READWRITE);
-    Result.Init;
-  end
-  else
+//  if Result = nil then
+//  begin
+//    Result := VirtualAlloc( nil,
+//                            64 * 1024,
+//                            SizeOf(TThreadMemManager),
+//                            MEM_COMMIT {$ifdef AlwaysAllocateTopDown} or MEM_TOP_DOWN{$endif},
+//                            PAGE_READWRITE);
+//    Result.Init;
+//  end
+//  else
   begin
     Result.FThreadId := GetCurrentThreadId;
     Result.FThreadTerminated := False;
@@ -422,7 +424,7 @@ begin
   FThreadId := 0;
   FThreadTerminated := True;
   //FOtherThreadFreedMemory := nil;
-  FNextThreadManager := nil;
+  FNextFreeThreadManager := nil;
 
   FSmallMemManager.Reset;
   FMediumMemManager.Reset;
@@ -569,6 +571,14 @@ begin
     ot := pm.OwnerBlock.OwnerManager;
     PThreadMemManager(ot.OwnerThread).FSmallMemManager.CheckMem(aMemory);
   end;
+end;
+
+procedure TThreadMemManager.DumpToFile(aFile: THandle; aTotalStats,
+  aSingleStats: PThreadMemManagerStats);
+begin
+  FSmallMemManager.DumpToFile(aFile, aTotalStats, aSingleStats);
+  FMediumMemManager.DumpToFile(aFile, aTotalStats, aSingleStats);
+  FLargeMemManager.DumpToFile(aFile, aTotalStats, aSingleStats);
 end;
 
 function TThreadMemManager.FreeMem(aMemory: Pointer): NativeInt;
