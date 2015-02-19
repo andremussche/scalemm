@@ -1515,7 +1515,8 @@ begin
         else
         begin
           //remove from linked list
-          nextfree.PrevFreeItem.NextFreeItem := nextfree.NextFreeItem;
+          if nextfree.PrevFreeItem <> nil then
+            nextfree.PrevFreeItem.NextFreeItem := nextfree.NextFreeItem;
           if nextfree.NextFreeItem <> nil then
             nextfree.NextFreeItem.PrevFreeItem := nextfree.PrevFreeItem;
         end;
