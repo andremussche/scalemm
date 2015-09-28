@@ -1,4 +1,4 @@
-﻿// fast scaling memory manager for Delphi
+// fast scaling memory manager for Delphi
 // licensed under a MPL/GPL/LGPL tri-license; version 0.1
 unit ScaleMM2;
 
@@ -13,7 +13,7 @@ Description:
 
 Homepage:
   http://code.google.com/p/scalemm
-  by André Mussche (andre.mussche@gmail.com)
+  by Andr� Mussche (andre.mussche@gmail.com)
 
 Usage:
  - Place ScaleMM2 as the very first unit under the "uses" clause of your
@@ -108,7 +108,7 @@ Change log:
  Version 2.2 (6-8-2013)
  - make it possible to use more than 2gb in 32bit (thanks to Maxx xxaM)
  	{$SetPEFlags IMAGE_FILE_LARGE_ADDRESS_AWARE
- - rare AV with interthread (small) memory and heavy load (Павел Пикулин)
+ - rare AV with interthread (small) memory and heavy load (pdeusp)
  Version 2.3 (22-10-2013)
  - interthread memory was not always released to Windows, giving out of memory (thanks to Maxx xxaM)
  - AV when doing realloc or free on nil pointer (thanks to qiu.songlin)

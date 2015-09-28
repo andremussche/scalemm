@@ -13,7 +13,7 @@ type
     //total memory allocated, header overhead, unused size overhead, etc
   end;
 
-  TSmallMemBlockListStats = record
+  TSmallMemBlockListStats = object
     //size of memory items (32, 64 etc bytes)
     ItemSize : NativeUInt;
     //total size of one array block
@@ -33,7 +33,7 @@ type
   end;
   PSmallMemBlockListStats = ^TSmallMemBlockListStats;
 
-  TSmallMemThreadManagerStats = record
+  TSmallMemThreadManagerStats = object
     /// array with memory per block size of 32 bytes (mini blocks)
     // - i.e. 32, 64, 96, 128, 160, 192, 224 bytes
     FMiniMemoryBlocks: array[0..6] of TSmallMemBlockListStats;
@@ -49,7 +49,7 @@ type
     procedure DumpToFile(aFile: THandle);
   end;
 
-  TMediumMemThreadManagerStats = record
+  TMediumMemThreadManagerStats = object
     MemBySize: array[0..16] of record
       Size,
       Used, Free: NativeUInt;
@@ -63,13 +63,13 @@ type
     procedure DumpToFile(aFile: THandle);
   end;
 
-  TLargeMemThreadManagerStats = record
+  TLargeMemThreadManagerStats = object
     AllocCount, AllocSize: NativeUInt;
 
     procedure DumpToFile(aFile: THandle);
   end;
 
-  TThreadMemManagerStats = record
+  TThreadMemManagerStats = object
     SmallMemoryStats: TSmallMemThreadManagerStats;
     MediumMemoryStats: TMediumMemThreadManagerStats;
     LargeMemoryStats: TLargeMemThreadManagerStats;
