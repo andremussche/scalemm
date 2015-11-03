@@ -537,7 +537,8 @@ const
     '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
 var
   LDigitBuffer: array[0..MaxDigits - 1] of AnsiChar;
-  LCount: Cardinal;
+  LCount: Integer;
+  LWritten: Cardinal;
   LDigit: NativeUInt;
 begin
   {Generate the digits in the local buffer}
@@ -556,7 +557,7 @@ begin
     LDigitBuffer[MaxDigits - LCount] := ' ';
   end;
 
-  WriteFile(hFile, LDigitBuffer[MaxDigits - LCount], LCount, LCount, nil);
+  WriteFile(hFile, LDigitBuffer[MaxDigits - LCount], LCount, LWritten, nil);
 //  {Copy the digits to the output buffer and advance it}
 //  System.Move(LDigitBuffer[MaxDigits - LCount], APBuffer^, LCount);
 //  Result := APBuffer + LCount;
