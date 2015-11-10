@@ -35,6 +35,13 @@ type
     Size        : NativeUInt;
     //PreviousMem,
     //NextMem: PLargeBlockMemory;
+
+    {$IFDEF Align16Bytes}
+      {$ifndef CPUX64}
+      Filer1: Pointer;  // 16 bytes aligned for 32 bit compiler
+      Filer2: Pointer;
+      {$endif}
+    {$ENDIF}
   end;
 
   TLargeThreadManagerOffset = packed
@@ -207,6 +214,18 @@ begin
 
   Result := Pointer(NativeUInt(pheader) + SizeOf(TLargeHeader));
 
+  {$IFDEF SCALEMM_MAGICTEST}
+  Assert(pheader.Magic1 = 0);  //not in use!
+  pheader.Magic1 := 123456789; //mark in use
+  {$ENDIF}
+  Assert( NativeUInt(Result) AND 3 = 0);
+  {$IFDEF Align8Bytes}
+  Assert( NativeUInt(Result) AND 7 = 0);
+  {$ENDIF}
+  {$IFDEF Align16Bytes}
+  Assert( NativeUInt(Result) AND 15 = 0);
+  {$ENDIF}
+
   Inc(FAllocCount);
   Inc(FAllocSize, pblock.Size);
   {
@@ -288,9 +307,11 @@ end;
 initialization
   {$IFDEF Align8Bytes}
   Assert( SizeOf(TLargeHeader) AND 7 = 0);
+  Assert( SizeOf(TLargeBlockMemory) AND 7 = 0);
   {$ENDIF}
   {$IFDEF Align16Bytes}
   Assert( SizeOf(TLargeHeader) AND 15 = 0);
+  Assert( SizeOf(TLargeBlockMemory) AND 15 = 0);
   {$ENDIF}
   Assert( SizeOf(TLargeHeader) = SizeOf(TBaseMemHeader) );
 

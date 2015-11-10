@@ -117,6 +117,8 @@ Change log:
  - interthread memory fixes (stability)
  Version 2.4.1 (16-12-2013)
  - optimize.move included (much faster Move() function due to SSE3)
+ Version 2.5 (10-11-2015)
+ - rare AV fixed in 64bit with high load due to misalignment
 }
 
 interface
@@ -150,20 +152,18 @@ type
 
     //procedure AddFreeMemToOwnerThread(aFirstMem, aLastMem: PBaseFreeMemHeader);
   public
-  (*
     {$IFDEF Align8Bytes}
-      {$ifndef CPUX64}
+      {$ifndef CPUX64}    //32bit
       Filer1: Int32;
       {$endif}
     {$ENDIF}
-  *)
     {$IFDEF Align16Bytes}
-      {$ifndef CPUX64}
+      {$ifndef CPUX64}    //32bit
       Filer1: Pointer;
-      Filer2: Pointer;
-      {$else CPUX64}
+      //Filer2: Pointer;
+      {$else CPUX64}      //64bit
       Filer1: Pointer;
-      Filer2: Pointer;
+      //Filer2: Pointer;
       {$endif}
     {$ENDIF}
 
@@ -176,6 +176,19 @@ type
     {$ENDIF}
     {$IFDEF SCALEMM_LOGGING}
     FLogging: TMemoryLogging;
+    {$ENDIF}
+
+    {$IFDEF Align8Bytes}
+      {$ifndef CPUX64}    //32bit
+      Filer_1: Int32;
+      {$endif}
+    {$ENDIF}
+    {$IFDEF Align16Bytes}
+      {$ifndef CPUX64}    //32bit
+      Filer_1: Pointer;
+      {$else CPUX64}      //64bit
+      Filer_1: Pointer;
+      {$endif}
     {$ENDIF}
   protected
     procedure FreeMemOfOtherThread(aMemory: PBaseMemHeader);
@@ -1212,6 +1225,18 @@ end;
 
 initialization
   ScaleMMInstall;
+
+  {$IFDEF Align8Bytes}
+    {$IF (SizeOf(TThreadMemManager) AND 7 <> 0) }
+        {$MESSAGE ERROR 'not aligned'}
+    {$IFEND}
+  {$ENDIF}
+
+  {$IFDEF Align16Bytes}
+    {$IF (SizeOf(TThreadMemManager) AND 15 <> 0) }
+        {$MESSAGE ERROR 'not aligned'}
+    {$IFEND}
+  {$ENDIF}
 
 finalization
   {$if CompilerVersion < 23}
