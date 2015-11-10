@@ -9,8 +9,8 @@ I failed on the first goal (ScaleMM2 is not easy to understand, because MM's are
 
 # Release version 2 is stable
 
-The v2 version is stable now, but not perfect:
-* 18-12-2013: [Version 2.4.1](https://scalemm.googlecode.com/files/ScaleMM_v2_4_1.zip) released: lots of interthread memory fixes + SSE3 move included
+The v2 version is stable now:
+* 10-11-2015: Version 2.5, rare AV fixed in 64bit with high load due to misalignment
 * Todo:
   * does not check and report memory leaks
   * more optimizations + code cleanup needed
