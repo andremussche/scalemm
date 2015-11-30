@@ -214,9 +214,9 @@ type
     procedure CheckMem(aMemory: Pointer);
     procedure DumpToFile(aFile: THandle; aTotalStats, aSingleStats: PThreadMemManagerStats);
 
-    function GetMem(aSize: NativeUInt): Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
-    function FreeMem(aMemory: Pointer; aRecursive: Boolean = false): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
-    function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; //{$ifdef HASINLINE}inline;{$ENDIF}
+    function GetMem(aSize: NativeUInt): Pointer;                                  {$ifdef HASINLINE}inline;{$ENDIF}
+    function FreeMem(aMemory: Pointer; aRecursive: Boolean = false): NativeInt;   {$ifdef HASINLINE}inline;{$ENDIF}
+    function ReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer;            //{$ifdef HASINLINE}inline;{$ENDIF}
   end;
 
 implementation
@@ -231,7 +231,9 @@ uses
 procedure TSmallMemHeader.CheckMem;
 begin
   {$IFDEF SCALEMM_DEBUG}
-  if Self.OwnerBlock.OwnerThreadId > 1 then
+  if (Self.OwnerBlock.OwnerThreadId > 1) and
+     not TScaleMMBackGroundThread.GarbageCollectionActive
+  then
     Assert(Self.OwnerBlock.OwnerThreadId = GetCurrentThreadId);
   {$ENDIF}
 
@@ -250,7 +252,9 @@ end;
 procedure TSmallMemBlock.CheckMem(aDirection: TScanDirection = sdBoth);
 begin
   {$IFDEF SCALEMM_DEBUG}
-  if (Self.OwnerThreadId > 1) then // and (Self.OwnerThreadId < MaxInt) then
+  if (Self.OwnerThreadId > 1) and  // and (Self.OwnerThreadId < MaxInt) then
+     (Self.OwnerManager.OwnerThread.FThreadId > 1) and
+     not TScaleMMBackGroundThread.GarbageCollectionActive then
   begin
     Assert(Self.OwnerThreadId = GetCurrentThreadId);
     Assert(Self.OwnerManager.OwnerThread.FThreadId = GetCurrentThreadId);
@@ -269,6 +273,11 @@ begin
     Assert(OwnerManager <> nil);
     Assert(OwnerManager.OwnerThread <> nil);
     Assert(OwnerThreadId = OwnerManager.OwnerThread.FThreadId);
+  end
+  else if TScaleMMBackGroundThread.GarbageCollectionActive then
+  begin
+    Assert(OwnerManager <> nil);
+    Assert(OwnerManager.OwnerThread <> nil);
   end
   else
   begin
@@ -422,7 +431,10 @@ begin
   OwnerManager  := nil;
 
   //release medium block
+  PThreadMemManager(OwnerManager.OwnerThread).FMediumMemManager.FreeMem(@Self);
+  {
   Scale_FreeMem(@Self);
+  }
 
   {$IFDEF SCALEMM_DEBUG}
   pOwnerList.CheckMem;
@@ -811,7 +823,8 @@ begin
   Assert(OwnerManager <> nil);
   Assert(OwnerManager.OwnerThread <> nil);
   //Assert(not OwnerManager.OwnerThread.FThreadTerminated);  can occur when thread is freed (TThreadMemManager.ProcessFreedMemFromOtherThreads)
-  if OwnerManager.OwnerThread.FThreadId = 1 then
+  if (OwnerManager.OwnerThread.FThreadId = 1) or
+     TScaleMMBackGroundThread.GarbageCollectionActive then
   begin
     //is global mem
   end
@@ -1253,7 +1266,8 @@ var
         //if allmem <> nil then
         //  allmem.Lock;
         // dispose
-        Assert(Self.OwnerThread.FThreadId = GetCurrentThreadId);
+        if not TScaleMMBackGroundThread.GarbageCollectionActive then
+          Assert(Self.OwnerThread.FThreadId = GetCurrentThreadId);
         tempmem.UnLock;
         PThreadMemManager(Self.OwnerThread).FMediumMemManager.FreeMemOnlyMarked(tempmem);
 //        PThreadMemManager(Self.OwnerThread).FMediumMemManager.FreeMemNoCheck(tempmem);
@@ -1367,7 +1381,8 @@ var
   end;
 
 begin
-  Assert(Self.OwnerThread.FThreadId = GetCurrentThreadId);
+  if not TScaleMMBackGroundThread.GarbageCollectionActive then
+    Assert(Self.OwnerThread.FThreadId = GetCurrentThreadId);
   for i := Low(Self.FMiniMemoryBlocks) to High(Self.FMiniMemoryBlocks) do
     __ProcessBlockMem( @FMiniMemoryBlocks[i],   @aOtherManager.FMiniMemoryBlocks[i]);
   for i := Low(Self.FSmallMemoryBlocks) to High(Self.FSmallMemoryBlocks) do
@@ -1420,7 +1435,7 @@ begin
       if aSize <= C_MAX_SMALLMEM_SIZE then   //1 till 2048
         Result := Self.GetMem(aSize + SmallBlockUpsizeAdder)
       else  //bigger mem?
-        Result := PThreadMemManager(Self.OwnerThread).GetMem(aSize + SmallBlockUpsizeAdder); // new mem
+        Result := PThreadMemManager(Self.OwnerThread).FastGetMem(aSize + SmallBlockUpsizeAdder); // new mem
       Move(aMemory^, Result^, Size); // copy (use smaller old size)
       //Self.FreeMem(aMemory); // free old mem
       ph.OwnerBlock.FreeMem(ph);

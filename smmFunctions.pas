@@ -71,6 +71,10 @@ const
   FILE_MAP_WRITE = 2;
   FILE_MAP_READ  = 4;
   INVALID_HANDLE_VALUE = THandle(-1);
+  DUPLICATE_SAME_ACCESS = $00000002;
+  STATUS_WAIT_0 = $00000000;
+  WAIT_FAILED   = DWORD($FFFFFFFF);
+  WAIT_OBJECT_0 = ((STATUS_WAIT_0 ) + 0 );
 
   {$IFnDEF PURE_PASCAL}
   function  TlsAlloc: DWORD; stdcall; external kernel32 name 'TlsAlloc';
@@ -88,7 +92,7 @@ const
   function  GetCurrentProcess: THandle; stdcall; external kernel32 name 'GetCurrentProcess';
   function  GetCurrentProcessId: DWORD; stdcall; external kernel32 name 'GetCurrentProcessId';
   function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
-//  function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
+  function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
 
   function  OpenFileMappingA(dwDesiredAccess: DWORD; bInheritHandle: BOOL; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'OpenFileMappingA';
@@ -96,6 +100,11 @@ const
   function  MapViewOfFile(hFileMappingObject: THandle; dwDesiredAccess: DWORD; dwFileOffsetHigh, dwFileOffsetLow, dwNumberOfBytesToMap: SIZE_T): Pointer; stdcall; external kernel32 name 'MapViewOfFile';
   function  UnmapViewOfFile(lpBaseAddress: Pointer): BOOL; stdcall; external kernel32 name 'UnmapViewOfFile';
   function  CloseHandle(hObject: THandle): BOOL; stdcall; external kernel32 name 'CloseHandle';
+  function  DuplicateHandle(hSourceProcessHandle, hSourceHandle, hTargetProcessHandle: THandle;
+              lpTargetHandle: Pointer; dwDesiredAccess: DWORD;
+              bInheritHandle: BOOL; dwOptions: DWORD): BOOL; stdcall; external kernel32 name 'DuplicateHandle';
+
+  function WaitForSingleObject(hHandle: THandle; dwMilliseconds: DWORD): DWORD; stdcall; external kernel32 name 'WaitForSingleObject';
 
   function  VirtualAlloc(lpvAddress: Pointer; dwSize: SIZE_T; flAllocationType, flProtect: DWORD): Pointer; stdcall; external kernel32 name 'VirtualAlloc';
   function  VirtualFree(lpAddress: Pointer; dwSize: SIZE_T; dwFreeType: DWORD): BOOL; stdcall; external kernel32 name 'VirtualFree';

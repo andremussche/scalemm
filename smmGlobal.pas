@@ -61,6 +61,16 @@ type
   end;
 //{$A+}?
 
+  TScaleMMBackGroundThread = class
+  protected
+    FHandle: THandle;
+    procedure Execute;
+  public
+    constructor Create;
+
+    class function GarbageCollectionActive: boolean;
+  end;
+
 var
   GlobalManager: TGlobalMemManager;
 
@@ -208,7 +218,7 @@ var
 //  freeheader: PMediumHeaderExt;
 begin
   //keep max 10 blocks in buffer
-  if FFreeBlockCount >= 10 then
+  if FFreeBlockCount >= 0 then
   begin
     firstmem := PMediumHeader( NativeUInt(aBlockMem) + SizeOf(TMediumBlockMemory));
     //is free mem?
@@ -536,6 +546,8 @@ begin
                           PAGE_READWRITE);
   FGlobalThreadMemory.Init;
   FGlobalThreadMemory.FThreadId := 1;
+
+  TScaleMMBackGroundThread.Create;
 end;
 
 procedure TGlobalMemManager.ProcessFreedMemoryFromOtherThreads;
@@ -641,6 +653,72 @@ begin
     //  Assert(False);
     FThreadLock := 0;
   end;
+end;
+
+{ TScaleMMBackGroundThread }
+
+function ThreadProc(const aThread: TScaleMMBackGroundThread): Integer;
+var
+  FreeThread: Boolean;
+begin
+  aThread.Execute;
+  EndThread(Result);
+end;
+
+constructor TScaleMMBackGroundThread.Create;
+//const
+//  CREATE_SUSPENDED                = $00000004;
+var
+  iThreadID: Cardinal;
+begin
+  FHandle := BeginThread(nil, 0, @ThreadProc, Pointer(Self), 0 {direct start}, iThreadID);
+end;
+
+threadvar
+  _GarbageCollectionActive: boolean;
+
+procedure TScaleMMBackGroundThread.Execute;
+var
+  threadmm: PThreadMemManager;
+  //iOldThreadId: Cardinal;
+begin
+  repeat
+    Sleep(5000);
+
+    GlobalManager.ThreadLock;
+    _GarbageCollectionActive := True;
+    try
+      threadmm := GlobalManager.GetFirstThreadMemory;
+      while threadmm <> nil do
+      begin
+        //thread is terminated or killed? at least our ScaleMM2.NewEndThread function is not called!
+        if WaitForSingleObject(threadmm.FThreadHandle, 0) = WAIT_OBJECT_0 then
+          GlobalManager.FreeThreadManager(threadmm);
+
+        if threadmm.IsMemoryFromOtherThreadsPresent and
+           threadmm.TryBusyLock then
+        try
+          //iOldThreadId := threadmm.FThreadId;
+          //threadmm.FThreadId := 1;
+          threadmm.ProcessFreedMemFromOtherThreads(False {everything});
+        finally
+          //threadmm.FThreadId := iOldThreadId;
+          threadmm.BusyUnLock;
+        end;
+
+        threadmm := threadmm.FNextThreadManager;
+      end;
+    finally
+      _GarbageCollectionActive := False;
+      GlobalManager.ThreadUnLock;
+    end;
+
+  until False;
+end;
+
+class function TScaleMMBackGroundThread.GarbageCollectionActive: boolean;
+begin
+  Result := _GarbageCollectionActive;
 end;
 
 end.

@@ -298,7 +298,7 @@ begin
   else
   //too much downscale
   begin
-    Result := PThreadMemManager(Self.OwnerThread).GetMem(iAllocSize); //possible "medium" or "small" mem!
+    Result := PThreadMemManager(Self.OwnerThread).FastGetMem(iAllocSize); //possible "medium" or "small" mem!
     Move(aMemory^, Result^, aSize); // copy (use smaller new size)
     Self.FreeMem(pblock);
   end;

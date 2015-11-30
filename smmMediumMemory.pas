@@ -392,7 +392,7 @@ begin
           Assert(pnext.NextFreeItem.PrevFreeItem = pnext);
     end;
 
-    if (pnext.OwnerThread <> nil) and (pnext.OwnerThread.FThreadId > 1) then
+    if (pnext.OwnerThread <> nil) and (pnext.OwnerThread.FThreadId > 1) and not TScaleMMBackGroundThread.GarbageCollectionActive then
       Assert(pnext.OwnerThread.FThreadId = GetCurrentThreadID);
 
     pnext := pnext.NextFreeItem;
@@ -1138,7 +1138,7 @@ var
 begin
   {$ifdef SCALEMM_DEBUG} try
   Assert(Self.OwnerThread.FThreadId >= 1);
-  if (OwnerThread <> nil) and (OwnerThread.FThreadId > 1) then
+  if (OwnerThread <> nil) and (OwnerThread.FThreadId > 1) and not TScaleMMBackGroundThread.GarbageCollectionActive then
     Assert(OwnerThread.FThreadId = GetCurrentThreadId);
   Assert(aHeader.OwnerThread.FThreadId = Self.OwnerThread.FThreadId);
   CheckMem();
@@ -1155,7 +1155,7 @@ begin
 
   //create remainder
   pheaderremainder := PMediumHeaderExt(aHeader);
-  if (OwnerThread <> nil) and (OwnerThread.FThreadId > 1) then
+  if (OwnerThread <> nil) and (OwnerThread.FThreadId > 1) and not TScaleMMBackGroundThread.GarbageCollectionActive then
     Assert(pheaderremainder.OwnerThread.FThreadId = GetCurrentThreadId);
   //next
   pnext            := PMediumHeaderExt(NativeUInt(pheaderremainder) + newsize);
@@ -1215,10 +1215,14 @@ begin
     begin
       {$IFDEF SCALEMM_MAGICTEST}
       Assert( (NextFreeItem = nil) or (NextFreeItem.Magic1 = 0) ); //must be free
-      Assert(pnext.OwnerThread.FThreadId = GetCurrentThreadId);
+      if not TScaleMMBackGroundThread.GarbageCollectionActive then
+        Assert(pnext.OwnerThread.FThreadId = GetCurrentThreadId);
       {$ENDIF}
-      Assert( (pnext.PrevFreeItem=nil) or (pnext.PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
-      Assert( (pnext.NextFreeItem=nil) or (pnext.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
+      if not TScaleMMBackGroundThread.GarbageCollectionActive then
+      begin
+        Assert( (pnext.PrevFreeItem=nil) or (pnext.PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
+        Assert( (pnext.NextFreeItem=nil) or (pnext.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
+      end;
 
       if {next.}PrevFreeItem = nil then {first?}
       begin
@@ -1239,8 +1243,11 @@ begin
           {next.}NextFreeItem.PrevFreeItem := {next.}PrevFreeItem;
       end;
 
-      Assert( (pnext.PrevFreeItem=nil) or (pnext.PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
-      Assert( (pnext.NextFreeItem=nil) or (pnext.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
+      if not TScaleMMBackGroundThread.GarbageCollectionActive then
+      begin
+        Assert( (pnext.PrevFreeItem=nil) or (pnext.PrevFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
+        Assert( (pnext.NextFreeItem=nil) or (pnext.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId));
+      end;
       {$IFDEF SCALEMM_DEBUG}
       CheckMemArray;
       CheckSingleSizeFreeMemList(pnext, False);
@@ -1268,7 +1275,7 @@ begin
   {$IFDEF SCALEMM_MAGICTEST}
   pheaderremainder.Magic1 := 0;//free
   {$ENDIF}
-  pheaderremainder.Size              := newsize;
+  pheaderremainder.Size   := newsize;
 
   if newsize < C_MAX_MEDIUMMEM_SIZE then  //smaller than 1mb?
   begin
@@ -1338,8 +1345,9 @@ begin
     {pheaderremainder.}PrevFreeItem  := nil; //we are the first
   end;
   Assert( (pheaderremainder.NextFreeItem=nil) or
-          ((pheaderremainder.NextFreeItem.OwnerThread.FThreadId = 1) or
-           (pheaderremainder.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId)));
+          ( (pheaderremainder.NextFreeItem.OwnerThread.FThreadId = 1) or
+             TScaleMMBackGroundThread.GarbageCollectionActive or
+            (pheaderremainder.NextFreeItem.OwnerThread.FThreadId = GetCurrentThreadId)));
 
   {$ifdef SCALEMM_DEBUG}
   CheckMemArray;
@@ -1397,7 +1405,7 @@ begin
     else if newsize < C_MAX_SMALLMEM_SIZE then
     begin
       //alloc new mem ("small") and copy data
-      Result := PThreadMemManager(Self.OwnerThread).GetMem(newsize);
+      Result := PThreadMemManager(Self.OwnerThread).FastGetMem(newsize);
       Move(aMemory^, Result^, newsize); // copy (use smaller new size)
       Self.FreeMem(aMemory); // free old mem
       Exit;
@@ -1446,7 +1454,7 @@ begin
     //downsize more than 1/4: to prevent fragmentation, move mem to smaller mem
     //alloc new mem and copy data
     begin
-      Result := PThreadMemManager(Self.OwnerThread).GetMem(newsize);
+      Result := PThreadMemManager(Self.OwnerThread).FastGetMem(newsize);
       Move(aMemory^, Result^, newsize); // copy (use smaller new size)
       FreeMem(aMemory); // free old mem
     end;
@@ -1564,7 +1572,7 @@ begin
       begin
         Assert(newsize > currentsize);
         //alloc new mem and copy data
-        Result := PThreadMemManager(Self.OwnerThread).GetMem(newsize);
+        Result := PThreadMemManager(Self.OwnerThread).FastGetMem(newsize);
         Move(aMemory^, Result^, currentsize); // copy (use smaller old size)
         Self.FreeMem(aMemory); // free old mem
       end;
@@ -1573,7 +1581,7 @@ begin
     //alloc new mem and copy data
     begin
       Assert(newsize > currentsize);
-      Result := PThreadMemManager(Self.OwnerThread).GetMem(newsize);
+      Result := PThreadMemManager(Self.OwnerThread).FastGetMem(newsize);
       Move(aMemory^, Result^, currentsize); // copy (use smaller old size)
       FreeMem(aMemory); // free old mem
     end;
@@ -1758,7 +1766,7 @@ begin
   {$IFDEF SCALEMM_MAGICTEST}
   Assert( (Magic1 = 0) or (Magic1 = 123456789) );
   {$ENDIF}
-  if (OwnerThread <> nil) and (OwnerThread.FThreadId > 1) then
+  if (OwnerThread <> nil) and (OwnerThread.FThreadId > 1) and not TScaleMMBackGroundThread.GarbageCollectionActive then
     Assert(OwnerThread.FThreadId = GetCurrentThreadId);
 
   Assert( Size <= C_MAX_MEDIUMMEM_SIZE+1 );
@@ -1906,7 +1914,7 @@ begin
 
   repeat
     mm := PThreadMemManager(NativeUInt(OwnerThread) and -2);  //remove lowest bit
-    if mm.TryLock then
+    if mm.TryThreadLock then
       Break;
 
     //small wait: try to swith to other pending thread (if any) else direct continue
@@ -1915,7 +1923,7 @@ begin
 
     //try again (owner can be changed in meantime!)
     mm := PThreadMemManager(NativeUInt(OwnerThread) and -2);  //remove lowest bit
-    if mm.TryLock then
+    if mm.TryThreadLock then
       Break;
     //wait some longer: force swith to any other thread
     sleep(1);
@@ -1942,7 +1950,7 @@ begin
   PMediumHeaderExt(@Self).Magic2 := -1585;
   {$ENDIF}
 
-  mm.UnLock;
+  mm.ThreadUnLock;
 end;
 
 { TMediumHeaderExt }
@@ -1989,8 +1997,8 @@ begin
   Assert(Self.OwnerManager <> aOwnerThread);
   prevthread := Self.OwnerManager;
 
-  PThreadMemManager(prevthread.OwnerThread).Lock;
-  PThreadMemManager(aOwnerThread.OwnerThread).Lock;
+  PThreadMemManager(prevthread.OwnerThread).ThreadLock;
+  PThreadMemManager(aOwnerThread.OwnerThread).ThreadLock;
   try
     Self.OwnerManager := aOwnerThread;
     //pthreadoffset    := PMediumThreadManagerOffset(NativeUInt(aOwnerThread) or 1);
@@ -2026,8 +2034,8 @@ begin
       pheader := pheader.NextMem;
     end;
   finally
-    PThreadMemManager(aOwnerThread.OwnerThread).UnLock;
-    PThreadMemManager(prevthread.OwnerThread).UnLock;
+    PThreadMemManager(aOwnerThread.OwnerThread).ThreadUnLock;
+    PThreadMemManager(prevthread.OwnerThread).ThreadUnLock;
   end;
 end;
 
