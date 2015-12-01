@@ -378,10 +378,11 @@ begin
 end;
 
 procedure TSmallMemBlock.FreeBlockMemory;
-{$IFDEF SCALEMM_DEBUG}
 var
+{$IFDEF SCALEMM_DEBUG}
   pOwnerList: PSmallMemBlockList;
 {$ENDIF}
+  owner: PSmallMemThreadManager;
 begin
   if OwnerList.FFirstMemBlock = @Self then
     Exit; //keep one block
@@ -428,10 +429,11 @@ begin
   {$ENDIF}
   FMemoryArray  := nil;
   OwnerList     := nil;
-  OwnerManager  := nil;
 
+  owner         := OwnerManager;
+  OwnerManager  := nil;
   //release medium block
-  PThreadMemManager(OwnerManager.OwnerThread).FMediumMemManager.FreeMem(@Self);
+  PThreadMemManager(owner.OwnerThread).FMediumMemManager.FreeMem(@Self);
   {
   Scale_FreeMem(@Self);
   }
