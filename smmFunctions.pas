@@ -123,7 +123,8 @@ const
   {$ifopt C+} //assertions?
   procedure Assert(aCondition: boolean);
   {$ENDIF}
-  function MessageBoxW(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall; external user32 name 'MessageBoxW';
+  function  MessageBoxW(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall; external user32 name 'MessageBoxW';
+  procedure OutputDebugStringA(lpOutputString: PAnsiChar); stdcall; external kernel32 name 'OutputDebugStringA';
 
   {$ifndef PURE_PASCAL}
   {$if CompilerVersion < 19}

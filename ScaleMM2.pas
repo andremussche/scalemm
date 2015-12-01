@@ -1196,6 +1196,8 @@ begin
   _PrevExitProcessProc := ExitProcessProc;
   ExitProcessProc      := ScaleMMExitProcessProc;
   {$ifend}
+
+  OutputDebugStringA('ScaleMM2 installed');
 end;
 
 procedure ScaleMMUninstall;
@@ -1221,6 +1223,8 @@ begin
   SetMemoryManager(OldMM);
   {Memory manager has been uninstalled}
   ScaleMMIsInstalled := False;
+
+  OutputDebugStringA('ScaleMM2 uninstalled');
 end;
 
 initialization

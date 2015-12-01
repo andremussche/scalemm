@@ -944,8 +944,11 @@ begin
       Assert(iFreeMemIndex <= High(FFreeMem));
       pheader       := FFreeMem[iFreeMemIndex];
       Assert(pheader <> nil);
-    end
-    else
+      if (pheader = nil) then
+        OutputDebugStringA('No memory found using quick mask position, allocating new block (fallback)');
+    end;
+
+    if (pheader = nil) then
     //alloc new mem (for biggest block)
     begin
       iFreeMemIndex := 16;
