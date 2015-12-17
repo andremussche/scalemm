@@ -841,6 +841,7 @@ end;
 
 function TThreadMemManager.LockedGetMem(aSize: NativeInt): Pointer;
 begin
+  {
   asm
     mov ecx,[esp]
     add ecx,$14
