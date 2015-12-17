@@ -40,6 +40,7 @@ type
   public
     procedure Init;
 
+    function  TryThreadLock: boolean;
     procedure ThreadLock;
     procedure ThreadUnLock;
 
@@ -215,10 +216,13 @@ procedure TGlobalMemManager.FreeMediumBlockMemory(
   aBlockMem: PMediumBlockMemory);
 var
   firstmem: PMediumHeader;
+  blocked: boolean;
 //  freeheader: PMediumHeaderExt;
 begin
+  blocked := TryThreadlock;
+
   //keep max 10 blocks in buffer
-  if FFreeBlockCount >= 0 then
+  if (FFreeBlockCount >= 10) or not blocked then
   begin
     firstmem := PMediumHeader( NativeUInt(aBlockMem) + SizeOf(TMediumBlockMemory));
     //is free mem?
@@ -230,6 +234,9 @@ begin
       //fully free mem? we can only release fully free mem (duh...)
       if PMediumHeaderExt(firstmem).ArrayPosition = 16 then
       begin
+        if blocked then
+          ThreadUnLock;
+
         //RELEASE TO WINDOWS
         VirtualFree(aBlockMem, 0 {all}, MEM_RELEASE);
         //exit!
@@ -239,7 +246,7 @@ begin
     //(False);
   end;
 
-  Threadlock;
+  if not blocked then ThreadLock;
   try
     ProcessFreedMemoryFromOtherThreads;
 
@@ -444,7 +451,8 @@ begin
   Result := nil;
   if FFirstBlock = nil then Exit;
 
-  Threadlock;
+  if not TryThreadlock then
+    Exit;
   try
     ProcessFreedMemoryFromOtherThreads;
 
@@ -655,6 +663,26 @@ begin
   end;
 end;
 
+function TGlobalMemManager.TryThreadLock: boolean;
+var
+  iCurrentThreadId: NativeUInt;
+begin
+  iCurrentThreadId := GetCurrentThreadId;
+  if (FThreadLock = iCurrentThreadId) and
+     (FThreadLockRecursion > 0) then
+  begin
+    Assert( CAS32(iCurrentThreadId, iCurrentThreadId, @FThreadLock) );
+    inc(FThreadLockRecursion);
+    Result := True;
+    Exit;
+  end;
+
+  //LOCK: no threads may be removed/freed now
+  Result := CAS32(0, iCurrentThreadId, @FThreadLock);
+  if Result then
+    inc(FThreadLockRecursion);
+end;
+
 { TScaleMMBackGroundThread }
 
 function ThreadProc(const aThread: TScaleMMBackGroundThread): Integer;
@@ -693,7 +721,11 @@ begin
       begin
         //thread is terminated or killed? at least our ScaleMM2.NewEndThread function is not called!
         if WaitForSingleObject(threadmm.FThreadHandle, 0) = WAIT_OBJECT_0 then
+        begin
+          CloseHandle(threadmm.FThreadHandle);
+          threadmm.FThreadHandle := 0;
           GlobalManager.FreeThreadManager(threadmm);
+        end;
 
         if threadmm.IsMemoryFromOtherThreadsPresent and
            threadmm.TryBusyLock then

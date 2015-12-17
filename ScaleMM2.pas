@@ -203,7 +203,7 @@ type
     procedure Init;
     procedure Reset;
 
-    procedure FastBusyLock;         {$ifdef HASINLINE}inline;{$ENDIF}
+    procedure FastBusyLock;         //{$ifdef HASINLINE}inline;{$ENDIF}
     procedure BusyLock;             //{$ifdef HASINLINE}inline;{$ENDIF}
     function  TryBusyLock: Boolean; {$ifdef HASINLINE}inline;{$ENDIF}
     procedure BusyUnLock;           {$ifdef HASINLINE}inline;{$ENDIF}
@@ -218,7 +218,7 @@ type
     //fast = no lock
     function FastGetMem(aSize: NativeInt) : Pointer;                         {$ifdef HASINLINE}inline;{$ENDIF}
 
-    function LockedGetMem(aSize: NativeInt) : Pointer;                       {$ifdef HASINLINE}inline;{$ENDIF}
+    function LockedGetMem(aSize: NativeInt) : Pointer;                       //{$ifdef HASINLINE}inline;{$ENDIF}
     function LockedFreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
     function LockedReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
   end;
@@ -612,6 +612,23 @@ procedure TThreadMemManager.FastBusyLock;
 begin
   if not CAS32(0, 1, @FBusyLock) then
     BusyLock;   //no inline, so smaller
+
+  {
+  asm
+    lea ecx,[ebx+$14]
+    mov dl,$01
+    xor eax,eax
+
+    lock cmpxchg [ecx],dl
+    setz al
+    //call CAS32
+
+    test al,al
+    jnz @Locked
+    call TThreadMemManager.BusyLock
+    @Locked:
+  end;
+  }
 end;
 
 procedure TThreadMemManager.BusyLock;
@@ -650,7 +667,7 @@ begin
 
   Assert(aMemory <> nil);
   pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-  Assert(pm.OwnerBlock <> nil);  
+  Assert(pm.OwnerBlock <> nil);
 
   //medium or large mem?
   if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
@@ -750,8 +767,9 @@ begin
     CheckMem(nil);
     {$ENDIF}
 //  finally
-    BusyUnLock;
+//    BusyUnLock;
 //  end;
+  FBusyLock := 0;
 end;
 
 function TThreadMemManager.FreeMemFromOtherThread(
@@ -823,6 +841,22 @@ end;
 
 function TThreadMemManager.LockedGetMem(aSize: NativeInt): Pointer;
 begin
+  asm
+    mov ecx,[esp]
+    add ecx,$14
+    //mov ecx, DWORD PTR FBusyLock
+    mov dl,$01
+    xor eax,eax
+
+    lock cmpxchg [ecx],dl
+    setz al
+    //call CAS32
+
+    test al,al
+    jnz @Locked
+    call TThreadMemManager.BusyLock
+    @Locked:
+  end;}
   FastBusyLock;
   //try
     if FOtherThreadFreedMemory <> nil then
@@ -830,8 +864,9 @@ begin
 
     Result := FastGetMem(aSize);
   //finally
-    BusyUnLock;
+  //  BusyUnLock;
   //end;
+  FBusyLock := 0;
 end;
 
 procedure TThreadMemManager.Init;
@@ -1048,6 +1083,7 @@ begin
 end;
 {$endif}
 
+(* no need for EndThread hack, thread termination is handled by smmGlobal now
 type
   TEndThread = procedure(ExitCode: Integer);
   PEndThread = ^TEndThread;
@@ -1094,6 +1130,7 @@ procedure PatchThread;
 begin
   FastcodeAddressPatch(@EndThread, NewEndThreadProc);
 end;
+*)
 
 const
 {$ifdef USEMEMMANAGEREX}
@@ -1144,7 +1181,7 @@ type
     {$else}
     SharedMM: PMemoryManager;
     {$endif}
-    NewEndThread: PEndThread;
+    //NewEndThread: PEndThread;
   end;
   PSharedRecord = ^TSharedRecord;
 var
@@ -1178,7 +1215,7 @@ begin
       LPMapAddress  := MapViewOfFile(MappingObjectHandle, FILE_MAP_WRITE, 0, 0, 0);
 
       SharedRecord.SharedMM     := @NewMM;
-      SharedRecord.NewEndThread := NewEndThreadProc;
+      //SharedRecord.NewEndThread := NewEndThreadProc;
       {Set a pointer to the new memory manager}
       LPMapAddress^ := @SharedRecord;
       {Unmap the file}
@@ -1194,7 +1231,7 @@ begin
     LPMapAddress := MapViewOfFile(MappingObjectHandle, FILE_MAP_READ, 0, 0, 0);
     {get shared data}
     SharedRecord     := PSharedRecord(LPMapAddress^)^;
-    NewEndThreadProc := SharedRecord.NewEndThread;
+    //NewEndThreadProc := SharedRecord.NewEndThread;
     {Set the new memory manager}
     NewMM            := SharedRecord.SharedMM^;
 
@@ -1243,7 +1280,7 @@ begin
   {$WARN SYMBOL_DEPRECATED ON}
 
   NewMM := ScaleMM_Ex;
-  NewEndThreadProc := @NewEndThread;
+  //NewEndThreadProc := @NewEndThread;
   {$ifdef MMSharingEnabled}
   TryUseExistingSharedManager;
   {$endif}
@@ -1268,7 +1305,7 @@ begin
   end;
   // we need to patch System.EndThread to properly mark memory to be freed
   // note: must also done in dll (again)?
-  PatchThread;
+  //PatchThread;
 
   {$if CompilerVersion >= 23}
   // issue 6: Delphi XE2 has annoying bug when using SetLocaleOverride -> AV in finalization of System.pas due to freemem(PreferredLanguagesOverride)
