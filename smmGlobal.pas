@@ -727,15 +727,31 @@ begin
           GlobalManager.FreeThreadManager(threadmm);
         end;
 
+        //interthread mem but not busy?
         if threadmm.IsMemoryFromOtherThreadsPresent and
-           threadmm.TryBusyLock then
-        try
-          //iOldThreadId := threadmm.FThreadId;
-          //threadmm.FThreadId := 1;
-          threadmm.ProcessFreedMemFromOtherThreads(False {everything});
-        finally
-          //threadmm.FThreadId := iOldThreadId;
-          threadmm.BusyUnLock;
+           not threadmm.IsBusyLocked then
+        begin
+          //suspend thread
+          if SuspendThread(threadmm.FThreadHandle) < 0 then
+            Error(reAssertionFailed);  //error
+          try
+            //not busy in the meantime?
+            if not threadmm.IsBusyLocked then
+            begin
+              threadmm.FastBusyLock;
+              try
+                //iOldThreadId := threadmm.FThreadId;
+                //threadmm.FThreadId := 1;
+                threadmm.ProcessFreedMemFromOtherThreads(False {everything});
+              finally
+                //threadmm.FThreadId := iOldThreadId;
+                threadmm.BusyUnLock;
+              end;
+            end;
+          finally
+            //resume
+            ResumeThread(threadmm.FThreadHandle);
+          end;
         end;
 
         threadmm := threadmm.FNextThreadManager;

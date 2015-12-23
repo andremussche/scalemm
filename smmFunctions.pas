@@ -94,6 +94,8 @@ const
   function  GetCurrentThreadId: DWORD; stdcall; external kernel32 name 'GetCurrentThreadId';
   function  GetCurrentThread: THandle; stdcall; external kernel32 name 'GetCurrentThread';
   procedure ExitThread(dwExitCode: DWORD); stdcall; external kernel32 name 'ExitThread';
+  function  SuspendThread(hThread: THandle): DWORD; stdcall; external kernel32 name 'SuspendThread';
+  function  ResumeThread(hThread: THandle): DWORD; stdcall; external kernel32 name 'ResumeThread';
 
   function  OpenFileMappingA(dwDesiredAccess: DWORD; bInheritHandle: BOOL; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'OpenFileMappingA';
   function  CreateFileMappingA(hFile: THandle; lpFileMappingAttributes: PSecurityAttributes; flProtect, dwMaximumSizeHigh, dwMaximumSizeLow: DWORD; lpName: PAnsiChar): THandle; stdcall; external kernel32 name 'CreateFileMappingA';

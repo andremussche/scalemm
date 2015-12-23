@@ -203,10 +203,11 @@ type
     procedure Init;
     procedure Reset;
 
-    procedure FastBusyLock;         //{$ifdef HASINLINE}inline;{$ENDIF}
-    procedure BusyLock;             //{$ifdef HASINLINE}inline;{$ENDIF}
-    function  TryBusyLock: Boolean; {$ifdef HASINLINE}inline;{$ENDIF}
-    procedure BusyUnLock;           {$ifdef HASINLINE}inline;{$ENDIF}
+    function  IsBusyLocked: boolean;
+    procedure FastBusyLock;           {$ifdef HASINLINE}inline;{$ENDIF}
+    //procedure BusyLock;             //{$ifdef HASINLINE}inline;{$ENDIF}
+    function  TryBusyLock: Boolean;   {$ifdef HASINLINE}inline;{$ENDIF}
+    procedure BusyUnLock;             {$ifdef HASINLINE}inline;{$ENDIF}
 
     procedure ReleaseAllFreeMem;
     procedure CheckMem(aMemory: Pointer);
@@ -219,8 +220,8 @@ type
     function FastGetMem(aSize: NativeInt) : Pointer;                         {$ifdef HASINLINE}inline;{$ENDIF}
 
     function LockedGetMem(aSize: NativeInt) : Pointer;                       //{$ifdef HASINLINE}inline;{$ENDIF}
-    function LockedFreeMem(aMemory: Pointer): NativeInt;                     {$ifdef HASINLINE}inline;{$ENDIF}
-    function LockedReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; {$ifdef HASINLINE}inline;{$ENDIF}
+    function LockedFreeMem(aMemory: Pointer): NativeInt;                     //{$ifdef HASINLINE}inline;{$ENDIF}
+    function LockedReallocMem(aMemory: Pointer; aSize: NativeUInt): Pointer; //{$ifdef HASINLINE}inline;{$ENDIF}
   end;
 
   {$if CompilerVersion >= 23}  //Delphi XE2
@@ -379,58 +380,61 @@ var
   pm: PBaseMemHeader;
   ot: PBaseSizeManager;
 begin
-  FastBusyLock;
-  //try
-    if FOtherThreadFreedMemory <> nil then
-      ProcessFreedMemFromOtherThreads(True);
+  //simple but very fast busy flag/soft lock
+  if Boolean(FBusyLock) then
+    FastBusyLock
+  else
+    FBusyLock := 1;
 
-    pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-    //check realloc of freed mem
-    if (pm.Size and 1 = 0) then //not free?
+  if FOtherThreadFreedMemory <> nil then
+    ProcessFreedMemFromOtherThreads(True);
+
+  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+  //check realloc of freed mem
+  if (pm.Size and 1 = 0) then //not free?
+  begin
+    //medium+large mem has ownerthread instead of ownerblock (optimization)
+    if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
     begin
-      //medium+large mem has ownerthread instead of ownerblock (optimization)
-      if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+      //other thread?
+      if PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4) <> @Self then
       begin
-        //other thread?
-        if PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4) <> @Self then
-        begin
-          Result := ReallocMemOfOtherThread(aMemory, aSize);
-          BusyUnLock;
-          Exit;
-        end;
+        Result := ReallocMemOfOtherThread(aMemory, aSize);
+        FBusyLock := 0;
+        Exit;
+      end;
 
-        //large or medium?
-        if NativeUInt(pm.OwnerBlock) and 2 = 0 then
-          Result := FMediumMemManager.ReallocMem(aMemory, aSize)
-        else
-          Result := FLargeMemManager.ReallocMemWithHeader(aMemory, aSize)
-      end
+      //large or medium?
+      if NativeUInt(pm.OwnerBlock) and 2 = 0 then
+        Result := FMediumMemManager.ReallocMem(aMemory, aSize)
       else
-      //small mem
-      begin
-        ot := pm.OwnerBlock.OwnerManager;
-
-        if ot = @FSmallMemManager then
-        begin
-          Result := FSmallMemManager.ReallocMem(aMemory, aSize);
-        end
-        else
-          Result := ReallocMemOfOtherThread(aMemory, aSize);
-      end
+        Result := FLargeMemManager.ReallocMemWithHeader(aMemory, aSize)
     end
     else
+    //small mem
     begin
-      Result := nil;
-      BusyUnLock;
-      Error(reInvalidPtr);  //double free?
-    end;
+      ot := pm.OwnerBlock.OwnerManager;
 
-    {$IFDEF SCALEMM_DEBUG}
-    CheckMem(nil);
-    {$ENDIF}
-  //finally
-    BusyUnLock;
-  //end;
+      if ot = @FSmallMemManager then
+      begin
+        Result := FSmallMemManager.ReallocMem(aMemory, aSize);
+      end
+      else
+        Result := ReallocMemOfOtherThread(aMemory, aSize);
+    end
+  end
+  else
+  begin
+    Result := nil;
+    FBusyLock := 0;
+    Error(reInvalidPtr);  //double free?
+  end;
+
+  {$IFDEF SCALEMM_DEBUG}
+  CheckMem(nil);
+  {$ENDIF}
+
+  FBusyLock := 0;
 end;
 
 function TThreadMemManager.ReallocMemOfOtherThread(aMemory: Pointer;
@@ -610,8 +614,24 @@ end;
 
 procedure TThreadMemManager.FastBusyLock;
 begin
-  if not CAS32(0, 1, @FBusyLock) then
-    BusyLock;   //no inline, so smaller
+  while FBusyLock > 0 do
+    Sleep(1);
+  FBusyLock := 1;
+
+  //inc(FBusyLock);
+//  asm
+//    lock inc dword ptr [eax+$14];
+//    jnz BusyLock;
+//  end;
+
+  {
+  if AtomicIncrement(FBusyLock) > 1 then
+  begin
+    AtomicDecrement(FBusyLock);
+//    if not CAS32(0, 1, @FBusyLock) then
+      BusyLock;   //no inline, so smaller
+  end;
+  }
 
   {
   asm
@@ -631,6 +651,7 @@ begin
   }
 end;
 
+{
 procedure TThreadMemManager.BusyLock;
 begin
   //LOCK: we are busy so no one else may do a memory operation
@@ -646,6 +667,7 @@ begin
     sleep(1);
   end;
 end;
+}
 
 procedure TThreadMemManager.BusyUnLock;
 begin
@@ -713,62 +735,64 @@ begin
     Exit;
   end;
 
-  FastBusyLock;
-  //try
-    if FOtherThreadFreedMemory <> nil then
-      ProcessFreedMemFromOtherThreads(True);
+  //simple but very fast busy flag/soft lock
+  if Boolean(FBusyLock) then
+    FastBusyLock
+  else
+    FBusyLock := 1;
 
-    pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
-    //check double free
-    if (pm.Size and 1 <> 0) then
+  if FOtherThreadFreedMemory <> nil then
+    ProcessFreedMemFromOtherThreads(True);
+
+  pm := PBaseMemHeader(NativeUInt(aMemory) - SizeOf(TBaseMemHeader));
+  //check double free
+  if (pm.Size and 1 <> 0) then
+  begin
+    FBusyLock := 0;
+    Error(reInvalidPtr);
+  end;
+
+  //medium or large mem?
+  if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
+  begin
+    pt := PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4);
+    if pt <> @Self then
+    //other thread?
     begin
-      BusyUnLock;
-      Error(reInvalidPtr);
+      FreeMemOfOtherThread(pm);
+      Result := 0;
+      FBusyLock := 0;
+      Exit;
     end;
 
-    //medium or large mem?
-    if NativeUInt(pm.OwnerBlock) and 3 <> 0 then
-    begin
-      pt := PThreadMemManager( NativeUInt(pm.OwnerBlock) and -4);
-      if pt <> @Self then
-      //other thread?
-      begin
-        FreeMemOfOtherThread(pm);
-        Result := 0;
-        BusyUnLock;
-        Exit;
-      end;
+    //large or medium?
+    if NativeUInt(pm.OwnerBlock) and 2 = 0 then
+      Result := FMediumMemManager.FreeMem(aMemory)
+    else
+      Result := FLargeMemManager.FreeMemWithHeader(aMemory);
+  end
+  else
+  //small mem
+  begin
+    ot := pm.OwnerBlock.OwnerManager;
 
-      //large or medium?
-      if NativeUInt(pm.OwnerBlock) and 2 = 0 then
-        Result := FMediumMemManager.FreeMem(aMemory)
-      else
-        Result := FLargeMemManager.FreeMemWithHeader(aMemory);
+    if ot = @FSmallMemManager then
+    begin
+      Result := FSmallMemManager.FreeMem(aMemory);
     end
     else
-    //small mem
     begin
-      ot := pm.OwnerBlock.OwnerManager;
-
-      if ot = @FSmallMemManager then
-      begin
-        Result := FSmallMemManager.FreeMem(aMemory);
-      end
-      else
-      begin
-        FreeMemOfOtherThread(pm);
-        Result := 0;
-        BusyUnLock;
-        Exit;
-      end;
+      FreeMemOfOtherThread(pm);
+      Result := 0;
+      FBusyLock := 0;
+      Exit;
     end;
+  end;
 
-    {$IFDEF SCALEMM_DEBUG}
-    CheckMem(nil);
-    {$ENDIF}
-//  finally
-//    BusyUnLock;
-//  end;
+  {$IFDEF SCALEMM_DEBUG}
+  CheckMem(nil);
+  {$ENDIF}
+
   FBusyLock := 0;
 end;
 
@@ -841,38 +865,23 @@ end;
 
 function TThreadMemManager.LockedGetMem(aSize: NativeInt): Pointer;
 begin
-  {
-  asm
-    mov ecx,[esp]
-    add ecx,$14
-    //mov ecx, DWORD PTR FBusyLock
-    mov dl,$01
-    xor eax,eax
+  if Boolean(FBusyLock) then
+    FastBusyLock
+  else
+    FBusyLock := 1;
 
-    lock cmpxchg [ecx],dl
-    setz al
-    //call CAS32
+  if FOtherThreadFreedMemory <> nil then
+    ProcessFreedMemFromOtherThreads(True);
 
-    test al,al
-    jnz @Locked
-    call TThreadMemManager.BusyLock
-    @Locked:
-  end;}
-  FastBusyLock;
-  //try
-    if FOtherThreadFreedMemory <> nil then
-      ProcessFreedMemFromOtherThreads(True);
+  Result := FastGetMem(aSize);
 
-    Result := FastGetMem(aSize);
-  //finally
-  //  BusyUnLock;
-  //end;
   FBusyLock := 0;
 end;
 
 procedure TThreadMemManager.Init;
 begin
   FThreadId := GetCurrentThreadId;
+  FBusyLock := -1;
 
   FSmallMemManager.Init;
   FSmallMemManager.OwnerThread  := @Self;
@@ -886,6 +895,11 @@ begin
   {$IFDEF SCALEMM_DEBUG}
   CheckMem(nil);
   {$ENDIF}
+end;
+
+function TThreadMemManager.IsBusyLocked: boolean;
+begin
+  Result := (FBusyLock > 0);
 end;
 
 function TThreadMemManager.IsMemoryFromOtherThreadsPresent: Boolean;

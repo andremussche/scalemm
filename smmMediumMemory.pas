@@ -953,6 +953,7 @@ begin
     end;
   end;
 
+  Assert(pheader <> nil);
   {$IFDEF SCALEMM_DEBUG}
   Assert(pheader <> nil);
   Assert(pheader.Size >= allocsize);
