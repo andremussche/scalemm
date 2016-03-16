@@ -484,7 +484,7 @@ end;
 
 function TGlobalMemManager.GetNewThreadManager: PThreadMemManager;
 begin
-  //Result := nil;
+  Result := nil;
 
   //reuse?
   if FFirstFreedThreadMemory <> nil then
@@ -500,9 +500,10 @@ begin
     end;
 
     ThreadUnLock;
-  end
-  else
+  end;
+
   //create new one
+  if Result = nil then
   begin
     Result := VirtualAlloc( nil,
                             //64 * 1024,

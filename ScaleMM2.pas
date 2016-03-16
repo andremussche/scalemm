@@ -119,6 +119,8 @@ Change log:
  - optimize.move included (much faster Move() function due to SSE3)
  Version 2.5 (10-11-2015)
  - rare AV fixed in 64bit with high load due to misalignment
+ Version 2.5.1 (16-3-2016)
+ - rare AV fixed in TGlobalMemManager.GetNewThreadManager (thanks to Molnár Attila)
 }
 
 interface
