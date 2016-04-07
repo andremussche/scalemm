@@ -944,9 +944,9 @@ begin
       Assert(iFreeMemIndex <= High(FFreeMem));
       pheader       := FFreeMem[iFreeMemIndex];
       Assert(pheader <> nil);
-    end
-    else
+    end;
     //alloc new mem (for biggest block)
+    if pheader = nil then    //extra check
     begin
       iFreeMemIndex := 16;
       pheader       := AllocBlock(allocsize);
