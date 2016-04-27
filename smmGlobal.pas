@@ -50,7 +50,7 @@ type
     procedure FreeAllMemory;
 
     procedure FreeMediumBlockMemory(aBlockMem: PMediumBlockMemory);
-    function  GetMediumBlockMemory(aNewOwner: PMediumThreadManager): PMediumBlockMemory;
+    function  GetMediumBlockMemory(aNewOwner: PMediumThreadManager; aMinResultSize: NativeUInt): PMediumBlockMemory;
 
     //procedure FreeSmallBlockMemory(aBlockMem: PSmallMemBlock);
     function  GetSmallBlockMemory(aItemSize: NativeUInt): PSmallMemBlock;
@@ -429,7 +429,7 @@ begin
   Result := FFirstThreadMemory;
 end;
 
-function TGlobalMemManager.GetMediumBlockMemory(aNewOwner: PMediumThreadManager): PMediumBlockMemory;
+function TGlobalMemManager.GetMediumBlockMemory(aNewOwner: PMediumThreadManager; aMinResultSize: NativeUInt): PMediumBlockMemory;
 begin
   Result := nil;
   if FFirstBlock = nil then Exit;
@@ -456,13 +456,31 @@ begin
     //get block
     Result := FFirstBlock;
     //got a block?
-    if Result <> nil then
+    while Result <> nil do
     begin
+      //has enough free mem?
+      if FGlobalThreadMemory.FMediumMemManager.ScanBlockForFreeItems(Result, aMinResultSize, True {only check size}) = nil then
+      begin
+        //no, try next block
+        Result := Result.NextBlock;
+        Continue;
+      end;
+
+      //unlink
+      if Result.PreviousBlock <> nil then
+        Result.PreviousBlock.NextBlock := Result.NextBlock;
+      if Result.NextBlock <> nil then
+        Result.NextBlock.PreviousBlock := Result.PreviousBlock;
       //rearrange linked list (replace first item)
-      FFirstBlock := Result.NextBlock;
-      if FFirstBlock <> nil then
-        FFirstBlock.PreviousBlock := nil;
+      if Self.FFirstBlock = Result then
+      begin
+        Self.FFirstBlock := Result.NextBlock;
+        if FFirstBlock <> nil then
+          FFirstBlock.PreviousBlock := nil;
+      end;
+
       dec(FFreeBlockCount);
+      Break;
     end;
 
     //got a block?
