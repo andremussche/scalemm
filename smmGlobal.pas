@@ -705,10 +705,9 @@ end;
 { TScaleMMBackGroundThread }
 
 function ThreadProc(const aThread: TScaleMMBackGroundThread): Integer;
-var
-  FreeThread: Boolean;
 begin
   aThread.Execute;
+  Result := 0;
   EndThread(Result);
 end;
 
@@ -751,7 +750,7 @@ begin
            not threadmm.IsBusyLocked then
         begin
           //suspend thread
-          if SuspendThread(threadmm.FThreadHandle) < 0 then
+          if Integer(SuspendThread(threadmm.FThreadHandle)) < 0 then
             Error(reAssertionFailed);  //error
           try
             //not busy in the meantime?
