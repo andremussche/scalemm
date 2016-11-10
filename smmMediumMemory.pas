@@ -111,7 +111,6 @@ type
 
     function  AllocBlock(aMinResultSize: NativeUInt): PMediumHeaderExt;
     procedure FreeBlock(aBlock: PMediumBlockMemory);
-    function  ScanBlockForFreeItems(aBlock: PMediumBlockMemory; aMinResultSize: NativeUInt): PMediumHeaderExt;
 
     procedure PutMemToFree(aHeader: PMediumHeader; aSize: NativeUInt);
     procedure FreeRemainder(aHeader: PMediumHeader; aSize: NativeUInt);
@@ -125,6 +124,7 @@ type
     procedure CheckMem(aMemory: Pointer = nil);
     procedure CheckMemArray;
     procedure CheckSingleSizeFreeMemList(const aMem: PMediumHeaderExt; aCheckParam: Boolean = True);
+    function  ScanBlockForFreeItems(aBlock: PMediumBlockMemory; aMinResultSize: NativeUInt; aOnlyCheckSize: boolean): PMediumHeaderExt;
 
     //function GetFilledMem(aSize: NativeUInt) : Pointer;
     function GetMem(aSize: NativeUInt) : Pointer;
@@ -162,10 +162,10 @@ var
   pthreadoffset: PBaseThreadManagerOffset;
 begin
   pheader      := nil;
-  globalblock  := GlobalManager.GetMediumBlockMemory(@Self);
+  globalblock  := GlobalManager.GetMediumBlockMemory(@Self, aMinResultSize);
   if globalblock <> nil then
   repeat
-    pheader := ScanBlockForFreeItems(globalblock, aMinResultSize);
+    pheader := ScanBlockForFreeItems(globalblock, aMinResultSize, False {process free mem});
 
     //no mem of minimum size? fetch another block
     if pheader = nil then
@@ -177,7 +177,7 @@ begin
       FFirstBlock                 := globalblock;
       globalblock.PreviousBlock   := nil;
 
-      globalblock  := GlobalManager.GetMediumBlockMemory(@Self);
+      globalblock  := GlobalManager.GetMediumBlockMemory(@Self, aMinResultSize);
     end
     else
       Assert(pheader.Size >= aMinResultSize);
@@ -944,9 +944,9 @@ begin
       Assert(iFreeMemIndex <= High(FFreeMem));
       pheader       := FFreeMem[iFreeMemIndex];
       Assert(pheader <> nil);
-    end
-    else
+    end;
     //alloc new mem (for biggest block)
+    if pheader = nil then    //extra check
     begin
       iFreeMemIndex := 16;
       pheader       := AllocBlock(allocsize);
@@ -1672,7 +1672,7 @@ begin
     FFreeMem[i] := nil;
 end;
 
-function TMediumThreadManager.ScanBlockForFreeItems(aBlock: PMediumBlockMemory; aMinResultSize: NativeUInt): PMediumHeaderExt;
+function TMediumThreadManager.ScanBlockForFreeItems(aBlock: PMediumBlockMemory; aMinResultSize: NativeUInt; aOnlyCheckSize: boolean): PMediumHeaderExt;
 var
   firstmem: PMediumHeader;
   prevmem,
@@ -1729,7 +1729,7 @@ begin
           {$ENDIF}
           Assert(Result.Size >= aMinResultSize);
         end;
-      if Result <> prevmem then
+      if (Result <> prevmem) and not aOnlyCheckSize then
       begin
         PutMemToFree(PMediumHeader(prevmem), newsize);
         {$IFDEF SCALEMM_MAGICTEST}
