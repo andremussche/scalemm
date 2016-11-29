@@ -11,6 +11,7 @@ type
   DWORD  = LongWord;
   BOOL   = LongBool;
   ULONG_PTR = NativeUInt;
+  DWORD_PTR  = ULONG_PTR;
   {$if CompilerVersion >= 23}  //Delphi XE2
   UINT_PTR  = System.UIntPtr;
   {$else}
@@ -45,7 +46,7 @@ type
         dwPageSize: DWORD;
         lpMinimumApplicationAddress: Pointer;
         lpMaximumApplicationAddress: Pointer;
-        dwActiveProcessorMask: DWORD;
+        dwActiveProcessorMask: DWORD_PTR;
         dwNumberOfProcessors: DWORD;
         dwProcessorType: DWORD;
         dwAllocationGranularity: DWORD;
@@ -151,6 +152,9 @@ const
   //from FastMM4.pas
   procedure WriteNativeUIntToStrBuf(hFile: THandle; ANum: NativeUInt);
   procedure WriteNativeUIntToHexBuf(hFile: THandle; ANum: NativeUInt; aDigits: Integer = 8);
+
+  function QueryPerformanceCounter(var lpPerformanceCount: Int64): BOOL; stdcall; external kernel32 name 'QueryPerformanceCounter';
+  function QueryPerformanceFrequency(var lpFrequency: Int64): BOOL; stdcall; external kernel32 name 'QueryPerformanceFrequency';
 
 
 implementation
