@@ -1,0 +1,72 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{2D9639F3-7D5B-4E1A-918F-A6DB3F2EC0F9}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Main.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="maindll.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="subdll.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="subdll2.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="Main">
+        <MSBuild Projects="Main.dproj"/>
+    </Target>
+    <Target Name="Main:Clean">
+        <MSBuild Projects="Main.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Main:Make">
+        <MSBuild Projects="Main.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="maindll">
+        <MSBuild Projects="maindll.dproj"/>
+    </Target>
+    <Target Name="maindll:Clean">
+        <MSBuild Projects="maindll.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="maindll:Make">
+        <MSBuild Projects="maindll.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="subdll">
+        <MSBuild Projects="subdll.dproj"/>
+    </Target>
+    <Target Name="subdll:Clean">
+        <MSBuild Projects="subdll.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="subdll:Make">
+        <MSBuild Projects="subdll.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="subdll2">
+        <MSBuild Projects="subdll2.dproj"/>
+    </Target>
+    <Target Name="subdll2:Clean">
+        <MSBuild Projects="subdll2.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="subdll2:Make">
+        <MSBuild Projects="subdll2.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="Main;maindll;subdll;subdll2"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="Main:Clean;maindll:Clean;subdll:Clean;subdll2:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="Main:Make;maindll:Make;subdll:Make;subdll2:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
