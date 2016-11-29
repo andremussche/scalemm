@@ -14,6 +14,7 @@ type
   // - caches some memory (blocks + threadmem) for fast reuse
   // - also keeps allocated memory in case an old thread allocated some memory
   // for another thread
+  PGlobalMemManager = ^TGlobalMemManager;
   TGlobalMemManager = object
   private {locks}
     //FBlockLock_old: NativeUInt;
@@ -65,20 +66,27 @@ type
   TScaleMMBackGroundThread = class
   protected
     FHandle: THandle;
+    FTerminated : Boolean;
+    FFinished : Boolean;
     procedure Execute;
   public
     constructor Create;
+    destructor Destroy; override;
 
     class function GarbageCollectionActive: boolean;
   end;
 
 var
-  GlobalManager: TGlobalMemManager;
+  GlobalManager: PGlobalMemManager;         
+  OwnedGlobalManager: TGlobalMemManager;    //needed for ShareMM
 
 implementation
 
 uses
   smmFunctions;
+
+var
+  BGThread : TScaleMMBackGroundThread;
 
 { TGlobalManager }
 
@@ -574,7 +582,7 @@ begin
   FGlobalThreadMemory.Init;
   FGlobalThreadMemory.FThreadId := 1;
 
-  TScaleMMBackGroundThread.Create;
+  BGThread := TScaleMMBackGroundThread.Create;
 end;
 
 procedure TGlobalMemManager.ProcessFreedMemoryFromOtherThreads;
@@ -720,6 +728,18 @@ begin
   FHandle := BeginThread(nil, 0, @ThreadProc, Pointer(Self), 0 {direct start}, iThreadID);
 end;
 
+destructor TScaleMMBackGroundThread.Destroy;
+begin
+  if FHandle <> 0 then
+  begin
+    FTerminated := TRUE;
+    while not FFinished do
+      WaitForSingleObject(FHandle, 1 * 1000);
+      //Sleep(1);
+  end;
+  inherited;
+end;
+
 threadvar
   _GarbageCollectionActive: boolean;
 
@@ -727,59 +747,72 @@ procedure TScaleMMBackGroundThread.Execute;
 var
   threadmm: PThreadMemManager;
   //iOldThreadId: Cardinal;
+  i: Integer;
 begin
   repeat
-    Sleep(5000);
-
-    GlobalManager.ThreadLock;
-    _GarbageCollectionActive := True;
-    try
-      threadmm := GlobalManager.GetFirstThreadMemory;
-      while threadmm <> nil do
-      begin
-        //thread is terminated or killed? at least our ScaleMM2.NewEndThread function is not called!
-        if WaitForSingleObject(threadmm.FThreadHandle, 0) = WAIT_OBJECT_0 then
-        begin
-          CloseHandle(threadmm.FThreadHandle);
-          threadmm.FThreadHandle := 0;
-          GlobalManager.FreeThreadManager(threadmm);
-        end;
-
-        //interthread mem but not busy?
-        if threadmm.IsMemoryFromOtherThreadsPresent and
-           not threadmm.IsBusyLocked then
-        begin
-          //suspend thread
-          if Integer(SuspendThread(threadmm.FThreadHandle)) < 0 then
-            Error(reAssertionFailed);  //error
-          try
-            //not busy in the meantime?
-            if not threadmm.IsBusyLocked then
-            begin
-              threadmm.FastBusyLock;
-              try
-                //iOldThreadId := threadmm.FThreadId;
-                //threadmm.FThreadId := 1;
-                threadmm.ProcessFreedMemFromOtherThreads(False {everything});
-              finally
-                //threadmm.FThreadId := iOldThreadId;
-                threadmm.BusyUnLock;
-              end;
-            end;
-          finally
-            //resume
-            ResumeThread(threadmm.FThreadHandle);
-          end;
-        end;
-
-        threadmm := threadmm.FNextThreadManager;
-      end;
-    finally
-      _GarbageCollectionActive := False;
-      GlobalManager.ThreadUnLock;
+    //wait 5s
+    for i := 1 to 50 do
+    begin
+      if FTerminated then
+        Break;
+      Sleep(100);
+      //Sleep(5000);
     end;
 
-  until False;
+    if not FTerminated then
+    begin
+      GlobalManager.ThreadLock;
+      _GarbageCollectionActive := True;
+      try
+        threadmm := GlobalManager.GetFirstThreadMemory;
+        while threadmm <> nil do
+        begin
+          //thread is terminated or killed? at least our ScaleMM2.NewEndThread function is not called!
+          if WaitForSingleObject(threadmm.FThreadHandle, 0) = WAIT_OBJECT_0 then
+          begin
+            CloseHandle(threadmm.FThreadHandle);
+            threadmm.FThreadHandle := 0;
+            GlobalManager.FreeThreadManager(threadmm);
+          end;
+
+          //interthread mem but not busy?
+          if threadmm.IsMemoryFromOtherThreadsPresent and
+             not threadmm.IsBusyLocked and
+             (threadmm.FThreadHandle <> Self.FHandle) then     //do NOT suspend ourselves!
+          begin
+            //suspend thread
+            if Integer(SuspendThread(threadmm.FThreadHandle)) >= 0 then
+            //  Error(reAssertionFailed);   no error, can cause deadlocks  //error
+            try
+              //not busy in the meantime?
+              if not threadmm.IsBusyLocked then
+              begin
+                threadmm.FastBusyLock;
+                try
+                  //iOldThreadId := threadmm.FThreadId;
+                  //threadmm.FThreadId := 1;
+                  threadmm.ProcessFreedMemFromOtherThreads(False {everything});
+                finally
+                  //threadmm.FThreadId := iOldThreadId;
+                  threadmm.BusyUnLock;
+                end;
+              end;
+            finally
+              //resume
+              ResumeThread(threadmm.FThreadHandle);
+            end;
+          end;
+
+          threadmm := threadmm.FNextThreadManager;
+        end;
+      finally
+        _GarbageCollectionActive := False;
+        GlobalManager.ThreadUnLock;
+      end;
+    end;
+
+  until FTerminated;
+  FFinished := TRUE;
 end;
 
 class function TScaleMMBackGroundThread.GarbageCollectionActive: boolean;
@@ -787,4 +820,36 @@ begin
   Result := _GarbageCollectionActive;
 end;
 
+var
+  OldDLLProc : TDLLProc;
+
+procedure SMDLLMain(dwReason: Integer);
+begin
+  if Assigned(OldDLLProc) then
+    OldDLLProc(dwReason);
+
+  //free background thread if (main) dll is unloaded
+  if dwReason = 0 then //DLL_PROCESS_DETACH
+  begin
+    if BGThread <> nil then
+    begin
+      BGThread.Free;
+      BGThread := nil;
+    end;
+  end;
+end;
+
+initialization
+  OldDLLProc := DLLProc;
+  DLLProc := @SMDLLMain;
+
+finalization
+  DLLProc := OldDLLProc;
+  if BGThread <> nil then
+  begin
+    BGThread.Free;
+    BGThread := nil;
+  end;
+
 end.
+

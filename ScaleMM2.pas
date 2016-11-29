@@ -123,6 +123,13 @@ Change log:
  - rare AV fixed in TGlobalMemManager.GetNewThreadManager (thanks to Molnár Attila)
  Version 2.6 (27-4-2016)
  - increasing memory usage with lot of short living threads (DataSnap, Indy) (thanks to Hans Wendel)
+ Version 2.7 (29-11-2016) 
+   (many thanks to Molnár Attila for testing, finding and solving these bugs!)
+ - deadlocks (in combination with dll's) fixed in background thread
+ - AV fixed in ShareMM with dll's
+ - ShareMM with only dll's is possible now (define MMSharingDLLOwnerEnabled) for e.g. Apache httpd and Microsoft IIS
+ - free background thread when dll is unloaded
+ - faster stopping of background thread
 }
 
 interface
@@ -246,6 +253,10 @@ type
 
   procedure ScaleMMInstall;
   procedure ScaleMMUnInstall;
+
+  {$ifdef MMSharingEnabled}
+  function ScaleMMIsMemoryManagerOwner: boolean;
+  {$endif}
 
 {$IFDEF PURE_PASCAL}
 threadvar
@@ -1183,14 +1194,11 @@ var
 //code below is copied from FastMM4
 const
   {Hexadecimal characters}
-  C_HexTable: array[0..15] of AnsiChar = ('0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
+  C_HexTable: array[0..15] of AnsiChar = ('0', '1', '2', '3', '4', '5', '6', '7',  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
 var
   {A string uniquely identifying the current process (for sharing the memory
    manager between DLLs and the main application)}
-  MappingObjectName: array[0..26] of AnsiChar = ('L', 'o', 'c', 'a', 'l', '\',
-    'S', 'c', 'a', 'l', 'e', 'M', 'M', '_', 'P', 'I', 'D', '_', '?', '?', '?', '?',
-    '?', '?', '?', '?', #0);
+  MappingObjectName: array[0..26] of AnsiChar = ('L', 'o', 'c', 'a', 'l', '\', 'S', 'c', 'a', 'l', 'e', 'M', 'M', '_', 'P', 'I', 'D', '_', '?', '?', '?', '?', '?', '?', '?', '?', #0);
   {The handle of the memory mapped file}
   MappingObjectHandle: Cardinal;
 type
@@ -1201,6 +1209,7 @@ type
     SharedMM: PMemoryManager;
     {$endif}
     //NewEndThread: PEndThread;
+    GlobalManager: PGlobalMemManager;
   end;
   PSharedRecord = ^TSharedRecord;
 var
@@ -1223,9 +1232,10 @@ begin
   {Is no MM being shared?}
   if MappingObjectHandle = 0 then
   begin
-    {Share the MM with other DLLs? - if this DLL is unloaded, then
-     dependent DLLs will cause a crash.}
+    {$IFnDEF MMSharingDLLOwnerEnabled} //always use sharedmm, also when there are only dll's (in case of Apache httpd or Microsoft IIS)
+    {Share the MM with other DLLs? - if this DLL is unloaded, then dependent DLLs will cause a crash.}
     if not IsLibrary then
+    {$ENDIF}
     begin
       {Create the memory mapped file}
       MappingObjectHandle := CreateFileMappingA(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, 4,
@@ -1233,7 +1243,8 @@ begin
       {Map a view of the memory}
       LPMapAddress  := MapViewOfFile(MappingObjectHandle, FILE_MAP_WRITE, 0, 0, 0);
 
-      SharedRecord.SharedMM     := @NewMM;
+      SharedRecord.SharedMM      := @NewMM;
+      SharedRecord.GlobalManager := @OwnedGlobalManager;
       //SharedRecord.NewEndThread := NewEndThreadProc;
       {Set a pointer to the new memory manager}
       LPMapAddress^ := @SharedRecord;
@@ -1253,6 +1264,7 @@ begin
     //NewEndThreadProc := SharedRecord.NewEndThread;
     {Set the new memory manager}
     NewMM            := SharedRecord.SharedMM^;
+    GlobalManager    := SharedRecord.GlobalManager;
 
     {Unmap the file}
     UnmapViewOfFile(LPMapAddress);
@@ -1266,6 +1278,11 @@ begin
   end;
 
   Result := IsMemoryManagerOwner;
+end;
+
+function ScaleMMIsMemoryManagerOwner: boolean;
+begin
+  Result := ScaleMMIsInstalled and IsMemoryManagerOwner;
 end;
 {$endif}
 
@@ -1319,6 +1336,7 @@ begin
     _FixedOffset;
     {$ENDIF}
 
+    GlobalManager := @OwnedGlobalManager;
     // init main thread manager
     GlobalManager.Init;
   end;
