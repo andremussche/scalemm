@@ -16,12 +16,22 @@ library maindll;
 uses
   ScaleMM2 in '..\ScaleMM2.pas',
   System.SysUtils,
-  System.Classes;
+  System.Classes,
+  Shared.Types in 'Shared.Types.pas',
+  Shared.Actions in 'Shared.Actions.pas';
 
 {$R *.res}
 
+function TestActions: ITestActions;
 begin
-  Assert(ScaleMMIsMemoryManagerOwner);
+  Result := TTestActions.Create;
+end;
+
+exports
+  TestActions;
+
+begin
+  Assert(not ScaleMMIsMemoryManagerOwner);
 
   TThread.CreateAnonymousThread(
     procedure

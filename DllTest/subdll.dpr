@@ -10,12 +10,25 @@ library subdll;
   with your DLL. To avoid using BORLNDMM.DLL, pass string information
   using PChar or ShortString parameters. }
 
+{$ifNdef MMSharingEnabled}MMSharingEnabled must be defined!{$endif}
+{$ifNdef MMSharingDLLOwnerEnabled}MMSharingDLLOwnerEnabled must be defined!{$endif}
+
 uses
   ScaleMM2 in '..\ScaleMM2.pas',
   System.SysUtils,
-  System.Classes;
+  System.Classes,
+  Shared.Types in 'Shared.Types.pas',
+  Shared.Actions in 'Shared.Actions.pas';
 
 {$R *.res}
+
+function TestActions: ITestActions;
+begin
+  Result := TTestActions.Create;
+end;
+
+exports
+  TestActions;
 
 begin
   Assert(not ScaleMMIsMemoryManagerOwner);
