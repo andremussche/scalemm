@@ -130,6 +130,10 @@ Change log:
  - ShareMM with only dll's is possible now (define MMSharingDLLOwnerEnabled) for e.g. Apache httpd and Microsoft IIS
  - free background thread when dll is unloaded
  - faster stopping of background thread
+ Version 2.8 (2-12-2016)
+ - fixed AV with interthread mem and/or short living thread
+ - Out of memory fixed in case of high load
+ - memleak fixed with partial used mem and short living threads
 }
 
 interface

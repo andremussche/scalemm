@@ -336,6 +336,8 @@ begin
   ThreadLock;
     // clear mem (partial: add to reuse list, free = free)
     FreeSmallBlocksFromThreadMemory(@aThreadMem.FSmallMemManager);
+    //collect all pending threadfreed memory
+    Self.FGlobalThreadMemory.FSmallMemManager.CollectAllThreadFreedMem;
   //UNLOCK
   ThreadUnLock;
 
@@ -421,10 +423,12 @@ begin
           bl.FFirstMemBlock.FPreviousMemBlock := nil;
       end;
 
+      {$IFDEF SCALEMM_DEBUG}
       if bl.FFirstMemBlock <> nil then
         bl.FFirstMemBlock.CheckMem(sdBoth);
       if bl.FFirstFreedMemBlock <> nil then
         bl.FFirstFreedMemBlock.CheckMem(sdBoth);
+      {$endif}
     end;
 
     if Result <> nil then
@@ -459,8 +463,9 @@ begin
   Result := nil;
   if FFirstBlock = nil then Exit;
 
-  if not TryThreadlock then
-    Exit;
+  //if not TryThreadlock then    this can give OoM in case of high load!
+  //  Exit;
+  ThreadLock;    //always lock, is a bit slower but otherwise OoM possible
   try
     ProcessFreedMemoryFromOtherThreads;
 
@@ -767,11 +772,13 @@ begin
         threadmm := GlobalManager.GetFirstThreadMemory;
         while threadmm <> nil do
         begin
-          //thread is terminated or killed? at least our ScaleMM2.NewEndThread function is not called!
+          //thread is terminated or killed? at least our ScaleMM2.NewEndThread function is not called! (note: is disabled because of this function :) )
           if WaitForSingleObject(threadmm.FThreadHandle, 0) = WAIT_OBJECT_0 then
           begin
             CloseHandle(threadmm.FThreadHandle);
             threadmm.FThreadHandle := 0;
+            threadmm.FThreadId     := 0;
+            threadmm.ProcessFreedMemFromOtherThreads(False {everything});
             GlobalManager.FreeThreadManager(threadmm);
           end;
 
@@ -781,7 +788,7 @@ begin
              (threadmm.FThreadHandle <> Self.FHandle) then     //do NOT suspend ourselves!
           begin
             //suspend thread
-            if Integer(SuspendThread(threadmm.FThreadHandle)) >= 0 then
+            if (threadmm.FThreadHandle <> 0) and (Integer(SuspendThread(threadmm.FThreadHandle)) >= 0) then
             //  Error(reAssertionFailed);   no error, can cause deadlocks  //error
             try
               //not busy in the meantime?

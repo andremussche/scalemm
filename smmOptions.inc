@@ -1,7 +1,7 @@
 {.$DEFINE SCALEMM_DEBUG}           //much(!) slower but better debugging (no inline functions etc)
 {.$DEFINE IntelVTune}              //debug info in release build
 {.$DEFINE MMSharingEnabled}        //Share MM with dlls
-{.$DEFINE MMSharingDLLOwnerEnabled //sharing enabled with dll's: the first dll owns the MM (needed for Apache httpd and Microsoft IIS because there is no main delphi application, only dll's)
+{.$DEFINE MMSharingDLLOwnerEnabled} //sharing enabled with dll's: the first dll owns the MM (needed for Apache httpd and Microsoft IIS because there is no main delphi application, only dll's)
 {.$DEFINE SCALEMM_MAGICTEST}       //extra safety checks with low overhead
 
 {$IFDEF SCALEMM_DEBUG}
