@@ -7,10 +7,12 @@ I failed on the first goal (ScaleMM2 is not easy to understand, because MM's are
 
 [Please donate :)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=andre%2emussche%40gmail%2ecom&lc=US&item_name=ScaleMM&item_number=ScaleMM&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
-# Release version 2 is stable
+# Release version 2 is stable (with background processing mode)
 
 The v2 version is stable now:
-* 10-11-2015: Version 2.5, rare AV fixed in 64bit with high load due to misalignment
+
+* 2-12-2016: Version 2.8, rare AV fixed with interthread mem, fixed out of memory with high load, fixed memleak with short living threads
+* contains background processing thread, for use with non-delphi threads (Apache Httpd or Microsoft IIS)
 * Todo:
   * does not check and report memory leaks
   * more optimizations + code cleanup needed
