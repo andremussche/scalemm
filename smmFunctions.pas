@@ -334,7 +334,7 @@ end;
 function BitScanLast(aValue: NativeInt): NativeUInt;
 asm
 {$IFDEF CPU386}
-  BSR	AX, aValue;
+  BSR	EAX, aValue;
 {$ELSE} .NOFRAME
   BSR	RAX, aValue;
 {$ENDIF}
